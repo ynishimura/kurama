@@ -9,7 +9,7 @@ Add an entry under `Unreleased` with every change a user can see: a command,
 an option, a configuration key, an error code, an exit code or an output
 format. Internal changes need none.
 
-## Unreleased
+## 0.1.0 - 2026-09-28
 
 The first public version. What it covers:
 

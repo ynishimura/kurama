@@ -147,9 +147,9 @@ Linux（`x86_64` と `aarch64`、glibc）でもビルドと実行ができます
 - MFA が必要なプロファイルと `op://` シークレットのための [1Password CLI](https://developer.1password.com/docs/cli/)（`op`）。アイテムの用意は[設定](#設定)で説明します
 
 ### インストール
-<!-- en: aa6ab92546a0 -->
+<!-- en: 82c9c4fd8fc7 -->
 
-リリースごとに、macOS（Apple シリコンと Intel）と Linux（x86_64 と arm64）向けのビルド済みバイナリを公開する予定です。まだリリースはないため、今はソースからビルドしてください。リリース後は次のようにインストールできます。
+リリースごとに、macOS（Apple シリコンと Intel）と Linux（x86_64 と arm64）向けのビルド済みバイナリを公開しています。
 
 ```bash
 brew install ynishimura/tap/kurama

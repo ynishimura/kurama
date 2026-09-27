@@ -165,9 +165,8 @@ supported: the build stops with a message naming the target.
 
 ### Installation
 
-Each release will publish prebuilt binaries for macOS (Apple silicon and
-Intel) and Linux (x86_64 and arm64). There is no release yet, so build from
-source for now. Once a release is out:
+Each release publishes prebuilt binaries for macOS (Apple silicon and
+Intel) and Linux (x86_64 and arm64):
 
 ```bash
 brew install ynishimura/tap/kurama
