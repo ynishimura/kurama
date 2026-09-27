@@ -1,0 +1,41 @@
+# --dry-run prints the request it built -- the query document and the
+# variables as its body -- with the credential masked, and sends nothing:
+# a mutation reaches the server only when it is called for real.
+id = "api_graphql_call_dry_run_prints_the_document"
+feature = "api-explorer"
+
+[combination]
+command = "api"
+spec = "graphql"
+openapi = "file"
+source = "token"
+mode = "dry-run"
+
+[input]
+args = ["api", "linear", "mutation.issueCreate", "-d", "{\"input\":{\"teamId\":\"t\",\"title\":\"x\"}}", "--dry-run"]
+config = """
+[auth.linear]
+kind = "token"
+token = "op://Agent/linear/credential"
+format = "{token}"
+
+[api.linear]
+base_url = "{server}/api"
+graphql = "/graphql"
+graphql_schema = "{fixtures}/graphql-linear.json"
+"""
+
+[fakes]
+api = "graphql"
+op = "enabled"
+
+[expect]
+exit_code = 0
+stdout = "empty"
+stderr_contains = [
+  "/api/graphql",
+  "# dry run: nothing is sent",
+  "> POST http://",
+  "{\"query\":\"mutation($input: IssueCreateInput!) { issueCreate(input: $input) { lastSyncId success } }\",\"variables\":{\"input\":{\"teamId\":\"t\",\"title\":\"x\"}}}",
+]
+api_calls = { count = 0 }

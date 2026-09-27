@@ -1,0 +1,25 @@
+# Text output keeps one physical line per row and escapes terminal controls;
+# data commands initialize tracing outside JSON mode without logging the SQL.
+id = "data_text_output_escapes_controls_and_initializes_logging"
+feature = "local-analytics"
+
+[combination]
+command = "data"
+data_op = "query"
+data_source = "local"
+format = "csv"
+
+[input]
+args = ["data", "--from", "{repo}/tests/fixtures/data/orders.csv", "--query", "SELECT 'first' || chr(10) || 'order' || chr(27) || '[31m' || chr(9) AS note FROM data LIMIT 1"]
+env = { RUST_LOG = "kurama=debug" }
+
+[expect]
+exit_code = 0
+stdout = { equals = "note\nfirst\\norder\\u{1b}[31m\\t\n" }
+stdout_excludes = ["\u001b"]
+stderr_contains = ["DEBUG", "Parsed command"]
+stderr_excludes = ["SELECT 'first'"]
+sts_actions = []
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true

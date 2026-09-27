@@ -1,0 +1,45 @@
+# A content search lists to --max-objects and reads what it listed: one the
+# bound stopped is incomplete and hands out the listing's cursor. Without the
+# bound every object is listed, each line that contains the text is reported
+# with its bucket, key, line and fetch time, gzip is decoded, and a binary
+# object and one that changed after it was listed are named as not searched,
+# so the run is still not complete.
+id = "s3_content_search_reports_incomplete_when_a_limit_stops_it"
+feature = "s3-explorer"
+
+[combination]
+command = "s3"
+source = "aws-profile"
+role = "assume-role"
+s3_op = "content-search"
+
+[input]
+args = ["s3", "assets", "s3://browse-objects/logs/", "--search-content", "request-id-123", "--max-objects", "2", "--json"]
+then_run = [
+  ["s3", "assets", "s3://browse-objects/logs/", "--search-content", "request-id-123", "--json"],
+  ["s3", "assets", "s3://browse-objects/logs/", "--search-content", "request-id-123"],
+]
+config = """
+[s3.assets]
+aws_profile = "dev"
+"""
+
+[expect]
+exit_code = 0
+op_calls = 0
+no_files_written = true
+stdout = { line_containing = [["logs/a.log", "2", "GET /x request-id-123 200"], ["logs/b.log.gz", "2", "POST /z request-id-123 500"]], line_count = 3 }
+stderr_contains = ["# incomplete", "# skipped logs/c.bin: binary", "# skipped logs/e.log: changed"]
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+sts_actions = ["AssumeRole"]
+stdout_json = { "/operation" = "content_search", "/search" = "request-id-123", "/max_objects" = 2, "/scanned_objects" = 2, "/matches/0/bucket" = "browse-objects", "/matches/0/key" = "logs/a.log", "/matches/0/line" = 2, "/matches/0/byte_offset" = 5, "/matches/0/excerpt" = "GET /x request-id-123 200", "/matches/0/fetched_at" = { contains = "T" }, "/matches/1/key" = "logs/b.log.gz", "/matches/2" = "<null>", "/searched/1/full" = true, "/skipped" = [], "/complete" = false, "/stop_reason" = "max_objects", "/cursor" = { contains = "" } }
+api_calls = { count = 3, sigv4 = { service = "s3", region = "ap-northeast-1" } }
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+stdout_json = { "/max_objects" = 100, "/scanned_objects" = 5, "/matches/1/key" = "logs/b.log.gz", "/matches/2" = "<null>", "/searched/2/key" = "logs/d.log", "/searched/3" = "<null>", "/skipped/0/key" = "logs/c.bin", "/skipped/0/reason" = "binary", "/skipped/1/key" = "logs/e.log", "/skipped/1/reason" = "changed", "/complete" = false, "/stop_reason" = "<null>", "/cursor" = "<null>" }
+api_calls = { count = 6, sigv4 = { service = "s3", region = "ap-northeast-1" } }

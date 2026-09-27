@@ -1,0 +1,48 @@
+# Usage failures of `kurama db`: a database the config does not name, a
+# call without an operation, a SQLite file that does not exist -- each exit
+# 2 with `DB_INVALID`, and the missing file is not created.
+id = "db_unknown_database_and_missing_operation_exit_2"
+feature = "database"
+
+[combination]
+command = "db"
+client = "db"
+engine = "sqlite"
+db_op = "tables"
+
+[input]
+args = ["db", "nope", "--tables", "--json"]
+then_run = [
+  ["db", "app"],
+  ["db", "/nonexistent/app.sqlite3", "--tables", "--json"],
+]
+config = """
+[db.app]
+engine = "sqlite"
+path = "{repo}/tests/fixtures/db/app.sqlite3"
+
+[db.writable]
+engine = "sqlite"
+allow_write = true
+path = "{repo}/tests/fixtures/db/app.sqlite3"
+"""
+
+[expect]
+exit_code = 2
+sts_actions = []
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true
+stderr_json = { "/error/code" = "DB_INVALID" }
+paths_absent = ["/nonexistent/app.sqlite3"]
+
+[[expect.runs]]
+run = 0
+stdout = "empty"
+stderr_json = { "/error/code" = "DB_INVALID", "/error/exit_code" = 2, "/error/retry" = "never", "/error/hint" = { contains = "status --kind db" } }
+
+[[expect.runs]]
+run = 1
+exit_code = 2
+stderr_lines_start_with = ["error[DB_INVALID]: choose one operation", "hint: "]
+hint = "choose an operation, for example `--tables`, `--describe TABLE` or `--query SQL`"

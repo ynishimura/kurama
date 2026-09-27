@@ -1,0 +1,73 @@
+# The contract of a URL description is read from the cache within the
+# revalidation interval: after the first --schema fetched it (publicly,
+# without the API's credential), the next ones send no request to the
+# description server or the API, read no secret from 1Password and run no
+# grant, although the API's source is a 1Password reference and another's
+# is an OAuth source with no stored token.
+id = "api_schema_from_a_cached_description_calls_nothing"
+feature = "api-explorer"
+
+[combination]
+command = "api"
+openapi = "url"
+cache = "fresh"
+output = "schema"
+
+[input]
+args = ["api", "voices", "--schema"]
+then_run = [
+  ["api", "voices", "--schema", "pets/get"],
+  ["api", "gh", "--schema", "--jq", ".description.source.kind"],
+]
+config = """
+[auth.voices]
+kind = "token"
+token = "op://Agent/voices/credential"
+header = "xi-api-key"
+format = "{token}"
+
+[auth.github]
+kind = "oauth"
+grant_type = "authorization_code"
+auth_url = "{server}/oauth/authorize"
+token_url = "{server}/oauth/token"
+client_id = "gh-client"
+
+[api.voices]
+base_url = "{server}/api"
+auth = "voices"
+openapi = "{server}/spec/petstore.json"
+
+[api.gh]
+base_url = "{server}/api"
+auth = "github"
+openapi = "{server}/spec/petstore.json"
+"""
+
+[expect]
+exit_code = 0
+stdout = { equals = "cached\n" }
+spec_calls = { count = 0 }
+api_calls = { count = 0 }
+op_calls = 0
+token_grants = []
+oauth_paths = []
+sts_actions = []
+open_calls = []
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+spec_calls = { count = 1, status = 200 }
+stdout_json = { "/description/source/kind" = "fetched", "/operations" = { length = 5 } }
+op_calls = 0
+api_calls = { count = 0 }
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+spec_calls = { count = 0 }
+stdout_json = { "/description/source/kind" = "cached", "/description/source/fetched_at" = "<string>", "/operations/0/id" = "pets/get" }
+op_calls = 0
+api_calls = { count = 0 }
+oauth_paths = []

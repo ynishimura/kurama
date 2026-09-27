@@ -1,0 +1,34 @@
+# An exit-1 failure under --jq is a tool error in the JSON error document:
+# category "tool" and retry "never", the pair no usage, human-action or
+# remote scenario reads.
+id = "errors_json_tool_error_has_tool_category_and_never_retry"
+feature = "errors"
+
+[combination]
+command = "api"
+source = "oauth"
+grant = "authorization_code"
+token = "stored"
+jq = "invalid"
+
+[input]
+stored_tokens = [{ source = "github", access_token = "stored-access-token", expires_in = 3600 }]
+args = ["api", "github", "/user", "--jq", ".["]
+config = """
+[auth.github]
+kind = "oauth"
+grant_type = "authorization_code"
+auth_url = "{server}/oauth/authorize"
+token_url = "{server}/oauth/token"
+client_id = "gh-client"
+scopes = ["repo"]
+env_var = "GITHUB_TOKEN"
+
+[api.github]
+base_url = "{server}/api"
+"""
+
+[expect]
+json_error = { code = "JQ_ERROR", exit = 1 }
+stderr_lines = 1
+stderr_json = { "/error/category" = "tool", "/error/retry" = "never", "/error/exit_code" = 1 }

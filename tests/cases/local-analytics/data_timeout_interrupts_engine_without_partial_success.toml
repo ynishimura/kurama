@@ -1,0 +1,22 @@
+# A timeout is an explicit tool failure that names the columns the query was
+# reading and how long it ran, with no partial result on stdout.
+id = "data_timeout_interrupts_engine_without_partial_success"
+feature = "local-analytics"
+
+[combination]
+command = "data"
+client = "data"
+data_op = "query"
+data_source = "local"
+format = "csv"
+
+[input]
+args = ["data", "--from", "{repo}/tests/fixtures/data/orders.csv", "--query", "SELECT sum(a.i*b.i) FROM range(100000000) a(i), range(100000000) b(i)", "--timeout", "1", "--json"]
+
+[expect]
+exit_code = 1
+stdout = "empty"
+stderr_json = { "/error/columns" = ["i"], "/error/elapsed_ms" = { at_least = 1000 }, "/error/code" = "DATA_FAILED", "/error/message" = { contains = "timed out" } }
+sts_actions = []
+op_calls = 0
+no_files_written = true

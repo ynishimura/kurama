@@ -1,0 +1,38 @@
+# A second 401 after the new token is the answer: exit 4, and the API was
+# called exactly twice.
+id = "api_second_401_exits_4_after_one_retry"
+feature = "api-client"
+
+[combination]
+command = "api"
+source = "oauth"
+grant = "client_credentials"
+token = "stale"
+api_response = "unauthorized"
+
+[input]
+stored_tokens = [{ source = "svc", access_token = "stale-token", expires_in = 3600 }]
+args = ["api", "svc", "/items"]
+config = """
+[auth.svc]
+kind = "oauth"
+grant_type = "client_credentials"
+token_url = "{server}/oauth/token"
+client_id = "svc-client"
+client_secret = "op://Agent/Service/client_secret"
+scopes = ["read"]
+
+[api.svc]
+description = "Service API"
+base_url = "{server}/api"
+"""
+
+[fakes]
+op = "enabled"
+api = "unauthorized"
+
+[expect]
+error = { code = "API_HTTP_ERROR", exit = 4 }
+stderr_contains = ["HTTP 401 Unauthorized: {\"message\":\"Bad credentials\"}"]
+token_grants = ["client_credentials"]
+api_calls = { count = 2, calls = [{ authorization = "Bearer stale-token" }, { authorization = "Bearer {granted_access_token}" }] }

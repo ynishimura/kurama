@@ -1,0 +1,22 @@
+# An API without a source sends no Authorization header and requests no
+# token.
+id = "api_without_auth_sends_no_authorization_header"
+feature = "api-client"
+
+[combination]
+command = "api"
+source = "none"
+
+[input]
+args = ["api", "public", "/ping", "--jq", ".authorization"]
+config = """
+[api.public]
+base_url = "{server}/api"
+"""
+
+[expect]
+exit_code = 0
+api_calls = { count = 1 }
+token_grants = []
+stdout = { contains = ["null"] }
+no_files_written = true

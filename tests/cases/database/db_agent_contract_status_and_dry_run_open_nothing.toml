@@ -1,0 +1,44 @@
+# The agent contract, the status row and a dry-run plan of a database, none
+# of which opens it: no STS, no 1Password, no file written.
+id = "db_agent_contract_status_and_dry_run_open_nothing"
+feature = "database"
+
+[combination]
+command = "agent"
+client = "db"
+"agent.kind" = "db"
+engine = "sqlite"
+db_op = "dry-run"
+
+[input]
+args = ["agent", "--kind", "db", "--json"]
+then_run = [
+  ["status", "--kind", "db", "--json"],
+  ["db", "app", "--dry-run", "--json"],
+]
+config = """
+[db.app]
+engine = "sqlite"
+path = "{repo}/tests/fixtures/db/app.sqlite3"
+
+[db.writable]
+engine = "sqlite"
+allow_write = true
+path = "{repo}/tests/fixtures/db/app.sqlite3"
+"""
+
+[expect]
+exit_code = 0
+sts_actions = []
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true
+stdout_json = { "/dry_run" = true, "/kind" = "db", "/meta/engine/name" = "sqlite", "/meta/engine/server_version" = "<null>", "/rows" = "<null>", "/meta/limits/max_rows" = 1000 }
+
+[[expect.runs]]
+run = 0
+stdout_json = { "/kind" = "db", "/request_operations" = { has = "query" }, "/request_schema" = "<object>", "/error_schema" = "<object>" }
+
+[[expect.runs]]
+run = 1
+stdout_json = { "/0/kind" = "db", "/0/name" = "app", "/0/engine" = "sqlite", "/0/allow_write" = false, "/0/connection_status" = "unknown" }

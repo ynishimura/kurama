@@ -1,0 +1,29 @@
+# `--allow-spill true` is recorded in the plan the dry run prints, and the
+# query runs with temporary disk allowed.
+id = "data_allow_spill_true_plans_with_temporary_disk"
+feature = "local-analytics"
+
+[combination]
+command = "data"
+client = "data"
+data_op = "dry-run"
+data_source = "local"
+format = "csv"
+"data.allow-spill" = "true"
+
+[input]
+args = ["data", "{repo}/tests/fixtures/data/ids.csv", "--allow-spill", "true", "--dry-run", "--json"]
+then_run = [["data", "{repo}/tests/fixtures/data/ids.csv", "--allow-spill", "true", "--preview", "--max-rows", "1", "--json"]]
+
+[expect]
+exit_code = 0
+stdout_json = { "/row_count" = 1, "/meta/limits/allow_spill" = true }
+sts_actions = []
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stdout_json = { "/dry_run" = true, "/meta/limits/allow_spill" = true }

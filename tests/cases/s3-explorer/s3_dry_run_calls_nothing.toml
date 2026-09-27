@@ -1,0 +1,26 @@
+# A dry run shows the target, the operation and its bounds, and calls no
+# STS, S3 or 1Password.
+id = "s3_dry_run_calls_nothing"
+feature = "s3-explorer"
+
+[combination]
+command = "s3"
+source = "aws-profile"
+s3_op = "search"
+mode = "dry-run"
+
+[input]
+args = ["s3", "assets", "s3://browse-bucket/reports/", "--search", "inv", "--dry-run", "--json"]
+config = """
+[s3.assets]
+aws_profile = "dev"
+page_size = 50
+"""
+
+[expect]
+exit_code = 0
+sts_actions = []
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true
+stdout_json = { "/dry_run" = true, "/operation" = "search", "/bucket" = "browse-bucket", "/prefix" = "reports/", "/search" = "inv", "/aws_profile" = "dev", "/region" = "ap-northeast-1", "/page_size" = 50, "/max_objects" = 1000, "/objects" = "<null>" }

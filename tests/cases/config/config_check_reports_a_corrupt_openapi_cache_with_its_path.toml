@@ -1,0 +1,34 @@
+# The cached copy of a description is unreadable: the report names the cache
+# file, as a warning, because kurama would fetch the description again. A
+# description file that does not exist is an error with its own code.
+id = "config_check_reports_a_corrupt_openapi_cache_with_its_path"
+feature = "config"
+
+[combination]
+command = "config-check"
+output = "json"
+config = "openapi-cache-corrupt"
+
+[input]
+args = ["config", "check", "--json"]
+replace_config = """
+[api.remote]
+base_url = "https://api.example.com"
+openapi = "https://api.example.com/openapi.json"
+
+[api.local]
+base_url = "https://api.example.com"
+openapi = "/nonexistent/kurama/openapi.json"
+"""
+
+[input.home_files]
+".cache/kurama/openapi/1b2b05bdb639d126.json" = "not json"
+".cache/kurama/openapi/1b2b05bdb639d126.body" = "{}"
+
+[expect]
+json_error = { code = "CONFIG_INVALID", exit = 2 }
+stderr_lines = 1
+stdout_json = { "/openapi/0/api" = "local", "/openapi/0/state" = "invalid", "/openapi/1/api" = "remote", "/openapi/1/state" = "invalid", "/openapi/1/path" = { contains = ".cache/kurama/openapi/1b2b05bdb639d126.json" }, "/diagnostics" = { length = 2 }, "/diagnostics/0/section" = "api.remote", "/diagnostics/0/severity" = "warning", "/diagnostics/0/code" = "API_SPEC_INVALID", "/diagnostics/0/message" = { contains = ".cache/kurama/openapi/1b2b05bdb639d126.json" }, "/diagnostics/1/section" = "api.local", "/diagnostics/1/severity" = "error", "/diagnostics/1/code" = "API_SPEC_UNAVAILABLE" }
+sts_actions = []
+op_calls = 0
+no_files_written = true

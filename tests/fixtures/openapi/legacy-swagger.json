@@ -1,0 +1,56 @@
+{
+  "swagger": "2.0",
+  "info": {"title": "Legacy", "version": "1"},
+  "host": "legacy.example.com",
+  "basePath": "/v2",
+  "schemes": ["https"],
+  "consumes": ["application/json", "application/xml"],
+  "securityDefinitions": {"oauth": {"type": "oauth2", "flow": "implicit", "authorizationUrl": "https://x", "scopes": {"items:write": "w"}}},
+  "paths": {
+    "/items": {
+      "get": {
+        "operationId": "listItems",
+        "summary": "List items",
+        "parameters": [
+          {"$ref": "#/parameters/page"},
+          {"name": "kind", "in": "query", "type": "string", "enum": ["a", "b"]}
+        ],
+        "responses": {"200": {"description": "ok"}}
+      },
+      "post": {
+        "operationId": "createItem",
+        "summary": "Create an item",
+        "security": [{"oauth": ["items:write"]}],
+        "parameters": [
+          {"name": "item", "in": "body", "required": true, "schema": {"$ref": "#/definitions/Item"}},
+          {"name": "X-Team", "in": "header", "type": "string"}
+        ],
+        "responses": {"201": {"description": "created"}}
+      }
+    },
+    "/upload": {
+      "post": {
+        "operationId": "upload",
+        "summary": "Upload a file",
+        "parameters": [
+          {"name": "file", "in": "formData", "type": "file", "required": true}
+        ],
+        "responses": {"200": {"description": "ok"}}
+      }
+    }
+  },
+  "parameters": {
+    "page": {"name": "page", "in": "query", "type": "integer", "default": 1}
+  },
+  "definitions": {
+    "Item": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": {"type": "string"},
+        "price": {"type": "number"},
+        "ref": {"$ref": "https://schemas.example.com/ref.json#/Ref"}
+      }
+    }
+  }
+}

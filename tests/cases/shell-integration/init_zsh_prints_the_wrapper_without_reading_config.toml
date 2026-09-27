@@ -1,0 +1,21 @@
+# `init zsh` prints the completer and the shell function that carries the
+# export script, and reads no configuration: the file is not even TOML.
+id = "init_zsh_prints_the_wrapper_without_reading_config"
+feature = "shell-integration"
+
+[combination]
+command = "init"
+"init.shell" = "zsh"
+config = "unread"
+
+[input]
+args = ["init", "zsh"]
+replace_config = "this = is not [ toml\n"
+
+[expect]
+exit_code = 0
+stdout = { kind = "plain-text", starts_with = "#compdef kurama", contains = ["compdef _kurama kurama", "\nkurama() {", "KURAMA_ENV_SCRIPT=\"$env_script\""] }
+sts_actions = []
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true

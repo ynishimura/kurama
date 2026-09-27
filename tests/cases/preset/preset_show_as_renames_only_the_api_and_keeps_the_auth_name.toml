@@ -1,0 +1,28 @@
+# `--as` names the [api.*] only: the auth keeps the preset's name, the API
+# points at it, the login step names it and the call step names the new API,
+# in the TOML and in the JSON alike.
+id = "preset_show_as_renames_only_the_api_and_keeps_the_auth_name"
+feature = "preset"
+
+[combination]
+command = "preset-show"
+output = "json"
+
+[input]
+args = ["preset", "show", "google-sheets", "--as", "sheets-work", "--set", "client_id=id-1", "--set", "client_secret=op://Agent/kurama-google/client_secret"]
+then_run = [["preset", "show", "google-sheets", "--as", "sheets-work", "--set", "client_id=id-1", "--set", "client_secret=op://Agent/kurama-google/client_secret", "--json"]]
+
+[expect]
+exit_code = 0
+stderr_empty = true
+stdout_json = { "/docs_url" = "https://console.cloud.google.com/apis/credentials", "/api" = "sheets-work", "/auth/name" = "google", "/auth/action" = "add", "/toml" = { contains = "[api.sheets-work]" }, "/warnings" = { length = 0 } }
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stdout = { contains = ["[auth.google]\nkind = \"oauth\"\ngrant_type = \"authorization_code\"\nissuer = \"https://accounts.google.com\"\nclient_id = \"id-1\"\nclient_secret = \"op://Agent/kurama-google/client_secret\"\nscopes = [\"https://www.googleapis.com/auth/spreadsheets.readonly\"]\nredirect_port = 8080\n", "[api.sheets-work]\ndescription = \"Google Sheets API v4\"\nbase_url = \"https://sheets.googleapis.com\"\nauth = \"google\"\ndiscovery = \"https://sheets.googleapis.com/$discovery/rest?version=v4\"\n"] }
+stdout_excludes = ["auth.sheets-work", "[api.google-sheets]"]
+stderr_contains = ["kurama preset add google-sheets --as sheets-work --set client_id=id-1", "kurama login google", "kurama api sheets-work sheets.spreadsheets.get -P spreadsheetId=<spreadsheet-id>", "http://127.0.0.1:8080/callback"]

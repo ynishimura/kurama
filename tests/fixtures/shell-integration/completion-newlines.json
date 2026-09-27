@@ -1,0 +1,17 @@
+{
+  "openapi": "3.0.3",
+  "info": {"title": "Newlines", "version": "1"},
+  "paths": {
+    "/items": {
+      "get": {
+        "operationId": "items/list",
+        "parameters": [
+          {"name": "limit", "in": "query", "required": true, "schema": {"type": "string", "enum": ["ten", "twenty\ninjected=value", "thirty\r"], "default": "forty\u0085", "example": "fifty"}},
+          {"name": "evil\ninjected=", "in": "query", "schema": {"type": "string"}},
+          {"name": "order", "in": "query", "schema": {"type": "string\ninjected", "default": "asc\ndesc"}}
+        ],
+        "responses": {"200": {"description": "ok"}}
+      }
+    }
+  }
+}

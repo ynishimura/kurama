@@ -1,0 +1,102 @@
+#!/usr/bin/env python3
+"""Fake GitHub CLI for xtask/tests/.
+
+Answers the calls xtask makes from the board in $KURAMA_FAKE_GH_BOARD, a JSON
+list of issues: {"number", "title", "body", "labels", "blockers":
+[[number, open]], "status"} ("status": null means not an item of the project).
+Nothing is a constant: the item of issue N is ITEM-N, the option of a status is
+OPT-<status>, and the body is the one given. The issues query is answered one
+page at a time, as GitHub does: as many as its `first` asks for (the variable,
+or the number written in the query), from the `after` cursor it passes.
+
+Every invocation is appended to $KURAMA_FAKE_GH_LOG as one JSON line, and every
+status a mutation writes as `WRITE <issue> <status>`, so a test reads what was
+asked and what was changed. A mutation also writes that status back to the
+board, so the next run reads the board as it left it.
+
+KURAMA_FAKE_GH_MODE=no-project-scope fails a Projects query the way a token
+without the `project` scope does; KURAMA_FAKE_GH_MODE=unreachable fails every
+call the way gh does offline.
+"""
+import json, os, re, sys
+
+args = sys.argv[1:]
+log = os.environ.get("KURAMA_FAKE_GH_LOG")
+
+
+def record(line):
+    if log:
+        with open(log, "a") as out:
+            out.write(line + "\n")
+
+
+record(json.dumps(args))
+mode = os.environ.get("KURAMA_FAKE_GH_MODE", "")
+if mode == "unreachable":
+    sys.stderr.write("error connecting to api.github.com\n")
+    sys.exit(1)
+
+with open(os.environ["KURAMA_FAKE_GH_BOARD"]) as source:
+    board = json.load(source)
+fields = dict(a.split("=", 1) for a in args if "=" in a)
+
+if args[:2] == ["repo", "view"]:
+    print("fake-owner/kurama")
+elif args[:2] == ["issue", "view"]:
+    issue = next((i for i in board if i["number"] == int(args[2])), None)
+    if issue is None:
+        sys.stderr.write(f"GraphQL: Could not resolve to an issue with the number of {args[2]}.\n")
+        sys.exit(1)
+    print(json.dumps({"body": issue["body"]}))
+elif args[:2] == ["api", "graphql"] and fields.get("query", "").lstrip().startswith("mutation"):
+    data = {}
+    for alias, number, option in re.findall(
+        r'(i(\d+)): updateProjectV2ItemFieldValue\(.*?itemId: "ITEM-\2".*?singleSelectOptionId: "OPT-([^"]+)"',
+        fields["query"],
+    ):
+        record(f"WRITE {number} {option}")
+        for issue in board:
+            if issue["number"] == int(number):
+                issue["status"] = option
+        data[alias] = {"projectV2Item": {"id": f"ITEM-{number}"}}
+    with open(os.environ["KURAMA_FAKE_GH_BOARD"], "w") as target:
+        json.dump(board, target)
+    print(json.dumps({"data": data}))
+elif args[:2] == ["api", "graphql"]:
+    if mode == "no-project-scope":
+        sys.stderr.write(
+            "GraphQL: Your token has not been granted the required scopes to execute this "
+            "query. The 'projectItems' field requires one of the following scopes: ['read:project']\n"
+        )
+        sys.exit(1)
+    options = [{"id": f"OPT-{name}", "name": name}
+               for name in ["Backlog", "Ready", "In progress", "In review", "Done"]]
+    limit = fields.get("first") or re.search(r"issues\(first: (\d+)", fields["query"]).group(1)
+    start = int(fields["after"].removeprefix("CURSOR-")) if "after" in fields else 0
+    end = start + int(limit)
+    nodes = []
+    for issue in board[start:end]:
+        items = []
+        if issue["status"] is not None:
+            items.append({
+                "id": f"ITEM-{issue['number']}",
+                "project": {"id": "PROJECT-3", "number": 3,
+                            "field": {"id": "FIELD-STATUS", "options": options}},
+                "status": {"name": issue["status"], "updatedAt": "2026-09-23T00:00:00Z"},
+            })
+        nodes.append({
+            "number": issue["number"],
+            "title": issue["title"],
+            "body": issue["body"],
+            "labels": {"nodes": [{"name": name} for name in issue["labels"]]},
+            "blockedBy": {"nodes": [{"number": n, "state": "OPEN" if open_ else "CLOSED"}
+                                    for n, open_ in issue["blockers"]]},
+            "projectItems": {"nodes": items},
+        })
+    # As GitHub does, an empty page has no cursor to continue from.
+    cursor = f"CURSOR-{start + len(nodes)}" if nodes else None
+    page = {"hasNextPage": end < len(board), "endCursor": cursor}
+    print(json.dumps({"data": {"repository": {"issues": {"pageInfo": page, "nodes": nodes}}}}))
+else:
+    sys.stderr.write(f"fake gh: unexpected call {args}\n")
+    sys.exit(2)

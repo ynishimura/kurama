@@ -1,0 +1,20 @@
+id = "data_s3_access_denied_exits_4"
+feature = "local-analytics"
+
+[combination]
+command = "data"
+source = "aws-profile"
+data_op = "preview"
+data_source = "s3"
+format = "csv"
+role = "assume-role"
+s3_response = "denied"
+
+[input]
+args = ["data", "--from", "s3://data-bucket/denied.csv", "--aws-profile", "dev", "--preview", "data"]
+
+[expect]
+error = { code = "DATA_REJECTED", exit = 4 }
+sts_actions = ["AssumeRole"]
+op_calls = 0
+no_files_written = true

@@ -1,0 +1,40 @@
+# A stale token is sent once; after the 401 a new token is requested and the
+# request is sent again with it, once. With --jq stderr stays empty;
+# api_401_retry_is_said_on_stderr_without_json pins the progress line.
+id = "api_401_gets_a_new_token_and_retries_once"
+feature = "api-client"
+
+[combination]
+command = "api"
+source = "oauth"
+grant = "client_credentials"
+token = "stale"
+api_response = "unauthorized-once"
+
+[input]
+stored_tokens = [{ source = "svc", access_token = "stale-token", expires_in = 3600 }]
+args = ["api", "svc", "/items", "--jq", ".login"]
+config = """
+[auth.svc]
+kind = "oauth"
+grant_type = "client_credentials"
+token_url = "{server}/oauth/token"
+client_id = "svc-client"
+client_secret = "op://Agent/Service/client_secret"
+scopes = ["read"]
+
+[api.svc]
+description = "Service API"
+base_url = "{server}/api"
+"""
+
+[fakes]
+op = "enabled"
+api = "unauthorized-once"
+
+[expect]
+exit_code = 0
+token_grants = ["client_credentials"]
+stderr_empty = true
+api_calls = { count = 2, calls = [{ authorization = "Bearer stale-token" }, { authorization = "Bearer fake-granted-access-token" }] }
+stdout = { equals = "octocat\n" }

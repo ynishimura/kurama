@@ -1,0 +1,49 @@
+# 1.2.497.0 is the last session-manager-plugin release that takes the
+# session response on the command line, where every process on the host can
+# read it: the plugin is checked before AWS is asked for a session token,
+# and before 1Password is asked for a password.
+id = "db_tunnel_refuses_a_plugin_that_would_put_the_session_token_in_argv"
+feature = "database"
+
+[combination]
+command = "db"
+client = "db"
+engine = "mysql"
+tls = "verify-ca"
+auth = "password"
+tunnel = "ssm"
+db_op = "tables"
+
+[input]
+args = ["db", "behind", "--tables", "--json"]
+env = { KURAMA_FAKE_PLUGIN_VERSION = "1.2.497.0" }
+config = """
+[db.behind]
+engine = "mysql"
+host = "rds.internal.example.com"
+database = "app"
+username = "reader"
+password = "op://Agent/db/password"
+tls = "verify-ca"
+connect_timeout_secs = 2
+
+[db.behind.tunnel]
+kind = "ssm"
+aws_profile = "dev"
+instance_name = "bastion"
+region = "ap-northeast-1"
+"""
+
+[fakes]
+op = "enabled"
+tools = true
+
+[expect]
+json_error = { code = "DB_INVALID", exit = 2 }
+sts_actions = []
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true
+ssm_calls = []
+stderr_contains = ["1.2.497.0", "1.2.536.0"]
+stderr_json = { "/error/hint" = { contains = "session-manager-plugin" } }

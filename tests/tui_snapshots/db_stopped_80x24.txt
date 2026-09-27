@@ -1,0 +1,24 @@
+ 鞍馬 kurama db  cmp-dev  mysql 8.4.3  portnoy  via ssm i-0abc1234…  READ ONLY
+┏ Columns  Preview  SQL  [Result]  query ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃   status  count(*)                                                           ┃
+┃ ▸ open    2                                                                  ┃
+┃   paid    1                                                                  ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃ DB_FAILED: the statement was interrupted and the database confirmed it stop… ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+ ↑↓←→ cell  Enter cell detail  y copy cell  Y copy row  Tab next tab  Esc tables

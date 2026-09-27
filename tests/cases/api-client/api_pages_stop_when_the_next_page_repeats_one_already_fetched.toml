@@ -1,0 +1,28 @@
+# A cursor the server ignores (here a PARAM it does not read) makes it
+# answer the same page again, whose cursor names a URL already requested:
+# paging stops `unsupported` after the second request instead of repeating
+# it up to the limit.
+id = "api_pages_stop_when_the_next_page_repeats_one_already_fetched"
+feature = "api-client"
+
+[combination]
+command = "api"
+source = "none"
+pages = "cursor"
+
+[input]
+args = ["api", "public", "/items?style=cursor&pages=5", "--pages", "5", "--cursor", "meta.next=cursr", "--jq", ".page"]
+config = """
+[api.public]
+base_url = "{server}/api"
+"""
+
+[fakes]
+api = "pages"
+
+[expect]
+exit_code = 0
+stdout = { equals = "1\n1\n" }
+stderr_json = { "/pages/fetched" = 2, "/pages/stopped" = "unsupported", "/pages/next" = "<null>", "/pages/detail" = { contains = "the next page is one already fetched: http://" } }
+api_calls = { count = 2, calls = [{ path = "/api/items?style=cursor&pages=5" }, { path = "/api/items?style=cursor&pages=5&cursr=c2" }] }
+no_files_written = true

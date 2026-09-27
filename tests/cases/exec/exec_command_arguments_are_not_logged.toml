@@ -1,0 +1,23 @@
+# `exec` logs which action it runs, never the command's arguments: a token
+# passed on the command line must not reach the INFO log.
+id = "exec_command_arguments_are_not_logged"
+feature = "exec"
+
+[combination]
+command = "exec"
+source = "aws-profile"
+role = "assume-role"
+log = "info"
+
+[input]
+args = ["exec", "dev", "--", "/bin/sh", "-c", "exit 0", "argument-secret-value"]
+env = { RUST_LOG = "kurama=info" }
+
+[expect]
+exit_code = 0
+sts_actions = ["AssumeRole"]
+op_calls = 0
+stdout = { equals = "" }
+stderr_contains = ["Starting profile command: profile=dev, readonly=false, action=exec"]
+stderr_excludes = ["argument-secret-value", "/bin/sh"]
+no_files_written = true

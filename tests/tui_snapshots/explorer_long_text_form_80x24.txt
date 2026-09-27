@@ -1,0 +1,24 @@
+ 鞍馬 kurama api  pets  Petstore 1.2.0                          bearer   sigv4
+┏ repositories/list-collaborators-with-permissions-for-an-organization-projec… ┓
+┃ ▸ petId*   path  string    ▏                                                 ┃
+┃   X-Trace  header  string                                                    ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+ Tab next  type value  Enter send  ^Y copy  Esc back  F1 help

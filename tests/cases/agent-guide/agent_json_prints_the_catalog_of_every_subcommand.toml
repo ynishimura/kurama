@@ -1,0 +1,20 @@
+# `agent --json` without a kind is the catalog of the whole CLI: every
+# visible subcommand with its arguments, which subcommands answer failures as
+# a JSON error document, and the error codes of every exit code.
+id = "agent_json_prints_the_catalog_of_every_subcommand"
+feature = "agent-guide"
+
+[combination]
+command = "agent"
+output = "catalog"
+
+[input]
+args = ["agent", "--json"]
+
+[expect]
+exit_code = 0
+stderr_empty = true
+stdout_lines = 1
+stdout_json = { "/schema_version" = 1, "/binary/name" = "kurama", "/binary/version" = "<string>", "/commands/api/json_errors" = true, "/commands/exec/json_errors" = false, "/commands/db/request_contract" = true, "/commands/agent/arguments/0/id" = "kind", "/commands/agent/arguments/0/values" = ["data", "db", "s3"], "/commands/agent/arguments/0/requires" = ["json"], "/commands/logout/arguments/0/required_unless_present" = ["all"], "/commands/inventory" = "<null>", "/exit_codes" = { length = 5 }, "/exit_codes/2/error_codes" = { has = "CONFIG_INVALID" }, "/exit_codes/3/error_codes" = { has = "OAUTH_LOGIN_REQUIRED" } }
+sts_actions = []
+op_calls = 0

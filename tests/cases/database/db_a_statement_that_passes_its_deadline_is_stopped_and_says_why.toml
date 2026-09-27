@@ -1,0 +1,36 @@
+# The deadline loop: dropping the future does not stop the engine, so the
+# loop sets the flag the progress handler reads, waits for the statement to
+# really end, and names the deadline -- not the engine -- as the reason. The
+# fixture is readable and unchanged right after.
+id = "db_a_statement_that_passes_its_deadline_is_stopped_and_says_why"
+feature = "database"
+
+[combination]
+command = "db"
+client = "db"
+engine = "sqlite"
+db_op = "query"
+
+[input]
+args = ["db", "app", "--timeout", "1", "--json", "--query", "WITH RECURSIVE forever(n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM forever) SELECT count(*) AS n FROM forever"]
+config = """
+[db.app]
+engine = "sqlite"
+path = "{repo}/tests/fixtures/db/app.sqlite3"
+
+[db.writable]
+engine = "sqlite"
+allow_write = true
+path = "{repo}/tests/fixtures/db/app.sqlite3"
+"""
+
+[expect]
+json_error = { code = "DB_FAILED", exit = 1 }
+sts_actions = []
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true
+stderr_json = { "/error/message" = { contains = "timed out after 1 seconds" } }
+stderr_contains = ["the database confirmed it stopped"]
+stderr_lines = 1
+files_unchanged = ["{repo}/tests/fixtures/db/app.sqlite3"]

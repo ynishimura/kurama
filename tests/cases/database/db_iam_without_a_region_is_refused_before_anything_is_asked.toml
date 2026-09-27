@@ -1,0 +1,56 @@
+# Neither the section, the host nor the AWS profile says where the database
+# is, so no token can be signed for it: refused before the tunnel's role is
+# assumed (the tunnel knows its region and would open), with the failure
+# naming which region is missing and where to write it.
+id = "db_iam_without_a_region_is_refused_before_anything_is_asked"
+feature = "database"
+
+[combination]
+command = "db"
+client = "db"
+engine = "postgresql"
+tls = "verify-ca"
+auth = "iam"
+tunnel = "ssm"
+db_op = "tables"
+
+[input]
+args = ["db", "both", "--tables", "--json"]
+aws_config = """
+[default]
+
+[profile dev]
+role_arn = arn:aws:iam::123456789012:role/Dev
+source_profile = default
+"""
+config = """
+[db.both]
+engine = "postgresql"
+host = "rds.internal.example.com"
+database = "app"
+username = "iam_reader"
+tls = "verify-ca"
+connect_timeout_secs = 2
+
+[db.both.iam]
+aws_profile = "dev"
+
+[db.both.tunnel]
+kind = "ssm"
+aws_profile = "dev"
+instance_name = "bastion"
+region = "ap-northeast-1"
+"""
+
+[fakes]
+op = "enabled"
+tools = true
+
+[expect]
+json_error = { code = "DB_INVALID", exit = 2 }
+sts_actions = []
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true
+ssm_calls = []
+stderr_json = { "/error/message" = { contains = "the region to sign the IAM token for" }, "/error/hint" = { contains = "add region to the [db.<name>.iam] section" } }

@@ -1,0 +1,23 @@
+# Without a terminal `--open` starts no browser and prints the page that
+# creates the credential instead, the rule `login` follows.
+id = "preset_show_open_without_a_terminal_prints_the_url_and_opens_nothing"
+feature = "preset"
+
+[combination]
+command = "preset-show"
+tty = "none"
+
+[input]
+args = ["preset", "show", "linear", "--open", "--set", "secret=op://Agent/kurama-linear/credential"]
+
+[fakes]
+browser = true
+
+[expect]
+exit_code = 0
+open_calls = []
+stdout = { starts_with = "# kurama preset: linear (kurama ", contains = ["format = \"{token}\""] }
+stderr_contains = ["# Open this page in a browser: https://linear.app/settings/account/security"]
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true

@@ -1,0 +1,43 @@
+# Each page repeats the request, so --pages takes a GET only: -X POST, or
+# -d (which makes the default method POST), is API_ARGUMENT_INVALID (exit 2)
+# before any request, in a dry run too.
+id = "api_pages_refuse_a_method_other_than_get_exits_2"
+feature = "api-client"
+
+[combination]
+command = "api"
+source = "none"
+pages = "link"
+
+[input]
+args = ["api", "public", "/items", "--pages", "3", "-X", "POST"]
+then_run = [
+  ["api", "public", "/items", "--pages=3", "-d", "{\"a\":1}", "--json"],
+  ["api", "public", "/items", "--pages", "3", "-X", "DELETE", "--dry-run", "--json"],
+]
+config = """
+[api.public]
+base_url = "{server}/api"
+"""
+
+[fakes]
+api = "pages"
+
+[expect]
+exit_code = 2
+api_calls = { count = 0 }
+stdout = "empty"
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+stderr_contains = ["error[API_ARGUMENT_INVALID]: --pages sends the request once per page, so it takes a GET only; this request is POST"]
+
+[[expect.runs]]
+run = 1
+stderr_lines = 1
+stderr_json = { "/error/code" = "API_ARGUMENT_INVALID", "/error/exit_code" = 2, "/error/message" = { contains = "this request is POST" } }
+
+[[expect.runs]]
+run = 2
+stderr_json = { "/error/code" = "API_ARGUMENT_INVALID", "/error/message" = { contains = "this request is DELETE" } }

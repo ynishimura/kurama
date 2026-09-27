@@ -1,0 +1,1 @@
+{"errors":[{"message":"GraphQL introspection is not allowed, but the query contained __schema or __type","extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}}]}

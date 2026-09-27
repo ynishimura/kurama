@@ -1,0 +1,38 @@
+# A first page without the marker the style reads (no Link header, no value
+# at the cursor path) cannot say whether more pages exist: the page is
+# printed and the stop report says unsupported with what was missing,
+# exit 0, one request.
+id = "api_pages_report_an_unsupported_style_instead_of_stopping_at_one"
+feature = "api-client"
+
+[combination]
+command = "api"
+source = "none"
+pages = "unsupported"
+
+[input]
+args = ["api", "public", "/items?style=none", "--pages", "3", "--json"]
+then_run = [["api", "public", "/items?style=none", "--pages", "3", "--cursor", "next_token=token"]]
+config = """
+[api.public]
+base_url = "{server}/api"
+"""
+
+[fakes]
+api = "pages"
+
+[expect]
+exit_code = 0
+api_calls = { count = 1 }
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+stdout = { line_count = 1, lines_start_with = ["{\"status\":200,"] }
+stderr_lines = 1
+stderr_json = { "/pages/fetched" = 1, "/pages/stopped" = "unsupported", "/pages/next" = "<null>", "/pages/detail" = { contains = "no Link header" } }
+
+[[expect.runs]]
+run = 1
+stdout = { equals = "{\"page\":1,\"items\":[\"item-1-1\",\"item-1-2\"]}\n" }
+stderr_contains = ["# pages: 1 fetched (--pages 3); stopped: unsupported, more pages cannot be told: the response body has no next_token"]

@@ -1,0 +1,30 @@
+ 鞍馬 kurama  AWS credential switcher                                           readonly   console
+  1 AWS   2 Auth   3 API   4 DB   5 Data   6 S3
+┏ S3 connections (2) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓┏ Details ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃     KIND NAME   STATE                              ┃┃ Connection  assets                         ┃
+┃ ▸   s3   assets -                                  ┃┃ AWS profile dev                            ┃
+┃     s3   public valid (11h 59m)                    ┃┃ Session     -                              ┃
+┃                                                    ┃┃ Region      -                              ┃
+┃                                                    ┃┃ Start       s3://example-assets/reports/   ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃ Next        Enter opens the S3 explorer    ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+ ↑↓ move  Enter open  q quit  Tab next tab  ? help

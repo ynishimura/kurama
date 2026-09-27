@@ -1,0 +1,20 @@
+# Files that are nothing but a list of independent entries. Two branches each
+# adding their own entry produce a conflict git cannot resolve on content
+# alone, so take both sides and let the checks reject a merge that is wrong:
+# a duplicate `mod` is a compile error, and `tests/architecture/` fails for a
+# feature file that is not declared or a scenario no feature claims.
+#
+# Everything else merges normally. In particular the section list in
+# src/shell/cli/commands/agent.rs is code, where taking both sides could
+# produce something that compiles and is still wrong; that one is an ordered
+# hub, and a conflict there is resolved by hand in one hunk.
+tests/scenarios/main.rs merge=union
+# The per-feature split separates two branches only while they are in two
+# features. Two issues in one feature append to the `tests` or `scenarios`
+# list of the same file, which is the case the split cannot help with; the
+# lists are independent entries like the two above. A merge that takes both
+# sides wrongly is rejected the same way: `doctor` and `tests/architecture/`
+# fail for a filter that matches nothing and a scenario no feature claims,
+# and two branches that changed the same key produce a duplicate key that
+# stops the TOML from parsing at all.
+.agent/features/*.toml merge=union

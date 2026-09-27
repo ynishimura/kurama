@@ -1,0 +1,50 @@
+ 鞍馬 kurama api  pets  Petstore 1.2.0                                                                                                          bearer   sigv4
+┏ Operations (6) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓┏ Operation ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃   METHOD ID                                                                                  ┃┃ Operation repositories/list-collaborators-with-permissions-f ┃
+┃   GET    pets/list                                                                           ┃┃           or-an-organization-project                         ┃
+┃   POST   pets/create                                                                         ┃┃ Request   GET                                                ┃
+┃   GET    pets/get                                                                            ┃┃           /organizations/{organization_id}/projects/{project ┃
+┃   DELETE DELETE /pets/{petId}                                                                ┃┃           _id}/collaborators/{collaborator_login}/permission ┃
+┃   GET    owners/list-pets                                                                    ┃┃           s                                                  ┃
+┃ ▸ GET    repositories/list-collaborators-with-permissions-for-an-organization-project        ┃┃ Summary   List the collaborators of an organization project  ┃
+┃                                                                                              ┃┃           with the permission level each of them has been    ┃
+┃                                                                                              ┃┃           granted on the project                             ┃
+┃                                                                                              ┃┃ Tags      pets                                               ┃
+┃                                                                                              ┃┃ Scopes    read:pets                                          ┃
+┃                                                                                              ┃┃ Params    petId (path, string, required); X-Trace (header,   ┃
+┃                                                                                              ┃┃           string)                                            ┃
+┃                                                                                              ┃┃ Body      -                                                  ┃
+┃                                                                                              ┃┃ Docs      https://docs.example.com/rest/projects/collaborato ┃
+┃                                                                                              ┃┃           rs#list-collaborators-with-permissions             ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃ Next      Enter opens the form                               ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+ ↑↓ move  Enter open  / search  q quit  h history  ? help  c copy  o docs

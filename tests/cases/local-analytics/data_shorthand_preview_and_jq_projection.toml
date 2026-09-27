@@ -1,0 +1,38 @@
+# The short forms keep preview, schema and JSON projection.
+id = "data_shorthand_preview_and_jq_projection"
+feature = "local-analytics"
+
+[combination]
+command = "data"
+client = "data"
+data_op = "preview"
+data_source = "local"
+format = "jsonl"
+
+[input]
+args = ["data", "{repo}/tests/fixtures/data/events.jsonl", "--json"]
+then_run = [
+  ["data", "{repo}/tests/fixtures/data/events.jsonl", "--describe", "--json"],
+  ["data", "{repo}/tests/fixtures/data/events.jsonl", "--preview", "--jq", ".rows | length"],
+]
+
+[expect]
+exit_code = 0
+stderr_empty = true
+stdout = { equals = "3\n" }
+sts_actions = []
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stderr_empty = true
+stdout_json = { "/operation" = "preview", "/row_count" = 3, "/meta/limits/max_rows" = 100 }
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+stderr_empty = true
+stdout_json = { "/operation" = "describe", "/rows/0/0" = "customer_id" }

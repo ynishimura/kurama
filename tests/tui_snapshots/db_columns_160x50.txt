@@ -1,0 +1,50 @@
+ 鞍馬 kurama db  cmp-dev  mysql 8.4.3  portnoy  via ssm i-0abc1234def567890                                                                          READ ONLY
+┏ Tables (4+) ━━━━━━━━━━━━━━━━━┓┏ [Columns]  Preview  SQL  Result  aws_accounts ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ ▸ aws_accounts               ┃┃   column      declared_type  nullable  has_default  primary_key  references                                                  ┃
+┃   aws_account_addresses      ┃┃ ▸ account_id  varchar(12)    false     false        true         ∅                                                           ┃
+┃   projects                   ┃┃   project_id  bigint         false     false        false        projects.id                                                 ┃
+┃   open_projects (view)       ┃┃   enabled     tinyint(1)     false     true         false        ∅                                                           ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃ 3 rows  4 ms                                                                                                                 ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+ ↑↓ move  Enter columns  p preview  s SQL  q quit  / filter  Tab tabs  ? help

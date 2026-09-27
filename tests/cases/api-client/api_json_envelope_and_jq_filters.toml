@@ -1,0 +1,57 @@
+# --json prints one {status, headers, body} envelope; --jq applies to the
+# envelope with --json and to the body without; `METHOD /path` with -d posts
+# the body, the extra header and the default Accept and Content-Type.
+id = "api_json_envelope_and_jq_filters"
+feature = "api-client"
+
+[combination]
+command = "api"
+source = "oauth"
+grant = "authorization_code"
+token = "stored"
+output = "json-jq"
+
+[input]
+stored_tokens = [{ source = "github", access_token = "stored-access-token", expires_in = 3600 }]
+args = ["api", "github", "/user", "--json"]
+then_run = [
+  ["api", "github", "/user", "--json", "--jq", ".body.login"],
+  ["api", "github", "/user?page=2", "--jq", ".path, .method"],
+  ["api", "github", "POST /items", "-d", "{\"a\":1}", "-H", "X-Trace: 1", "--jq", ".body"],
+]
+config = """
+[auth.github]
+kind = "oauth"
+grant_type = "authorization_code"
+auth_url = "{server}/oauth/authorize"
+token_url = "{server}/oauth/token"
+client_id = "gh-client"
+scopes = ["repo"]
+env_var = "GITHUB_TOKEN"
+
+[api.github]
+base_url = "{server}/api"
+"""
+
+[expect]
+exit_code = 0
+stdout = "plain-text"
+
+[[expect.runs]]
+run = 0
+stdout_lines = 1
+stdout_json = { "/status" = 200, "/headers/content-type" = "application/json", "/body/login" = "octocat" }
+
+[[expect.runs]]
+run = 1
+stdout = { equals = "octocat\n" }
+
+[[expect.runs]]
+run = 2
+stdout = { equals = "/api/user\nGET\n" }
+api_calls = { count = 1, authorization = "Bearer stored-access-token", calls = [{ path = "/api/user?page=2" }] }
+
+[[expect.runs]]
+run = 3
+stdout = { equals = "{\"a\":1}\n" }
+api_calls = { count = 1, authorization = "Bearer stored-access-token", calls = [{ method = "POST", body = "{\"a\":1}", headers = { "x-trace" = "1", "content-type" = "application/json", "accept" = "application/json" } }] }

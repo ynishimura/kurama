@@ -1,0 +1,46 @@
+# With --json, an API nobody configured and a login that needs a person are
+# each one JSON error document on stderr, with the code, category, retry and
+# hint the text line would carry, and no log line, even at trace.
+id = "api_json_failure_is_one_error_document_on_stderr"
+feature = "api-client"
+
+[combination]
+command = "api"
+output = "json"
+source = "oauth"
+grant = "authorization_code"
+tty = "none"
+token = "missing"
+
+[input]
+args = ["api", "nope", "/user", "--json"]
+then_run = [["api", "github", "/user", "--json"]]
+env = { RUST_LOG = "trace" }
+config = """
+[auth.github]
+kind = "oauth"
+grant_type = "authorization_code"
+auth_url = "{server}/oauth/authorize"
+token_url = "{server}/oauth/token"
+client_id = "gh-client"
+scopes = ["repo"]
+env_var = "GITHUB_TOKEN"
+
+[api.github]
+base_url = "{server}/api"
+"""
+
+[expect]
+json_error = { code = "OAUTH_LOGIN_REQUIRED", exit = 3 }
+stderr_lines = 1
+stderr_json = { "/error/category" = "human", "/error/retry" = "after_human", "/error/hint" = "run `kurama login github` in a terminal", "/error/next_actions/0/message" = "run `kurama login github` in a terminal" }
+oauth_paths = []
+api_calls = { count = 0 }
+open_calls = []
+
+[[expect.runs]]
+run = 0
+json_error = { code = "API_NOT_FOUND", exit = 2 }
+stderr_lines = 1
+stderr_json = { "/schema_version" = 1, "/error/category" = "usage", "/error/retry" = "never", "/error/message" = { contains = "nope" }, "/error/hint" = { contains = "kurama status" } }
+api_calls = { count = 0 }

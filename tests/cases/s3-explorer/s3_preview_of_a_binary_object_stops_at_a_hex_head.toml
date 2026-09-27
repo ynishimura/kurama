@@ -1,0 +1,41 @@
+# A binary object is shown as the hex of its first bytes and never as text;
+# an empty object is told apart from both without a GET.
+id = "s3_preview_of_a_binary_object_stops_at_a_hex_head"
+feature = "s3-explorer"
+
+[combination]
+command = "s3"
+source = "aws-profile"
+role = "assume-role"
+s3_op = "preview"
+s3_content = "binary"
+
+[input]
+args = ["s3", "assets", "s3://browse-objects/data/image.png", "--preview", "--json"]
+then_run = [
+  ["s3", "assets", "s3://browse-objects/data/empty.txt", "--preview", "--json"],
+  ["s3", "assets", "s3://browse-objects/data/image.png", "--preview"],
+]
+config = """
+[s3.assets]
+aws_profile = "dev"
+"""
+
+[expect]
+exit_code = 0
+op_calls = 0
+no_files_written = true
+stdout = { equals = "89504e470d0a1a0a0000000d4948445200000001\n" }
+stderr_contains = ["binary"]
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+sts_actions = ["AssumeRole"]
+stdout_json = { "/object/content_type" = "image/png", "/preview/kind" = "binary", "/preview/hex" = "89504e470d0a1a0a0000000d4948445200000001", "/preview/text" = "<null>", "/complete" = true }
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+stdout_json = { "/object/size" = 0, "/preview/kind" = "empty", "/preview/text" = "<null>", "/preview/hex" = "<null>", "/complete" = true, "/bytes_read" = 0 }
+api_calls = { count = 1, sigv4 = { service = "s3", region = "ap-northeast-1" }, calls = [{ method = "HEAD", path = "/browse-objects/data/empty.txt" }] }

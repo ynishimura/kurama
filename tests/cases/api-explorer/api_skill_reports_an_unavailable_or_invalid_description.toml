@@ -1,0 +1,49 @@
+# --skill fails on a description the way --ops does: a URL that cannot be
+# fetched with no cached copy is API_SPEC_UNAVAILABLE (exit 1), a file that
+# is not OpenAPI is API_SPEC_INVALID (exit 2), each with its hint and
+# nothing on stdout.
+id = "api_skill_reports_an_unavailable_or_invalid_description"
+feature = "api-explorer"
+
+[combination]
+command = "api"
+openapi = "url"
+cache = "none"
+spec_server = "down"
+output = "skill"
+
+[input]
+args = ["api", "pets", "--skill"]
+then_run = [
+  ["api", "broken", "--skill"],
+]
+config = """
+[api.pets]
+base_url = "{server}/api"
+openapi = "{server}/spec/petstore.json"
+
+[api.broken]
+base_url = "{server}/api"
+openapi = "{fixtures}/invalid.json"
+"""
+
+[fakes]
+spec = "down"
+
+[expect]
+error = { code = "API_SPEC_INVALID", exit = 2 }
+stderr_contains = ["is not usable: the document has no `paths` object"]
+hint = "the openapi document under [api.broken] must be OpenAPI 3.0 / 3.1 or Swagger 2.0, as JSON or YAML"
+stdout = "empty"
+spec_calls = { count = 0 }
+api_calls = { count = 0 }
+
+[[expect.runs]]
+run = 0
+error = { code = "API_SPEC_UNAVAILABLE", exit = 1 }
+stderr_contains = ["cannot load the API description http://", "HTTP 503: spec server down"]
+hint = "check the openapi URL under [api.pets]; `kurama api pets --refresh-spec` fetches it again"
+stdout = "empty"
+spec_calls = { count = 1, status = 503 }
+api_calls = { count = 0 }
+no_files_written = true

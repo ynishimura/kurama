@@ -1,0 +1,50 @@
+ 鞍馬 kurama api  pets  Petstore 1.2.0                                                                                                          bearer   sigv4
+┏ Operations (5) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓┏ Operation ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃   METHOD ID                                                                                  ┃┃ Operation pets/list                                          ┃
+┃ ▸ GET    pets/list                                                                           ┃┃ Request   GET /pets                                          ┃
+┃   POST   pets/create                                                                         ┃┃ Summary   List pets                                          ┃
+┃   GET    pets/get                                                                            ┃┃ About     List the pets of the store.                        ┃
+┃   DELETE DELETE /pets/{petId}                                                                ┃┃ Tags      pets                                               ┃
+┃   GET    owners/list-pets                                                                    ┃┃ Scopes    read:pets                                          ┃
+┃                                                                                              ┃┃ Params    limit (query, integer); status (query,             ┃
+┃                                                                                              ┃┃           available|sold)                                    ┃
+┃                                                                                              ┃┃ Body      -                                                  ┃
+┃                                                                                              ┃┃ Docs      -                                                  ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃ Next      Enter opens the form                               ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                 ┏ History ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓                                                 ┃
+┃                                                 ┃                                                          ┃                                                 ┃
+┃                                                 ┃    [all pets] pets/list  limit=100                       ┃                                                 ┃
+┃                                                 ┃  ▸ pets/create  +body                                    ┃                                                 ┃
+┃                                                 ┃    pets/get  petId=p1  X-Trace=t1                        ┃                                                 ┃
+┃                                                 ┃                                                          ┃                                                 ┃
+┃                                                 ┃  2/3  Enter opens the form, s saves as a favorite        ┃                                                 ┃
+┃                                                 ┃                                                          ┃                                                 ┃
+┃                                                 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛                                                 ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+ ↑↓ select  Enter open  s save  Esc close

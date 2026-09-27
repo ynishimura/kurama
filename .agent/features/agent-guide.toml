@@ -1,0 +1,24 @@
+[agent-guide]
+summary = "`kurama agent ready`: each source's state (ready, will_prompt, needs_human, misconfigured) from what `status` reads, calling nothing; `kurama agent`: the contract for agents and scripts (commands, JSON fields, exit codes, the setup of [auth.*] and [api.*]) embedded from docs/agents/kurama/; `--skill` prints the Agent Skill that points at it; `--json` prints the catalog of every subcommand read off build_command(); `kurama agent install` writes that Skill and one per [api.*] with a description (the `api --skill` rendering) under ~/.claude/skills"
+entry = "src/shell/cli/commands/agent.rs"
+files = [
+  "src/shell/cli/commands/agent.rs",
+  "src/shell/cli/commands/agent_catalog.rs",
+  "src/shell/cli/commands/agent_ready.rs",
+  "src/shell/cli/commands/agent_install.rs",
+  "src/domain/functions/skill_install.rs",
+  "src/domain/functions/source_readiness.rs",
+  "tests/fixtures/agent/",
+  "docs/agents/kurama/",
+  "docs/agents/SKILL.md",
+  "README.md",
+]
+scenarios = [
+  "agent_json_is_byte_identical_across_runs",
+  "agent_json_kind_data_and_db_keep_their_current_output",
+]
+depends_on = ["cli-entry", "errors", "status", "config", "oauth", "profile-loading", "secrets", "api-explorer"]
+notes = "The unit test checks that every `kurama <command>` the contract names is a subcommand of the binary; the scenarios run with an invalid config.toml to prove the command reads none. A headless Claude Code session that knew nothing about kurama followed the Setup chapter end to end on 2026-09-18 against a fake OAuth server (a manual trial; AGENTS.md describes it); the scenarios do not repeat it."
+
+[agent-guide.real]
+not_applicable = "prints text compiled into the binary, or (agent ready) reads the local configuration, session cache and token store only; nothing external answers"

@@ -1,0 +1,36 @@
+# What a minimal file leaves out is a default, not a warning: --describe of
+# an operation without `responses` prints its parameters (the undeclared
+# path parameter required, as a string) and no response section, `response`
+# is null in --json, and nothing is printed on stderr.
+id = "api_minimal_openapi_describe_without_responses"
+feature = "api-explorer"
+
+[combination]
+command = "api"
+openapi = "file"
+description = "minimal"
+output = "describe"
+
+[input]
+args = ["api", "backlog", "--describe", "issues/get"]
+then_run = [
+  ["api", "backlog", "--describe", "issues/get", "--json"],
+]
+config = """
+[api.backlog]
+base_url = "{server}"
+openapi = "{fixtures}/minimal.yaml"
+"""
+
+[expect]
+exit_code = 0
+stdout_json = { "/response" = "<null>", "/parameters/0/name" = "issueIdOrKey", "/parameters/0/in" = "path", "/parameters/0/required" = true, "/parameters/0/type" = "string", "/request_body" = "<null>" }
+stderr_empty = true
+api_calls = { count = 0 }
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stdout = { equals = "issues/get\n  GET /api/v2/issues/{issueIdOrKey}\n\nParameters\n  NAME          IN    TYPE    REQUIRED  DESCRIPTION\n  issueIdOrKey  path  string  yes\n\nExample\n  kurama api backlog issues/get -P 'issueIdOrKey=<issueIdOrKey>'\n" }
+stderr_empty = true

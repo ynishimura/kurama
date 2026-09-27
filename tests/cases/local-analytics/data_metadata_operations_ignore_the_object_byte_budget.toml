@@ -1,0 +1,47 @@
+# `max_source_bytes` bounds what an operation reads end to end: a Parquet
+# footer, a column range and a CSV header are not the object, so describe
+# and a Parquet scan are not refused for its size; a CSV read end to end is.
+id = "data_metadata_operations_ignore_the_object_byte_budget"
+feature = "local-analytics"
+
+[combination]
+command = "data"
+source = "aws-profile"
+client = "data"
+data_op = "describe"
+data_source = "s3"
+format = "parquet"
+
+[input]
+args = ["data", "--from", "s3://data-bucket/orders.parquet", "--aws-profile", "dev", "--max-source-bytes", "10", "--describe", "data", "--json"]
+then_run = [
+  ["data", "--from", "s3://data-bucket/orders.parquet", "--aws-profile", "dev", "--max-source-bytes", "10", "--query", "SELECT count(*) AS rows FROM data", "--json"],
+  ["data", "--from", "{repo}/tests/fixtures/data/orders.csv", "--max-source-bytes", "10", "--describe", "data", "--json"],
+  ["data", "--from", "{repo}/tests/fixtures/data/orders.csv", "--max-source-bytes", "10", "--summary", "data", "--json"],
+]
+
+[expect]
+op_calls = 0
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stdout_json = { "/columns/0/name" = "column_name", "/rows" = [["customer_id", "VARCHAR", "YES", "<null>", "<null>", "<null>"], ["amount", "DECIMAL(18,2)", "YES", "<null>", "<null>", "<null>"]] }
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+stdout_json = { "/rows" = [["3"]] }
+
+[[expect.runs]]
+run = 2
+exit_code = 0
+sts_actions = []
+stdout_json = { "/rows" = [["customer_id", "VARCHAR", "YES", "<null>", "<null>", "<null>"], ["amount", "DOUBLE", "YES", "<null>", "<null>", "<null>"], ["note", "VARCHAR", "YES", "<null>", "<null>", "<null>"]] }
+
+[[expect.runs]]
+run = 3
+sts_actions = []
+json_error = { code = "DATA_INVALID", exit = 2 }
+stderr_json = { "/error/message" = { contains = "max_source_bytes" }, "/error/hint" = { contains = "--describe" } }

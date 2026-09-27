@@ -1,0 +1,78 @@
+# A `[auth.*]` of kind `token`: the credential is an API key kept in
+# Parameter Store, sent in the header the source names. The fake answers the
+# parameter name it was asked for, so the header value says which reference
+# the value came from. Nothing is granted and nothing is cached, whatever the
+# run does; one read per run, by the role of the AWS profile the reference names.
+id = "oauth_token_kind_sends_the_configured_header"
+feature = "oauth"
+
+[combination]
+command = "api"
+source = "token"
+secret = "aws-ssm"
+header = "named"
+api_response = "ok"
+
+[input]
+args = ["api", "example", "/voices"]
+then_run = [
+  ["token", "example"],
+  ["token", "example", "--json"],
+  ["env", "example"],
+  ["exec", "example", "--", "/bin/sh", "-c", "printf '%s %s\\n' \"$EXAMPLE_TOKEN\" \"$KURAMA_AUTH\""],
+]
+config = """
+[auth.example]
+kind = "token"
+token = "aws-ssm://dev/kurama/api-key"
+header = "xi-api-key"
+format = "{token}"
+env_var = "EXAMPLE_TOKEN"
+
+[api.example]
+base_url = "{server}/api"
+"""
+
+[fakes]
+aws_secrets = "from-id"
+
+[expect]
+exit_code = 0
+token_grants = []
+op_calls = 0
+no_files_written = true
+secret_reads = [
+  { operation = "ssm:GetParameter", id = "/kurama/api-key", region = "ap-northeast-1" },
+  { operation = "ssm:GetParameter", id = "/kurama/api-key", region = "ap-northeast-1" },
+  { operation = "ssm:GetParameter", id = "/kurama/api-key", region = "ap-northeast-1" },
+  { operation = "ssm:GetParameter", id = "/kurama/api-key", region = "ap-northeast-1" },
+  { operation = "ssm:GetParameter", id = "/kurama/api-key", region = "ap-northeast-1" },
+]
+
+# The value of the parameter the reference names is sent in xi-api-key, and
+# no Authorization header is.
+[[expect.runs]]
+run = 0
+token_grants = []
+api_calls = { count = 1, headers = { "xi-api-key" = "parameter-of/kurama/api-key" } }
+
+# token prints the resolved value itself.
+[[expect.runs]]
+run = 1
+stdout = { equals = "parameter-of/kurama/api-key\n" }
+
+# --json carries the value and claims no type, expiry or scope.
+[[expect.runs]]
+run = 2
+stdout_json = { "/access_token" = "parameter-of/kurama/api-key", "/token_type" = "<null>", "/expires_at" = "<null>", "/scope" = "<null>" }
+
+# env exports the credential into the configured variable.
+[[expect.runs]]
+run = 3
+stdout = { contains = ["export EXAMPLE_TOKEN='parameter-of/kurama/api-key'", "export KURAMA_AUTH='example'", "unset EXAMPLE_TOKEN"] }
+
+# exec runs the command with the credential in its environment.
+[[expect.runs]]
+run = 4
+exit_code = 0
+stdout = { equals = "parameter-of/kurama/api-key example\n" }

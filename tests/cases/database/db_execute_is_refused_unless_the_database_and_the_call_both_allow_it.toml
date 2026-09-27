@@ -1,0 +1,54 @@
+# A write needs the database's `allow_write` and the call's decision
+# (`--commit` or `--rollback`); a read takes no transaction decision; a
+# SQLite file given as a path is read-only whatever the call says. Every
+# refusal happens before the database is opened, and the fixture is byte for
+# byte what it was.
+id = "db_execute_is_refused_unless_the_database_and_the_call_both_allow_it"
+feature = "database"
+
+[combination]
+command = "db"
+client = "db"
+engine = "sqlite"
+db_op = "execute"
+
+[input]
+args = ["db", "app", "--execute", "DELETE FROM orders WHERE id = ?", "--param", "1", "--commit", "--json"]
+then_run = [
+  ["db", "writable", "--execute", "DELETE FROM orders", "--json"],
+  ["db", "app", "--tables", "--commit", "--json"],
+  ["db", "{repo}/tests/fixtures/db/app.sqlite3", "--execute", "DELETE FROM orders", "--commit", "--json"],
+]
+config = """
+[db.app]
+engine = "sqlite"
+path = "{repo}/tests/fixtures/db/app.sqlite3"
+
+[db.writable]
+engine = "sqlite"
+allow_write = true
+path = "{repo}/tests/fixtures/db/app.sqlite3"
+"""
+
+[expect]
+json_error = { code = "DB_INVALID", exit = 2 }
+sts_actions = []
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true
+files_unchanged = ["{repo}/tests/fixtures/db/app.sqlite3"]
+
+[[expect.runs]]
+run = 0
+exit_code = 2
+stderr_json = { "/error/code" = "DB_INVALID", "/error/message" = { contains = "allow_write" }, "/error/hint" = { contains = "allow_write = true" } }
+
+[[expect.runs]]
+run = 1
+exit_code = 2
+stderr_json = { "/error/message" = { contains = "--rollback" } }
+
+[[expect.runs]]
+run = 2
+exit_code = 2
+stderr_json = { "/error/message" = { contains = "execute options" } }

@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 400" width="1280" height="400" role="img" aria-labelledby="title desc">
+  <title id="title">鞍馬 Kurama</title>
+  <desc id="desc">A full moon behind a torii gate on mountain ridges at night, a band of seigaiha waves, and the name Kurama in kanji and letters.</desc>
+  <defs>
+    <linearGradient id="night" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#07101f"/>
+      <stop offset="1" stop-color="#132a4a"/>
+    </linearGradient>
+    <radialGradient id="moon" cx="0.42" cy="0.38" r="0.7">
+      <stop offset="0" stop-color="#f4f9fd"/>
+      <stop offset="1" stop-color="#bcd6ea"/>
+    </radialGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0.5" stop-color="#38a1db" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#38a1db" stop-opacity="0"/>
+    </radialGradient>
+    <!-- Seigaiha: overlapping rings of concentric arcs, one tile 40 x 20. -->
+    <pattern id="seigaiha" width="40" height="20" patternUnits="userSpaceOnUse">
+      <g fill="#0c1d36" stroke="#38a1db" stroke-width="1.4" stroke-opacity="0.6">
+        <circle cx="0" cy="20" r="19"/><circle cx="0" cy="20" r="13"/><circle cx="0" cy="20" r="7"/>
+        <circle cx="40" cy="20" r="19"/><circle cx="40" cy="20" r="13"/><circle cx="40" cy="20" r="7"/>
+        <circle cx="20" cy="30" r="19"/><circle cx="20" cy="30" r="13"/><circle cx="20" cy="30" r="7"/>
+      </g>
+    </pattern>
+  </defs>
+
+  <rect width="1280" height="400" fill="url(#night)"/>
+
+  <!-- Stars. -->
+  <g fill="#eaf4fc">
+    <circle cx="560" cy="60" r="1.6" opacity="0.8"/><circle cx="640" cy="120" r="1.2" opacity="0.6"/>
+    <circle cx="1180" cy="70" r="1.6" opacity="0.8"/><circle cx="1230" cy="160" r="1.2" opacity="0.6"/>
+    <circle cx="720" cy="40" r="1.2" opacity="0.7"/><circle cx="1110" cy="30" r="1.4" opacity="0.7"/>
+    <circle cx="610" cy="200" r="1" opacity="0.5"/><circle cx="1250" cy="240" r="1" opacity="0.5"/>
+  </g>
+
+  <!-- The moon and its halo. -->
+  <circle cx="930" cy="170" r="190" fill="url(#glow)"/>
+  <circle cx="930" cy="170" r="124" fill="url(#moon)"/>
+
+  <!-- Clouds, drawn as stacked rounded bars. -->
+  <g fill="#9cc7e6" opacity="0.55">
+    <rect x="1030" y="118" width="170" height="14" rx="7"/>
+    <rect x="1070" y="140" width="150" height="14" rx="7"/>
+    <rect x="1000" y="162" width="120" height="14" rx="7"/>
+    <rect x="690" y="96" width="120" height="12" rx="6"/>
+    <rect x="720" y="114" width="90" height="12" rx="6"/>
+  </g>
+
+  <!-- Mountain ridges, far to near. -->
+  <path d="M560 330 L700 240 L760 270 L860 200 L930 245 L1010 190 L1120 260 L1200 230 L1280 280 L1280 400 L560 400 Z" fill="#1b3a63"/>
+  <path d="M600 350 L720 290 L800 315 L900 262 L990 305 L1080 270 L1180 318 L1280 300 L1280 400 L600 400 Z" fill="#10284a"/>
+
+  <!-- The torii gate, a silhouette against the moon. -->
+  <g fill="#081426">
+    <path d="M846 214 Q930 202 1014 214 L1019 229 Q930 219 841 229 Z"/>
+    <rect x="856" y="238" width="148" height="10"/>
+    <rect x="925" y="229" width="10" height="11"/>
+    <rect x="874" y="229" width="14" height="112"/>
+    <rect x="972" y="229" width="14" height="112"/>
+  </g>
+
+  <!-- A band of seigaiha waves along the bottom. -->
+  <rect x="0" y="340" width="1280" height="60" fill="url(#seigaiha)"/>
+  <rect x="0" y="338" width="1280" height="3" fill="#38a1db" opacity="0.9"/>
+
+  <!-- The name. -->
+  <g font-family="'Hiragino Mincho ProN','Yu Mincho','Noto Serif JP','Noto Serif CJK JP',serif">
+    <text x="96" y="196" font-size="132" font-weight="700" fill="#eaf4fc" letter-spacing="12">鞍馬</text>
+  </g>
+  <g font-family="'Futura','Avenir Next','Helvetica Neue',Arial,sans-serif">
+    <text x="102" y="252" font-size="40" font-weight="700" fill="#38a1db" letter-spacing="18">KURAMA</text>
+    <text x="102" y="296" font-size="21" fill="#eaf4fc" fill-opacity="0.8" letter-spacing="1">Credentials and APIs for you and your coding agents.</text>
+  </g>
+  <!-- A seal stamp beside the name. -->
+  <g transform="translate(430 88)">
+    <rect width="58" height="58" rx="6" fill="#1e50a2"/>
+    <rect x="3" y="3" width="52" height="52" rx="4" fill="none" stroke="#eaf4fc" stroke-opacity="0.6"/>
+    <text x="29" y="41" text-anchor="middle" font-size="34" font-weight="700" fill="#eaf4fc" font-family="'Hiragino Mincho ProN','Yu Mincho','Noto Serif JP',serif">鍵</text>
+  </g>
+</svg>

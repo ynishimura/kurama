@@ -1,0 +1,54 @@
+# What a write reports, and that a cut `RETURNING` is as partial as a cut
+# read; a section that bounds every write it allows refuses a wider one. The
+# writes run against a copy of the fixture, rolled back, and the copy is byte
+# for byte what it was with no journal left beside it.
+id = "db_execute_reports_its_statements_and_a_cut_returning_is_partial"
+feature = "database"
+
+[combination]
+command = "db"
+client = "db"
+engine = "sqlite"
+db_op = "execute"
+
+[input]
+args = ["db", "writable", "--execute", "UPDATE orders SET status = 'open' RETURNING id", "--rollback", "--json"]
+then_run = [
+  ["db", "writable", "--execute", "UPDATE orders SET status = 'open' RETURNING id", "--rollback", "--max-rows", "1", "--json"],
+  ["db", "bounded", "--execute", "UPDATE orders SET status = 'open'", "--rollback", "--json"],
+]
+copy_files = [{ from = "{repo}/tests/fixtures/db/app.sqlite3", to = "{repo}/target/agent/fixtures/db_write.sqlite3" }]
+config = """
+[db.writable]
+engine = "sqlite"
+allow_write = true
+path = "{repo}/target/agent/fixtures/db_write.sqlite3"
+
+[db.bounded]
+engine = "sqlite"
+allow_write = true
+max_affected_rows = 1
+path = "{repo}/target/agent/fixtures/db_write.sqlite3"
+"""
+
+[expect]
+exit_code = 1
+sts_actions = []
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true
+stderr_json = { "/error/code" = "DB_FAILED", "/error/message" = { contains = "nothing was kept" } }
+files_unchanged = ["{repo}/target/agent/fixtures/db_write.sqlite3"]
+paths_absent = ["{repo}/target/agent/fixtures/db_write.sqlite3-journal"]
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stdout_json = { "/statements/0/index" = 0, "/statements/0/rows_affected" = 4, "/statements/0/truncated" = false, "/meta/transaction/read_only" = false, "/meta/transaction/outcome" = "rolled_back", "/meta/returned_rows" = "<null>" }
+
+[[expect.runs]]
+run = 1
+exit_code = 1
+stderr_json = { "/error/code" = "DB_FAILED" }
+stderr_lines = 1
+stdout_json = { "/statements/0/truncated" = true, "/statements/0/stop_reason" = "max_rows", "/statements/0/rows_affected" = 4 }

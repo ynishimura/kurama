@@ -1,0 +1,22 @@
+# The report names the file KURAMA_CONFIG_PATH points at and says that the
+# variable chose it; a named file that does not exist is itself the problem,
+# reported with its path, and the run fails.
+id = "config_check_names_the_effective_path_and_its_override"
+feature = "config"
+
+[combination]
+command = "config-check"
+output = "json"
+config = "missing"
+
+[input]
+args = ["config", "check", "--json"]
+env = { KURAMA_CONFIG_PATH = "/nonexistent/kurama/config.toml" }
+
+[expect]
+json_error = { code = "CONFIG_INVALID", exit = 2 }
+stderr_lines = 1
+stdout_json = { "/config/path" = "/nonexistent/kurama/config.toml", "/config/source" = "KURAMA_CONFIG_PATH", "/config/exists" = false, "/valid" = false, "/diagnostics" = { length = 1 }, "/diagnostics/0/message" = { contains = "does not exist: /nonexistent/kurama/config.toml" }, "/diagnostics/0/section" = "<null>" }
+sts_actions = []
+op_calls = 0
+no_files_written = true

@@ -1,0 +1,83 @@
+# The plan tells the description fetch a dry run makes apart from the API
+# call it never makes: an operationId fetches the description (network true,
+# performed) and resolves the request; `METHOD /path` then reads the cached
+# copy (cache hit, no network); a plain path needs no description; and a
+# description behind openapi_auth is not fetched at all, because a dry run
+# starts no credential source. That rule is the target's: --ops with
+# --dry-run still loads the description as --ops does, with the token.
+id = "api_dry_run_json_separates_a_spec_fetch_from_the_api_call"
+feature = "api-explorer"
+
+[combination]
+command = "api"
+mode = "dry-run"
+output = "json"
+openapi = "url"
+target = "operation-method-path-and-path"
+
+[input]
+args = ["api", "pets", "pets/get", "-P", "petId=p-1", "--dry-run", "--json"]
+then_run = [
+  ["api", "pets", "GET /pets", "--dry-run", "--json"],
+  ["api", "pets", "/pets", "--dry-run", "--json"],
+  ["api", "github", "pets/get", "-P", "petId=1", "--dry-run", "--json"],
+  ["api", "github", "--ops", "--dry-run", "--json"],
+]
+stored_tokens = [{ source = "github", access_token = "stored-access-token", expires_in = 3600 }]
+config = """
+[api.pets]
+base_url = "{server}/api"
+openapi = "{server}/spec/petstore.json"
+
+[auth.github]
+kind = "oauth"
+grant_type = "authorization_code"
+auth_url = "{server}/oauth/authorize"
+token_url = "{server}/oauth/token"
+client_id = "gh-client"
+
+[api.github]
+base_url = "{server}/api"
+openapi = "{server}/spec/petstore.yaml"
+openapi_auth = true
+"""
+
+[expect]
+api_calls = { count = 0 }
+token_grants = []
+oauth_paths = []
+sts_actions = []
+op_calls = 0
+files_written = { include = ["*.cache/kurama/openapi/*.body", "*.cache/kurama/openapi/*.json"] }
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+spec_calls = { count = 1, status = 200 }
+stdout_json = { "/target" = "pets/get", "/request/method" = "GET", "/request/url" = { contains = "/api/pets/p-1" }, "/description/source/kind" = "fetched", "/description/source/url" = { contains = "/spec/petstore.json" }, "/description/network" = true, "/description/cache_hit" = false, "/effects/0/effect" = "description_fetch", "/effects/0/performed" = true, "/effects/0/network" = true, "/effects/1/effect" = "filesystem", "/effects/1/performed" = true, "/effects/2/effect" = "description_fetch", "/effects/2/performed" = false, "/effects/2/when" = "if_needed", "/effects/3/effect" = "api_request", "/effects/3/performed" = false, "/effects/3/network" = true }
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+spec_calls = { count = 0 }
+stdout_json = { "/target" = "GET /pets", "/request/url" = { contains = "/api/pets" }, "/description/source/kind" = "cached", "/description/network" = false, "/description/cache_hit" = true, "/effects/0/effect" = "filesystem", "/effects/0/performed" = true, "/effects/0/network" = false }
+
+[[expect.runs]]
+run = 2
+exit_code = 0
+spec_calls = { count = 0 }
+stdout_json = { "/target" = "/pets", "/request/url" = { contains = "/api/pets" }, "/description" = "<null>", "/effects" = { length = 1 }, "/effects/0/effect" = "api_request" }
+
+[[expect.runs]]
+run = 3
+json_error = { code = "API_SPEC_UNAVAILABLE", exit = 1 }
+stderr_lines = 1
+stderr_json = { "/error/message" = { contains = "a dry run uses none" }, "/error/hint" = "run `kurama api github --refresh-spec` without --dry-run to cache the description, then dry-run again" }
+spec_calls = { count = 0 }
+stdout = "empty"
+
+[[expect.runs]]
+run = 4
+exit_code = 0
+spec_calls = { count = 1, status = 200, authorization = "Bearer stored-access-token" }
+stdout_json = { "/0/id" = "pets/list" }

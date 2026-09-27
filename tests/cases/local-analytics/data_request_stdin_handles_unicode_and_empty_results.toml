@@ -1,0 +1,21 @@
+# An empty result still carries its Unicode schema.
+id = "data_request_stdin_handles_unicode_and_empty_results"
+feature = "local-analytics"
+
+[combination]
+command = "data"
+client = "data"
+data_op = "query"
+data_source = "local"
+format = "csv"
+
+[input]
+args = ["data", "--request", "-", "--json"]
+stdin = '''{"operation":"query","args":{"from":"{repo}/tests/fixtures/data/orders.csv","sql":"SELECT note AS \"注記\" FROM data WHERE note = '見つからない\n文字'"}}'''
+
+[expect]
+exit_code = 0
+stdout_json = { "/columns/0/name" = "注記", "/rows" = [], "/truncated" = false }
+sts_actions = []
+op_calls = 0
+no_files_written = true

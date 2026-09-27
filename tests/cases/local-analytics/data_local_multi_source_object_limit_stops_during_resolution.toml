@@ -1,0 +1,36 @@
+# `max_source_objects` is one budget for the whole request: once the first
+# local source has spent it, the second source's candidate is refused before
+# it is resolved. The candidate is a directory, which resolving would report
+# as "not a regular file"; the refusal names the limit instead.
+id = "data_local_multi_source_object_limit_stops_during_resolution"
+feature = "local-analytics"
+
+[combination]
+command = "data"
+client = "data"
+data_op = "query"
+data_source = "workspace"
+format = "csv"
+
+[input]
+args = ["data", "pair", "--max-source-objects", "1", "--query", "SELECT count(*) FROM first", "--json"]
+config = """
+[data.pair]
+root_dir = "{repo}/tests/fixtures"
+[[data.pair.sources]]
+name = "first"
+path = "data/orders.csv"
+[[data.pair.sources]]
+name = "second"
+path = "data"
+format = "csv"
+"""
+
+[expect]
+json_error = { code = "DATA_INVALID", exit = 2 }
+stderr_json = { "/error/message" = { contains = "max_source_objects" } }
+stderr_excludes = ["not a regular file"]
+sts_actions = []
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true

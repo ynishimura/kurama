@@ -1,0 +1,62 @@
+# A PostgreSQL user that authenticates with an IAM token under verify-full.
+# The fake layer holds the plan: `--dry-run` signs nothing, assumes no role
+# and reads no password. The throwaway layer opens the RDS PostgreSQL that
+# tests/db/rds-iam.yaml creates for the run with the token the role of the
+# profile signs, checking the server's certificate against the RDS bundle.
+id = "db_throwaway_rds_iam_token_opens_postgresql_under_verify_full"
+feature = "database"
+
+[combination]
+command = "db"
+engine = "postgresql"
+auth = "iam"
+tls = "verify-full"
+
+[input]
+args = ["db", "rds-pg", "--dry-run", "--json"]
+config = """
+[db.rds-pg]
+engine = "postgresql"
+host = "127.0.0.1"
+port = 1
+database = "app"
+username = "iam_reader"
+tls = "verify-full"
+ca_file = "{repo}/tests/fixtures/db/ca.pem"
+connect_timeout_secs = 2
+
+[db.rds-pg.iam]
+aws_profile = "dev"
+"""
+
+[fakes]
+op = "enabled"
+
+[expect]
+exit_code = 0
+stdout_json = { "/dry_run" = true }
+sts_actions = []
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true
+
+[throwaway]
+stacks = ["rds-iam"]
+args = ["db", "rds-pg", "--tables", "--json"]
+config = """
+[db.rds-pg]
+engine = "postgresql"
+host = "{rds_pg_host}"
+database = "app"
+username = "iam_reader"
+tls = "verify-full"
+ca_file = "{rds_ca_file}"
+
+[db.rds-pg.iam]
+aws_profile = "{throwaway_profile}"
+"""
+
+[throwaway.expect]
+exit_code = 0
+stdout_json = { "/operation" = "tables", "/target" = "rds-pg", "/meta/engine/name" = "postgresql" }
+no_files_written = true

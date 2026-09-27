@@ -1,0 +1,25 @@
+# A local read names no region and asks no bucket or STS anything, even with
+# an AWS profile named.
+id = "data_a_local_input_never_asks_where_a_bucket_lives"
+feature = "local-analytics"
+
+[combination]
+command = "data"
+source = "aws-profile"
+client = "data"
+data_op = "query"
+data_source = "local"
+format = "csv"
+region = "none"
+
+[input]
+args = ["data", "{repo}/tests/fixtures/data/orders.csv", "--aws-profile", "dev", "--query", "SELECT count(*) AS rows FROM data", "--json"]
+
+[expect]
+exit_code = 0
+stdout_json = { "/meta/region" = "<null>", "/meta/input_count" = 1 }
+stderr_empty = true
+sts_actions = []
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true

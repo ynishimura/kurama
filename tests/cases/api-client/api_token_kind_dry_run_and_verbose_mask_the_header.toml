@@ -1,0 +1,48 @@
+# --dry-run and -v print the request they built, and the header the source
+# names carries a credential: masking only the fixed list would print it in
+# full. The dry run reads no secret; -v sends the real one.
+id = "api_token_kind_dry_run_and_verbose_mask_the_header"
+feature = "api-client"
+
+[combination]
+command = "api"
+source = "token"
+secret = "aws-ssm"
+header = "named"
+mode = "dry-run-and-verbose"
+
+[input]
+args = ["api", "example", "/voices", "--dry-run"]
+then_run = [["api", "example", "/voices", "-v"]]
+config = """
+[auth.example]
+kind = "token"
+token = "aws-ssm://dev/kurama/api-key"
+header = "xi-api-key"
+format = "{token}"
+
+[api.example]
+base_url = "{server}/api"
+"""
+
+[fakes]
+aws_secrets = "from-id"
+
+[expect]
+exit_code = 0
+token_grants = []
+secret_reads = [{ operation = "ssm:GetParameter", id = "/kurama/api-key", region = "ap-northeast-1" }]
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stdout = "empty"
+stderr_contains = ["> xi-api-key: ****"]
+api_calls = { count = 0 }
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+stderr_contains = ["> xi-api-key: ****"]
+stderr_excludes = ["parameter-of/kurama/api-key"]
+api_calls = { count = 1, headers = { "xi-api-key" = "parameter-of/kurama/api-key" } }

@@ -1,0 +1,27 @@
+# The catalog is read off the clap definition compiled into the binary: an
+# invalid config.toml does not stop it, and it calls no STS, no 1Password, no
+# API or token endpoint and writes nothing (the token store included).
+id = "agent_json_reads_no_config_network_keychain_or_sts"
+feature = "agent-guide"
+
+[combination]
+command = "agent"
+output = "catalog"
+config = "unread"
+
+[input]
+args = ["agent", "--json"]
+replace_config = """
+[mfa.onepassword]
+enabled = false
+"""
+
+[expect]
+exit_code = 0
+stderr_empty = true
+stdout_json = { "/schema_version" = 1 }
+sts_actions = []
+op_calls = 0
+api_calls = { count = 0 }
+token_grants = []
+no_files_written = true

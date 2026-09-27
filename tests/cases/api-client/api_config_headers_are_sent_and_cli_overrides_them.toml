@@ -1,0 +1,66 @@
+# [api.*] headers go with every request, over the default Accept; a -H of
+# the same name, in any case, replaces one of them and leaves the others; a
+# SigV4 API signs them like any other header. The credential is sent as
+# before and nothing is called twice.
+id = "api_config_headers_are_sent_and_cli_overrides_them"
+feature = "api-client"
+
+[combination]
+command = "api"
+headers = "configured"
+source = "oauth"
+auth = "aws-profile"
+
+[input]
+stored_tokens = [{ source = "github", access_token = "stored-access-token", expires_in = 3600 }]
+args = ["api", "github", "/user"]
+then_run = [
+  ["api", "github", "/user", "-H", "x-github-api-version: 2026-03-10"],
+  ["api", "apigw", "/items"],
+]
+config = """
+[auth.github]
+kind = "oauth"
+grant_type = "authorization_code"
+auth_url = "{server}/oauth/authorize"
+token_url = "{server}/oauth/token"
+client_id = "gh-client"
+scopes = ["repo"]
+env_var = "GITHUB_TOKEN"
+
+[api.github]
+base_url = "{server}/api"
+
+[api.github.headers]
+Accept = "application/vnd.github+json"
+X-GitHub-Api-Version = "2022-11-28"
+
+[api.apigw]
+base_url = "{server}/api"
+aws_profile = "dev"
+service = "execute-api"
+[auth.apigw]
+kind = "oauth"
+grant_type = "client_credentials"
+token_url = "{server}/oauth/token"
+client_id = "unused"
+client_secret = "op://Agent/Service/client_secret"
+
+[api.apigw.headers]
+X-Api-Version = "7"
+"""
+
+[expect]
+exit_code = 0
+token_grants = []
+op_calls = 0
+api_calls = { count = 1, sigv4 = { service = "execute-api", region = "ap-northeast-1" }, calls = [{ headers = { "x-api-version" = "7" }, signed_headers_include = ["x-api-version"] }] }
+sts_actions = ["AssumeRole"]
+
+[[expect.runs]]
+run = 0
+api_calls = { count = 1, authorization = "Bearer stored-access-token", headers = { "accept" = "application/vnd.github+json", "x-github-api-version" = "2022-11-28" } }
+
+[[expect.runs]]
+run = 1
+api_calls = { count = 1, authorization = "Bearer stored-access-token", headers = { "accept" = "application/vnd.github+json", "x-github-api-version" = "2026-03-10" } }

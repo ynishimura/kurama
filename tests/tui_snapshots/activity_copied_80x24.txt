@@ -1,0 +1,24 @@
+ 鞍馬 kurama audit  Copied: kurama api pets -X POST /pets
+┏ Calls (6) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃   UTC      CMD  TARGET REQUEST                                STATUS  TOOK   ┃
+┃   08:05:05 api  pets   DELETE /v1/pets/7                      204     142ms  ┃
+┃   08:04:04 exec dev    aws                                    exec    812ms  ┃
+┃   08:03:03 db   app    sha256:a82418a16c77ffbd4e34a013e06efa… ok      1.2s   ┃
+┃   08:02:02 api  pets   GET /v1/pets/404                       404     142ms  ┃
+┃ ▸ 08:01:01 api  pets   POST /v1/pets                          refused 3ms    ┃
+┃   08:00:00 api  pets   GET /v1/pets                           200     142ms  ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+ ↑↓ move  y copy command  Enter details  q quit

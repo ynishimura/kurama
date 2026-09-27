@@ -1,0 +1,20 @@
+# A role that demands MFA the profile does not declare is exit 4.
+id = "sts_mfa_required_exits_4_with_error_code"
+feature = "assume-role"
+
+[combination]
+command = "env"
+source = "aws-profile"
+role = "assume-role"
+sts_response = "mfa-required"
+
+[input]
+args = ["env", "dev"]
+
+[fakes]
+sts = { error = { code = "AccessDenied", message = "MFA authentication is required to assume this role" } }
+
+[expect]
+error = { code = "STS_MFA_REQUIRED", exit = 4 }
+sts_actions = ["AssumeRole"]
+no_files_written = true

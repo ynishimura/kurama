@@ -1,0 +1,51 @@
+# --schema prints one JSON document on one line: the schema version, the
+# profile, the description's identity and source, the options of `kurama
+# api` as clap defines them, and every operation with its parameter schemas.
+# An OpenAPI 3.0 file and a Swagger 2.0 file give the same shape, --jq
+# post-processes the document, and nothing but the file is read.
+id = "api_schema_prints_one_json_document_from_a_local_description"
+feature = "api-explorer"
+
+[combination]
+command = "api"
+openapi = "file"
+output = "schema"
+
+[input]
+args = ["api", "pets", "--schema"]
+then_run = [
+  ["api", "pets", "--schema", "--jq", ".operations[].id"],
+  ["api", "legacy", "--schema"],
+]
+config = """
+[api.pets]
+base_url = "{server}/api"
+openapi = "{fixtures}/petstore.json"
+
+[api.legacy]
+base_url = "{server}/api"
+openapi = "{fixtures}/legacy-swagger.json"
+"""
+
+[expect]
+exit_code = 0
+stdout_lines = 1
+stderr_empty = true
+api_calls = { count = 0 }
+spec_calls = { count = 0 }
+op_calls = 0
+token_grants = []
+no_files_written = true
+stdout_json = { "/schema_version" = 1, "/api/name" = "legacy", "/description/title" = "Legacy", "/description/source/kind" = "file", "/operations" = { length = 3 }, "/operations/1/id" = "createItem", "/operations/1/request_body/content_type" = "application/json", "/operations/1/request_body/schema/required" = ["name"], "/operations/1/request_body/schema/properties/ref/$ref" = "https://schemas.example.com/ref.json#/Ref", "/operations/0/parameters/0/schema/default" = 1, "/operations/0/parameters/1/schema/enum" = ["a", "b"], "/warnings" = { length = 2 } }
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stdout_lines = 1
+stderr_empty = true
+stdout_json = { "/schema_version" = 1, "/api/name" = "pets", "/api/base_url" = { contains = "/api" }, "/description/title" = "Petstore", "/description/version" = "1.2.0", "/description/source/kind" = "file", "/description/source/path" = { contains = "petstore.json" }, "/operations" = { length = 5 }, "/operations/0/id" = "pets/list", "/operations/0/method" = "GET", "/operations/0/path" = "/pets", "/operations/0/parameters/1/in" = "query", "/operations/0/parameters/1/required" = false, "/operations/0/parameters/1/schema/enum" = ["available", "sold"], "/operations/0/parameters/0/schema/default" = 20, "/options" = { min_length = 10 }, "/warnings" = [] }
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+stdout = { equals = "pets/list\npets/create\npets/get\nDELETE /pets/{petId}\nowners/list-pets\n" }

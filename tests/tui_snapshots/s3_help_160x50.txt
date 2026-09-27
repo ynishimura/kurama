@@ -1,0 +1,50 @@
+ 鞍馬 kurama s3  assets  dev  ap-northeast-1  s3://example-assets/reports/                                                                           READ ONLY
+┏ List (5+) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓┏ Details ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ ▸ 2024/                                                                                      ┃┃ Prefix      reports/2024/                                    ┃
+┃   2025/                                                                                      ┃┃                                                              ┃
+┃   orders.csv                                                                              20 ┃┃ Next        Enter opens it                                   ┃
+┃   summary.json                                                                            33 ┃┃                                                              ┃
+┃   events.parquet                                                                     1048576 ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                 ┏ Help ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓                                                 ┃
+┃                                                 ┃                                                          ┃                                                 ┃
+┃                                                 ┃  ↑↓ or j/k    move; the next page loads at the end       ┃                                                 ┃
+┃                                                 ┃  Enter        open a bucket or prefix; preview an        ┃                                                 ┃
+┃                                                 ┃  object                                                  ┃                                                 ┃
+┃                                                 ┃  ← or Bksp    up one level; back from a search           ┃                                                 ┃
+┃                                                 ┃  /            filter the rows already listed (no         ┃                                                 ┃
+┃                                                 ┃  request)                                                ┃                                                 ┃
+┃                                                 ┃  s            key search: every key under the prefix     ┃                                                 ┃
+┃                                                 ┃  g            content search: read the objects' lines    ┃                                                 ┃
+┃                                                 ┃  n            the next range of the preview              ┃                                                 ┃
+┃                                                 ┃  d            the kurama data request for an object      ┃                                                 ┃
+┃                                                 ┃  Esc          stop what runs; the rows so far stay       ┃                                                 ┃
+┃                                                 ┃  q or Ctrl-C  quit                                       ┃                                                 ┃
+┃                                                 ┃                                                          ┃                                                 ┃
+┃                                                 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛                                                 ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃ 5 scanned · more below                                                                       ┃┃                                                              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+ Esc close

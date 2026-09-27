@@ -1,0 +1,60 @@
+# Two OAuth sources hold a token each: status finds both, `logout --all`
+# clears both, and afterwards status reports both missing and the token
+# store holds nothing. One source cleared and the other left would pass a
+# case with a single source.
+id = "oauth_logout_all_clears_every_stored_source"
+feature = "oauth"
+
+[combination]
+command = "logout"
+source = "oauth"
+grant = "authorization_code"
+token = "stored"
+
+[input]
+args = ["status", "--only", "auth", "--json"]
+then_run = [["logout", "--all"], ["status", "--only", "auth", "--json"]]
+stored_tokens = [
+  { source = "github", access_token = "{stored_access_token}", expires_in = 3600 },
+  { source = "gitlab", access_token = "{stored_access_token}", expires_in = 3600 },
+]
+config = """
+[auth.github]
+kind = "oauth"
+grant_type = "authorization_code"
+auth_url = "{server}/oauth/authorize"
+token_url = "{server}/oauth/token"
+client_id = "gh-client"
+
+[auth.gitlab]
+kind = "oauth"
+grant_type = "authorization_code"
+auth_url = "{server}/oauth/authorize"
+token_url = "{server}/oauth/token"
+client_id = "gl-client"
+"""
+
+[fakes]
+session_cache = true
+
+[expect]
+exit_code = 0
+sts_actions = []
+token_grants = []
+token_store = []
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stdout_json = { "" = { length = 2 }, "/0/name" = "github", "/0/token" = "valid", "/1/name" = "gitlab", "/1/token" = "valid" }
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+stdout = "empty"
+stderr_contains = ["# Cleared token: github", "# Cleared token: gitlab"]
+
+[[expect.runs]]
+run = 2
+exit_code = 0
+stdout_json = { "" = { length = 2 }, "/0/name" = "github", "/0/token" = "missing", "/0/logged_in" = false, "/1/name" = "gitlab", "/1/token" = "missing", "/1/logged_in" = false }

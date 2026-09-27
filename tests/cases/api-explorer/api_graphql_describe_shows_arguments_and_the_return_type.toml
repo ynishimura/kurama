@@ -1,0 +1,59 @@
+# --describe of a GraphQL operation shows its arguments as the variables
+# object -- `input: IssueCreateInput!` with the required fields of the input
+# type in the skeleton and the rest as optional paths -- and its return type
+# with the shape of its fields; --schema carries the same operation in the
+# OpenAPI contract. Nothing about it is `unsupported`, and `POST
+# <endpoint>` with a body is sent as it is.
+id = "api_graphql_describe_shows_arguments_and_the_return_type"
+feature = "api-explorer"
+
+[combination]
+command = "api"
+spec = "graphql"
+openapi = "file"
+output = "describe"
+
+[input]
+args = ["api", "linear", "--describe", "mutation.issueCreate"]
+then_run = [
+  ["api", "linear", "--describe", "mutation.issueCreate", "--json"],
+  ["api", "linear", "--schema", "mutation.issueCreate", "--jq", ".operations[0].request_body.content_type"],
+  ["api", "linear", "POST /graphql", "-d", "{\"query\":\"{ viewer { id } }\"}", "--jq", ".path"],
+]
+config = """
+[api.linear]
+base_url = "{server}/api"
+graphql = "/graphql"
+graphql_schema = "{fixtures}/graphql-linear.json"
+"""
+
+[expect]
+exit_code = 0
+spec_calls = { count = 0 }
+stdout = { equals = "/api/graphql\n" }
+api_calls = { count = 1, calls = [{ method = "POST", path = "/api/graphql", body = "{\"query\":\"{ viewer { id } }\"}" }] }
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+api_calls = { count = 0 }
+stdout = { contains = [
+  "mutation.issueCreate\n  POST /graphql\n  Creates a new issue.\n",
+  "Request body  application/json (required)\n  GraphQL variables: input: IssueCreateInput!\n",
+  "\"teamId\": \"\"",
+  "optional: input.title, input.description, input.assigneeId, input.priority, input.labelIds\n",
+  "Response  200  application/json\n  IssuePayload!\n",
+  "\"success\": \"boolean\"",
+] }
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+api_calls = { count = 0 }
+stdout_json = { "/request_body/skeleton" = { input = { teamId = "" } }, "/request_body/required" = true, "/response/description" = "IssuePayload!", "/response/shape/lastSyncId" = "number", "/unsupported" = [] }
+
+[[expect.runs]]
+run = 2
+exit_code = 0
+api_calls = { count = 0 }
+stdout = { equals = "application/json\n" }

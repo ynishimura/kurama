@@ -1,0 +1,47 @@
+# A Swagger 2.0 description lists its operations and warns about what kurama
+# cannot represent; a body parameter operation posts with the `consumes`
+# media type and the header parameter; a formData operation is refused before
+# any request.
+id = "api_swagger2_description_lists_body_and_form_data_operations"
+feature = "api-explorer"
+
+[combination]
+command = "api"
+openapi = "file-swagger2"
+
+[input]
+args = ["api", "legacy", "--ops"]
+then_run = [
+  ["api", "legacy", "createItem", "-P", "X-Team=core", "-d", "{\"name\":\"x\"}", "--json"],
+  ["api", "legacy", "--describe", "createItem"],
+  ["api", "legacy", "upload", "-d", "x"],
+]
+config = """
+[api.legacy]
+base_url = "{server}/api"
+openapi = "{fixtures}/legacy-swagger.json"
+"""
+
+[expect]
+error = { code = "API_ARGUMENT_INVALID", exit = 2 }
+stderr_contains = ["operation upload needs formData parameter 'file' which kurama does not send"]
+api_calls = { count = 0 }
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stdout = { contains = ["listItems", "createItem", "upload"] }
+stderr_contains = [
+  "# warning: upload: formData parameter 'file' is not supported",
+  "# warning: $ref https://schemas.example.com/ref.json#/Ref is not resolved",
+]
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+api_calls = { count = 1, calls = [{ method = "POST", path = "/api/items", body = "{\"name\":\"x\"}", headers = { "x-team" = "core", "content-type" = "application/json" } }] }
+
+[[expect.runs]]
+run = 2
+exit_code = 0
+stdout = { contains = ["  {\n    \"name\": \"\"\n  }\n  optional: price, ref\n", "\nScopes\n  items:write\n"] }

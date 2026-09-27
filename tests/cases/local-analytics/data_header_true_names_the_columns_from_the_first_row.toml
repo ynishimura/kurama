@@ -1,0 +1,23 @@
+# `--header true` names the column from the first CSV row and keeps it out
+# of the data, and the plan records the choice.
+id = "data_header_true_names_the_columns_from_the_first_row"
+feature = "local-analytics"
+
+[combination]
+command = "data"
+client = "data"
+data_op = "preview"
+data_source = "local"
+format = "csv"
+"data.header" = "true"
+
+[input]
+args = ["data", "{repo}/tests/fixtures/data/ids.csv", "--header", "true", "--preview", "--max-rows", "200", "--json"]
+
+[expect]
+exit_code = 0
+stdout_json = { "/columns/0/name" = "id", "/row_count" = 120, "/rows/0/0" = "0", "/meta/sources/0/header" = true }
+sts_actions = []
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true

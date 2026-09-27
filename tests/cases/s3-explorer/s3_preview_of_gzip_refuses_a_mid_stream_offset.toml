@@ -1,0 +1,47 @@
+# A gzip object is decoded from its first byte to --bytes; a decoded preview
+# cut short is not complete, and an offset inside the stream is refused
+# before any byte is read, with how to see further instead.
+id = "s3_preview_of_gzip_refuses_a_mid_stream_offset"
+feature = "s3-explorer"
+
+[combination]
+command = "s3"
+source = "aws-profile"
+role = "assume-role"
+s3_op = "preview"
+s3_encoding = "gzip"
+
+[input]
+args = ["s3", "assets", "s3://browse-objects/data/events.jsonl.gz", "--preview", "--json"]
+then_run = [
+  ["s3", "assets", "s3://browse-objects/data/events.jsonl.gz", "--preview", "--bytes", "10", "--json"],
+  ["s3", "assets", "s3://browse-objects/data/events.jsonl.gz", "--preview", "--offset-bytes", "5"],
+]
+config = """
+[s3.assets]
+aws_profile = "dev"
+"""
+
+[expect]
+error = { code = "S3_INVALID", exit = 2 }
+hint = "drop --offset-bytes and raise --bytes (up to 1048576) to see further into the decoded text"
+stderr_contains = ["gzip"]
+stdout_lines = 0
+op_calls = 0
+no_files_written = true
+api_calls = { count = 1, sigv4 = { service = "s3", region = "ap-northeast-1" }, calls = [{ method = "HEAD", path = "/browse-objects/data/events.jsonl.gz" }] }
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+sts_actions = ["AssumeRole"]
+stdout_json = { "/preview/encoding" = "gzip", "/preview/format" = "jsonl", "/preview/text" = "{\"id\":1,\"msg\":\"start\"}\n{\"id\":2,\"msg\":\"request-id-123 done\"}\n", "/preview/well_formed" = true, "/preview/next_offset" = "<null>", "/bytes_decoded" = 60, "/complete" = true, "/stop_reason" = "<null>" }
+api_calls = { count = 2, sigv4 = { service = "s3", region = "ap-northeast-1" }, calls = [
+  { method = "HEAD" },
+  { method = "GET", headers_include = ["if-match", "range"] },
+] }
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+stdout_json = { "/preview/text" = "{\"id\":1,\"m", "/preview/next_offset" = "<null>", "/bytes_decoded" = 10, "/complete" = false, "/stop_reason" = "max_bytes" }

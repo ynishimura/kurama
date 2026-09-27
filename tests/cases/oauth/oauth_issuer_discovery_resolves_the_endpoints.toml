@@ -1,0 +1,28 @@
+# No `kind`: "oauth" is the default. The discovery document is fetched once,
+# then the token endpoint it names is used.
+id = "oauth_issuer_discovery_resolves_the_endpoints"
+feature = "oauth"
+
+[combination]
+command = "token"
+source = "oauth"
+grant = "client_credentials"
+endpoints = "issuer-discovery"
+
+[input]
+args = ["token", "svc2"]
+config = """
+[auth.svc2]
+grant_type = "client_credentials"
+issuer = "{server}/"
+client_id = "svc2-client"
+"""
+
+[fakes]
+token_store = true
+
+[expect]
+exit_code = 0
+token_grants = ["client_credentials"]
+stdout = { contains = ["{granted_access_token}"] }
+oauth_paths = ["/.well-known/openid-configuration", "/oauth/token"]

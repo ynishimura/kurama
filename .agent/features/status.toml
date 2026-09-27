@@ -1,0 +1,20 @@
+[status]
+summary = "`kurama status`: every AWS profile, [auth.*] source and [api.*] profile, [data.*] workspace and [s3.*] connection with its session or token state and what the shell holds (KURAMA_AWS, KURAMA_AUTH), as a table or JSON"
+entry = "src/shell/cli/commands/status.rs"
+files = [
+  "src/shell/cli/commands/status.rs",
+  "src/domain/functions/profile_status.rs",
+  "src/shell/cli/commands/s3_status.rs",
+]
+tests = ["status"]
+scenarios = [
+  "status_lists_auth_sources_and_apis_with_their_token_state",
+  "status_only_lists_one_kind_of_row",
+  "profile_loading_honors_aws_config_file_without_default_aws_directory",
+  "tui_home_switches_between_the_source_tabs",
+]
+depends_on = ["cli-entry", "profile-loading", "session-cache", "assume-role", "oauth", "config", "database", "export-output", "local-analytics"]
+notes = "Reads the session cache and the token store but never STS, 1Password, a secret store or a token endpoint; an unreadable keychain entry is reported as `unreadable` instead of failing, and a kind = \"token\" source as `not_checked` because its credential is only ever read when it is used"
+
+[status.real]
+pending = "reads the keychain session cache; test-fakes read the file-backed one"

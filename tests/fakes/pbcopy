@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Fake clipboard (`pbcopy` on macOS, `xclip` on Linux) for tests/scenarios/:
+# records what was copied in $KURAMA_FAKE_PBCOPY_LOG, one entry per line, and
+# puts nothing on any clipboard.
+set -euo pipefail
+
+if [ -n "${KURAMA_FAKE_PBCOPY_LOG:-}" ]; then
+  { cat; printf '\n'; } >> "$KURAMA_FAKE_PBCOPY_LOG"
+else
+  cat > /dev/null
+fi

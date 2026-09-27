@@ -1,0 +1,35 @@
+# Without --pages a listing that names a next page is still one request:
+# the body as the server sent it, no stop report, with or without --json.
+id = "api_pages_are_not_fetched_without_the_flag"
+feature = "api-client"
+
+[combination]
+command = "api"
+source = "none"
+pages = "off"
+
+[input]
+args = ["api", "public", "/items?pages=5"]
+then_run = [["api", "public", "/items?pages=5&style=cursor", "--json", "--jq", ".body.page"]]
+config = """
+[api.public]
+base_url = "{server}/api"
+"""
+
+[fakes]
+api = "pages"
+
+[expect]
+exit_code = 0
+stderr_empty = true
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+stdout = { equals = "{\"page\":1,\"items\":[\"item-1-1\",\"item-1-2\"]}" }
+api_calls = { count = 1, calls = [{ path = "/api/items?pages=5" }] }
+
+[[expect.runs]]
+run = 1
+stdout = { equals = "1\n" }
+api_calls = { count = 1, calls = [{ path = "/api/items?pages=5&style=cursor" }] }

@@ -1,0 +1,51 @@
+# The entries the one keychain warning leaves out are each named at debug,
+# so `RUST_LOG=kurama=debug` still shows which ones this build could not read.
+id = "session_cache_an_unreadable_keychain_names_each_entry_at_debug"
+feature = "session-cache"
+
+[combination]
+command = "status"
+session_cache = "denied"
+log = "debug"
+
+[input]
+args = ["status"]
+env = { RUST_LOG = "kurama=debug" }
+aws_config = """
+[default]
+region = us-east-1
+
+[profile ops-mfa]
+role_arn = arn:aws:iam::123456789012:role/Ops
+source_profile = default
+mfa_serial = arn:aws:iam::123456789012:mfa/agent
+region = ap-northeast-1
+
+[profile audit-mfa]
+role_arn = arn:aws:iam::123456789012:role/Audit
+source_profile = default
+mfa_serial = arn:aws:iam::123456789012:mfa/auditor
+region = ap-northeast-1
+"""
+config = """
+[auth.github]
+kind = "oauth"
+grant_type = "authorization_code"
+auth_url = "{server}/oauth/authorize"
+token_url = "{server}/oauth/token"
+client_id = "gh-client"
+scopes = ["repo"]
+env_var = "GITHUB_TOKEN"
+
+[api.github]
+base_url = "{server}/api"
+"""
+
+[fakes]
+op = "enabled"
+keychain_denied = -25293
+
+[expect]
+exit_code = 0
+sts_actions = []
+stderr_lines_containing = { "macOS denied this build access" = 1, "keychain entry skipped" = 3, "mfa/agent" = 1, "mfa/auditor" = 1, "token of [auth.github]" = 1 }

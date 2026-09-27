@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "feature": "mcp",
+  "status": "verified",
+  "reason": null,
+  "commit": "e358939c29cf076004c98fc6de1b8957fa10c582",
+  "feature_hash": "0b4917231a5667f2",
+  "diff_hash": "cbf29ce484222325",
+  "environment": "real-services",
+  "access": "read-only",
+  "command": [
+    "cargo",
+    "xtask",
+    "verify",
+    "--layer",
+    "real",
+    "mcp"
+  ],
+  "generated_at": "2026-09-27T06:08:06.953676+00:00",
+  "observed": [
+    {
+      "test": "mcp_lists_the_tools_and_calls_an_api",
+      "result": "passed",
+      "mock": [
+        "mcp_lists_the_tools_and_calls_an_api"
+      ]
+    }
+  ],
+  "fixtures": {}
+}

@@ -1,0 +1,142 @@
+# Manual dispatch only: pushes and pull requests never start this workflow,
+# on this repository or from a fork. The first line of verification is the
+# local gate (`cargo xtask check`, run by the Lefthook pre-push hook); this
+# re-runs the same gate on a chosen platform, not a different standard. A
+# maintainer dispatches it on a pull request's branch after reading the diff; a
+# fork's branch is pushed to `ci/pr-<N>` first, because a dispatch runs only a
+# ref of this repository (CONTRIBUTING.md#ci). It uses no secrets and a
+# read-only token, and nothing it runs reaches AWS, a real database or a real
+# keychain: the scenarios run against the fakes, `real_db` returns without
+# `KURAMA_TEST_DB`, no `verify --layer` runs, and `verify-real --check` reads
+# committed evidence without probing anything.
+name: CI
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: Platform to check
+        type: choice
+        options: [ubuntu, macos, all]
+        default: ubuntu
+      coverage:
+        description: Also generate coverage on Ubuntu
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  # Every run builds from a restored or empty target/, so incremental caches
+  # only make the cached folder bigger.
+  CARGO_INCREMENTAL: 0
+  RUST_BACKTRACE: 1
+
+jobs:
+  check:
+    name: cargo xtask check
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: ${{ fromJSON(inputs.platform == 'all' && '["ubuntu-24.04", "macos-latest"]' || inputs.platform == 'macos' && '["macos-latest"]' || '["ubuntu-24.04"]') }}
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        # The toolchain developers run locally, so clippy -D warnings reads
+        # the same lints here; the msrv job holds the minimum.
+        toolchain: stable
+        components: rustfmt, clippy
+
+    - name: Cache cargo dependencies
+      uses: actions/cache@v6
+      with:
+        path: |
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+          target/
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Install cargo-machete
+      # The version mise.toml pins for the local gate.
+      run: cargo install --locked cargo-machete --version 0.9.2
+
+    - name: Doctor
+      run: cargo xtask doctor
+
+    # The same gate agents run locally: fmt --check, clippy -D warnings on all
+    # targets, every test (unit, integration, doc, architecture, scenarios),
+    # unused dependencies. It writes the verification report as it goes.
+    - name: Check
+      run: cargo xtask check
+
+    # The real-environment evidence committed under .agent/real/: its format,
+    # the files and fixtures it was taken on, and the credential scan. CI runs
+    # no probe; `cargo xtask verify-real <feature>` is run where the
+    # environment is and its evidence committed with the change.
+    - name: Real-environment evidence
+      run: cargo xtask verify-real --check
+
+    - name: Upload verification report
+      if: always()
+      uses: actions/upload-artifact@v7
+      with:
+        name: verification-report-${{ matrix.os }}
+        path: |
+          target/agent/verification-report.md
+          target/agent/verification-report.json
+          target/agent/scenarios/
+          target/agent/tui/
+          tests/tui_snapshots/*.txt.new
+
+  # The minimum `rust-version` in Cargo.toml still builds; keep the two equal.
+  msrv:
+    name: Rust 1.95.0 builds
+    runs-on: ubuntu-24.04
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        toolchain: "1.95.0"
+
+    - name: Check
+      run: cargo check --locked
+
+  coverage:
+    name: Code Coverage
+    if: ${{ inputs.coverage }}
+    runs-on: ubuntu-24.04
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        toolchain: stable
+        components: llvm-tools-preview
+
+    - name: Install cargo-llvm-cov
+      run: cargo install --locked cargo-llvm-cov
+
+    - name: Generate coverage report
+      run: cargo llvm-cov --locked --features test-fakes --workspace --lcov --output-path lcov.info
+
+    # Kept as a run artifact: no third-party upload and no token to hold.
+    - name: Upload coverage report
+      uses: actions/upload-artifact@v7
+      with:
+        name: coverage-lcov
+        path: lcov.info

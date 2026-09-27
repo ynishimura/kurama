@@ -1,0 +1,43 @@
+# RFC 6265 §3.1: several Set-Cookie are never folded into one field, and an
+# Expires date has a comma of its own. The envelope keeps each cookie as its
+# own string in an array, so --json and --jq tell them apart; the fake
+# answers one Set-Cookie for each line of the body it was sent.
+id = "api_json_preserves_repeated_set_cookie_headers"
+feature = "api-client"
+
+[combination]
+command = "api"
+source = "none"
+output = "json-jq"
+api_response = "set-cookie"
+
+[input]
+args = ["api", "public", "/echo?set_cookies", "-d", "a=1; Expires=Wed, 21 Oct 2026 07:28:00 GMT\nb=2", "--json"]
+then_run = [
+  ["api", "public", "/echo?set_cookies", "-d", "a=1; Expires=Wed, 21 Oct 2026 07:28:00 GMT\nb=2", "--jq", ".headers[\"set-cookie\"][0]", "--json"],
+  ["api", "public", "/echo?set_cookies", "-d", "a=1; Expires=Wed, 21 Oct 2026 07:28:00 GMT\nb=2", "--jq", ".headers[\"set-cookie\"][1]", "--json"],
+]
+config = """
+[api.public]
+base_url = "{server}/api"
+"""
+
+[fakes]
+api = "echo"
+
+[expect]
+exit_code = 0
+api_calls = { count = 1 }
+
+[[expect.runs]]
+run = 0
+stdout_lines = 1
+stdout_json = { "/status" = 200, "/headers/set-cookie/0" = "a=1; Expires=Wed, 21 Oct 2026 07:28:00 GMT", "/headers/set-cookie/1" = "b=2" }
+
+[[expect.runs]]
+run = 1
+stdout = { equals = "a=1; Expires=Wed, 21 Oct 2026 07:28:00 GMT\n" }
+
+[[expect.runs]]
+run = 2
+stdout = { equals = "b=2\n" }

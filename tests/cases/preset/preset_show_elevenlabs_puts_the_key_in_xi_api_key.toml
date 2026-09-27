@@ -1,0 +1,25 @@
+# ElevenLabs takes its API key as it is in `xi-api-key`, not as a Bearer
+# token in Authorization, so the preset writes the header and the format
+# kurama's defaults would get wrong. Nothing is resolved or contacted.
+id = "preset_show_elevenlabs_puts_the_key_in_xi_api_key"
+feature = "preset"
+
+[combination]
+command = "preset-show"
+output = "text"
+
+[input]
+args = ["preset", "show", "elevenlabs", "--set", "secret=op://Agent/kurama-elevenlabs/credential"]
+
+[fakes]
+op = "enabled"
+
+[expect]
+exit_code = 0
+stdout = { starts_with = "# kurama preset: elevenlabs (kurama ", contains = ["[auth.elevenlabs]\nkind = \"token\"\ntoken = \"op://Agent/kurama-elevenlabs/credential\"\nheader = \"xi-api-key\"\nformat = \"{token}\"\nenv_var = \"ELEVENLABS_API_KEY\"\n", "[api.elevenlabs]\ndescription = \"ElevenLabs API\"\nbase_url = \"https://api.elevenlabs.io\"\n", "openapi = \"https://api.elevenlabs.io/openapi.json\""] }
+stderr_contains = ["# Setup for elevenlabs", "https://elevenlabs.io/app/settings/api-keys", "--title kurama-elevenlabs", "kurama api elevenlabs /v1/models"]
+sts_actions = []
+op_calls = 0
+secret_reads = []
+api_calls = { count = 0 }
+no_files_written = true

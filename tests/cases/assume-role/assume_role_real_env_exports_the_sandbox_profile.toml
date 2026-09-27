@@ -1,0 +1,33 @@
+# The same `env` on the sandbox profile `kurama-sandbox`: the role differs, the
+# source profile and the MFA serial do not, so this and the `kurama-real` case together
+# say that one session token serves two roles the way the daily use does.
+id = "assume_role_real_env_exports_the_sandbox_profile"
+feature = "assume-role"
+
+[combination]
+command = "env"
+source = "aws-profile"
+role = "assume-role"
+output = "export-script"
+
+[input]
+args = ["env", "dev"]
+
+[expect]
+exit_code = 0
+sts_actions = ["AssumeRole"]
+stdout = "export-script"
+op_calls = 0
+no_files_written = true
+
+[real]
+requires = ["profile:kurama-sandbox", "keychain:OP_SERVICE_ACCOUNT_TOKEN"]
+args = ["env", "kurama-sandbox"]
+
+[real.combination]
+target = "aws-sandbox"
+mfa = "onepassword"
+
+[real.expect]
+exit_code = 0
+stdout = "export-script"

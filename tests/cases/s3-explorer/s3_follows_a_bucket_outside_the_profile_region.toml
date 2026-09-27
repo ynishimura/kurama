@@ -1,0 +1,30 @@
+# The first request is signed for the profile's region; the bucket answers
+# with its own, the request is sent there once, and the result names the
+# region the bucket was read in.
+id = "s3_follows_a_bucket_outside_the_profile_region"
+feature = "s3-explorer"
+
+[combination]
+command = "s3"
+source = "aws-profile"
+role = "assume-role"
+s3_op = "list"
+region = "bucket"
+
+[input]
+args = ["s3", "assets", "s3://browse-west/", "--list", "--recursive", "--json"]
+config = """
+[s3.assets]
+aws_profile = "dev"
+"""
+
+[expect]
+exit_code = 0
+sts_actions = ["AssumeRole"]
+op_calls = 0
+no_files_written = true
+stdout_json = { "/region" = "us-west-2", "/objects/0/key" = "reports/west.csv", "/complete" = true }
+api_calls = { count = 2, calls = [
+  { path = "/browse-west/?list-type=2&max-keys=200&prefix=", signing_region = "ap-northeast-1" },
+  { path = "/browse-west/?list-type=2&max-keys=200&prefix=", signing_region = "us-west-2" },
+] }

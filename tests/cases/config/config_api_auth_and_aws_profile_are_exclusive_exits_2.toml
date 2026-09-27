@@ -1,0 +1,40 @@
+# An API that names both a token source and an AWS profile is refused when
+# the configuration is read: nothing is called to find out which one wins.
+id = "config_api_auth_and_aws_profile_are_exclusive_exits_2"
+feature = "config"
+
+[combination]
+command = "api"
+auth = "oauth-and-aws-profile"
+
+[input]
+args = ["api", "svc", "/items"]
+config = """
+[auth.svc]
+kind = "oauth"
+grant_type = "client_credentials"
+token_url = "{server}/oauth/token"
+client_id = "svc-client"
+client_secret = "op://Agent/Service/client_secret"
+scopes = ["read"]
+
+[api.svc]
+description = "Service API"
+base_url = "{server}/api"
+
+[api.both]
+base_url = "{server}/api"
+auth = "svc"
+aws_profile = "dev"
+"""
+
+[expect]
+error = { code = "CONFIG_INVALID", exit = 2 }
+stderr_contains = [
+  "[api.both] auth and aws_profile are exclusive: keep one of them",
+  "/kurama-config.toml (KURAMA_CONFIG_PATH overrides the location)",
+]
+hint = "fix /"
+sts_actions = []
+api_calls = { count = 0 }
+no_files_written = true

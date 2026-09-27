@@ -1,0 +1,40 @@
+ 鞍馬 kurama s3  assets  dev  ap-northeast-1  s3://example-assets/reports/                                   READ ONLY
+┏ Key search "invoice" (2) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓┏ Details ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ ▸ invoice-001.pdf                                           7 ┃┃ Key         reports/invoice-001.pdf                 ┃
+┃   invoice-002.pdf                                           7 ┃┃ Size        7 bytes                                 ┃
+┃                                                               ┃┃ Modified    2026-09-01T00:00:00Z                    ┃
+┃                                                               ┃┃ ETag        "9b2cf535f27731c974343645a3985328"      ┃
+┃                                                               ┃┃ Class       STANDARD                                ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃ Next        Enter previews it; d opens it as data   ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃ searching the keys… 3 s  Esc stops it  200 scanned · arrivin… ┃┃                                                     ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+ Esc stop  ↑↓ move  q quit

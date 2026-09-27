@@ -1,0 +1,28 @@
+# `agent --kind s3 --json` is the S3 contract an agent reads before it writes
+# an [s3.*]: the operations and the bounds a run takes when it names none.
+# The configuration is invalid on purpose, and nothing is assumed, listed,
+# read from 1Password or written.
+id = "s3_agent_kind_reports_operations_without_reading_config"
+feature = "s3-explorer"
+
+[combination]
+command = "agent"
+client = "s3"
+"agent.kind" = "s3"
+config = "unread"
+
+[input]
+args = ["agent", "--kind", "s3", "--json"]
+replace_config = """
+[mfa.onepassword]
+enabled = false
+"""
+
+[expect]
+exit_code = 0
+stderr_empty = true
+sts_actions = []
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true
+stdout_json = { "/schema_version" = 1, "/kind" = "s3", "/operations" = ["buckets", "list", "search", "head", "preview", "content_search"], "/defaults/page_size" = 200, "/defaults/max_objects" = 100000, "/defaults/search_max_objects" = 1000, "/defaults/content_search_max_objects" = 100, "/defaults/request_timeout_secs" = 30, "/defaults/preview_bytes" = 65536, "/defaults/max_preview_bytes" = 1048576, "/capabilities/write" = false, "/capabilities/tui" = true }

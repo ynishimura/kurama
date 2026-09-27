@@ -1,0 +1,30 @@
+ 鞍馬 kurama api  pets  loading the description…                                    bearer   sigv4
+┏ Operations ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓┏ Operation ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Loading the API description…                       ┃┃           No operation selected.           ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+ ↑↓ move  Enter open  / search  q quit  h history  ? help  c copy  o docs

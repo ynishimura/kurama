@@ -1,0 +1,24 @@
+ 鞍馬 kurama db  cmp-dev  mysql 8.4.3  portnoy  via ssm i-0abc1234…  READ ONLY
+┏ Columns  Preview  [SQL]  Result ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ SELECT status, count(*) FROM orders GROUP BY status▏                         ┃
+┃                                                                              ┃
+┃ Enter or F5 runs it in a read-only transaction; one statement a run.         ┃
+┃ ^E (or e from the list) opens it in $EDITOR for several lines.               ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+ Enter run  ^E $EDITOR  Tab result  Esc tables

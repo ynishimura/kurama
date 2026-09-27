@@ -1,0 +1,39 @@
+# The audit log is a record, never a requirement: when its directory cannot
+# be made (a file stands where it would go), the call still succeeds, one
+# warning says the entry was not written, and a failing call keeps its own
+# exit code.
+id = "audit_write_failure_does_not_fail_the_command"
+feature = "audit"
+
+[combination]
+command = "api"
+audit = "write-failure"
+
+[input]
+args = ["api", "public", "/user"]
+then_run = [["db", "missing", "--tables", "--json"]]
+config = """
+[audit]
+enabled = true
+
+[api.public]
+base_url = "{server}/api"
+"""
+
+[input.home_files]
+".local/state/kurama" = "a file where the state directory would be"
+
+[expect]
+# The file seeded where the directory would go is all there is.
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+api_calls = { count = 1 }
+stdout = { contains = ["octocat"] }
+stderr_lines_containing = { "# warning: the audit log could not be written" = 1 }
+
+[[expect.runs]]
+run = 1
+json_error = { code = "DB_INVALID", exit = 2 }

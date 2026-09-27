@@ -1,0 +1,70 @@
+# An Aurora DSQL cluster, which its host names and which takes IAM only. The
+# fake layer holds the plan: `--dry-run` signs nothing, assumes no role and
+# reads no secret. The throwaway layer opens the cluster tests/db/dsql.yaml
+# creates for the run with DSQL's own token, signed by the role of the
+# profile, under verify-full against the public CA -- then lists the tables
+# of a cluster nobody wrote to, which is none.
+id = "db_throwaway_dsql_token_opens_the_cluster"
+feature = "database"
+
+[combination]
+command = "db"
+engine = "postgresql"
+auth = "iam"
+tls = "verify-full"
+cluster = "aurora-dsql"
+
+[input]
+args = ["db", "dsql", "--dry-run", "--json"]
+config = """
+[db.dsql]
+engine = "postgresql"
+host = "abcdefghijklmnopqrst.dsql.ap-northeast-1.on.aws"
+database = "postgres"
+username = "admin"
+tls = "verify-full"
+connect_timeout_secs = 2
+
+[db.dsql.iam]
+aws_profile = "dev"
+"""
+
+[fakes]
+op = "enabled"
+
+[expect]
+exit_code = 0
+stdout_json = { "/dry_run" = true }
+sts_actions = []
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true
+
+[throwaway]
+stacks = ["dsql"]
+args = ["db", "dsql", "--query", "SELECT 1 AS one", "--json"]
+then_run = [["db", "dsql", "--tables", "--json"]]
+config = """
+[db.dsql]
+engine = "postgresql"
+host = "{dsql_host}"
+database = "postgres"
+username = "admin"
+tls = "verify-full"
+
+[db.dsql.iam]
+aws_profile = "{throwaway_profile}"
+"""
+
+[throwaway.combination]
+db_op = "query"
+
+[throwaway.expect]
+exit_code = 0
+stdout_json = { "/operation" = "tables", "/target" = "dsql", "/meta/engine/name" = "postgresql", "/rows" = [] }
+no_files_written = true
+
+[[throwaway.expect.runs]]
+run = 0
+exit_code = 0
+stdout_json = { "/operation" = "query", "/rows/0/0" = "1", "/row_count" = 1, "/meta/engine/name" = "postgresql" }

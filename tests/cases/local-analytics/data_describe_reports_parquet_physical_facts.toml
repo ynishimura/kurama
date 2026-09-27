@@ -1,0 +1,65 @@
+# `--describe` on Parquet adds the footer facts and names the column that
+# dominates the read; a row format has neither; DESCRIBE in user SQL stays
+# refused; text mode ends with one physical line under the column table.
+id = "data_describe_reports_parquet_physical_facts"
+feature = "local-analytics"
+
+[combination]
+command = "data"
+source = "aws-profile"
+client = "data"
+data_op = "describe"
+data_source = "s3"
+format = "parquet"
+
+[input]
+args = ["data", "--from", "s3://data-bucket/orders.parquet", "--aws-profile", "dev", "--describe", "data", "--json"]
+then_run = [
+  ["data", "--from", "{repo}/tests/fixtures/data/orders.csv", "--describe", "data", "--json"],
+  ["data", "--from", "{repo}/tests/fixtures/data/orders.csv", "--query", "DESCRIBE data", "--json"],
+  ["data", "--from", "s3://data-bucket/orders.parquet", "--aws-profile", "dev", "--describe", "data"],
+]
+
+[expect]
+op_calls = 0
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+[expect.runs.stdout_json]
+"/parquet/files" = 1
+"/parquet/files_omitted" = 0
+"/parquet/rows" = 3
+"/parquet/row_groups" = 1
+"/parquet/max_row_groups_per_file" = 1
+"/parquet/columns_omitted" = 0
+"/parquet/columns" = { length = 2 }
+"/parquet/columns/0/name" = "amount"
+"/parquet/columns/0/physical_type" = "INT64"
+"/parquet/columns/0/has_statistics" = true
+"/parquet/columns/0/compressed_bytes" = { at_least = 1 }
+"/parquet/columns/0/uncompressed_bytes" = { at_least = 1 }
+"/parquet/columns/1/name" = "customer_id"
+"/parquet/columns/1/physical_type" = "BYTE_ARRAY"
+"/parquet/columns/1/has_statistics" = true
+"/parquet/columns/1/compressed_bytes" = { at_least = 1 }
+"/parquet/columns/1/uncompressed_bytes" = { at_least = 1 }
+"/meta/next_actions" = { length = 1 }
+"/meta/next_actions/0/message" = { contains = ["Column 'amount' is the largest at", "name the columns you need"] }
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+sts_actions = []
+stdout_json = { "/parquet" = "<null>", "/meta/next_actions" = [] }
+
+[[expect.runs]]
+run = 2
+sts_actions = []
+json_error = { code = "DATA_INVALID", exit = 2 }
+
+[[expect.runs]]
+run = 3
+exit_code = 0
+stdout = { contains = ["customer_id\tVARCHAR"], line_containing = [["parquet: 1 file(s), ", "largest column amount"]] }

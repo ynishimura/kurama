@@ -1,0 +1,15 @@
+openapi: 3.1.0
+paths:
+  /api/v2/users/myself:
+    get:
+      operationId: users/myself
+      summary: The user the API key belongs to
+  /api/v2/issues:
+    get:
+      operationId: issues/list
+      parameters:
+        - {name: "projectId[]", in: query, schema: {type: integer}}
+        - {name: count, in: query, schema: {type: integer}}
+  /api/v2/issues/{issueIdOrKey}:
+    get:
+      operationId: issues/get

@@ -1,0 +1,19 @@
+# The agent contract for data is printed whatever the configuration says.
+id = "data_agent_schema_ignores_invalid_config"
+feature = "local-analytics"
+
+[combination]
+command = "agent"
+"agent.kind" = "data"
+client = "data"
+
+[input]
+args = ["agent", "--kind", "data", "--json"]
+replace_config = "invalid toml"
+
+[expect]
+exit_code = 0
+stdout_json = { "/schema_version" = 1, "/capabilities/tui" = false, "/input_formats" = { has = "jsonl" }, "/request_schema" = "<object>" }
+sts_actions = []
+op_calls = 0
+no_files_written = true

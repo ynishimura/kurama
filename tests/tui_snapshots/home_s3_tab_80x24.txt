@@ -1,0 +1,24 @@
+ 鞍馬 kurama  AWS credential switcher                       readonly   console
+  1 AWS   2 Auth   3 API   4 DB   5 Data   6 S3
+┏ S3 connections (2) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃     KIND NAME   STATE                                                        ┃
+┃ ▸   s3   assets -                                                            ┃
+┃     s3   public valid (11h 59m)                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+ ↑↓ move  Enter open  q quit  Tab next tab  ? help

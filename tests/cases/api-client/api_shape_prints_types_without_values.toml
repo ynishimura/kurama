@@ -1,0 +1,46 @@
+# --shape prints the type of every value of the JSON body and no value:
+# object keys stay, an array is its count and the merged shape of its
+# elements. It is applied to the body before --json and --jq, which keep
+# the server's status and headers. The request is sent as given; --output
+# takes the server's bytes, so --shape beside it is refused.
+id = "api_shape_prints_types_without_values"
+feature = "api-client"
+
+[combination]
+command = "api"
+source = "none"
+fit = "shape"
+
+[input]
+args = ["api", "public", "POST /echo", "-d", "{\"user\":{\"login\":\"octocat\",\"id\":42},\"repos\":[{\"name\":\"kurama\",\"topics\":[\"rust\",\"cli\"]},{\"name\":\"other\",\"topics\":[],\"archived\":true}],\"note\":null}", "--shape"]
+then_run = [
+  ["api", "public", "POST /echo", "-d", "{\"user\":{\"login\":\"octocat\",\"id\":42}}", "--shape", "--json", "--jq", ".status, .headers[\"content-type\"], .body.user"],
+  ["api", "public", "POST /echo", "-d", "{\"user\":{\"login\":\"octocat\"}}", "--shape", "--output", "{home}/shape.json"],
+]
+config = """
+[api.public]
+base_url = "{server}/api"
+"""
+
+[fakes]
+api = "echo"
+
+[expect]
+exit_code = 2
+stderr_contains = ["the argument '--shape' cannot be used with '--output <PATH>'"]
+stdout = "empty"
+api_calls = { count = 0 }
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stdout = { equals = "{\"user\":{\"login\":\"string\",\"id\":\"number\"},\"repos\":{\"array\":2,\"of\":{\"name\":\"string\",\"topics\":{\"array\":2,\"of\":\"string\"},\"archived\":\"boolean\"}},\"note\":\"null\"}" }
+stdout_excludes = ["octocat", "42", "kurama", "rust", "cli", "other", "true"]
+api_calls = { count = 1, calls = [{ method = "POST", body = "{\"user\":{\"login\":\"octocat\",\"id\":42},\"repos\":[{\"name\":\"kurama\",\"topics\":[\"rust\",\"cli\"]},{\"name\":\"other\",\"topics\":[],\"archived\":true}],\"note\":null}" }] }
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+stdout = { equals = "200\napplication/octet-stream\n{\"login\":\"string\",\"id\":\"number\"}\n" }
+api_calls = { count = 1 }

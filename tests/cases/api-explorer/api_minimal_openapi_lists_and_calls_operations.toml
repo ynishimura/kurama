@@ -1,0 +1,62 @@
+# The Manual REST contract: a hand-written OpenAPI file with `openapi` and
+# `paths` only (the sample the agent guide prints) is a description like
+# any other. --ops lists it, --schema carries it, and an operation target
+# fills a path parameter the file never declared and a declared query
+# parameter, sent with the API's credential in its query.
+id = "api_minimal_openapi_lists_and_calls_operations"
+feature = "api-explorer"
+
+[combination]
+command = "api"
+openapi = "file"
+description = "minimal"
+target = "operation"
+
+[input]
+args = ["api", "backlog", "--ops"]
+then_run = [
+  ["api", "backlog", "--schema", "--jq", ".operations | length"],
+  ["api", "backlog", "issues/get", "-P", "issueIdOrKey=PRJ-1", "--jq", ".path"],
+  ["api", "backlog", "issues/list", "-P", "count=2"],
+  ["api", "backlog", "issues/list", "-P", "count=two"],
+]
+config = """
+[auth.backlog]
+kind = "token"
+token = "op://Agent/backlog/credential"
+query = "apiKey"
+
+[api.backlog]
+base_url = "{server}"
+openapi = "{fixtures}/minimal.yaml"
+"""
+
+[expect]
+error = { code = "API_ARGUMENT_INVALID", exit = 2 }
+stderr_contains = ["parameter count: \"two\" is not an integer"]
+api_calls = { count = 0 }
+spec_calls = { count = 0 }
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stdout = { equals = "ID            METHOD  PATH                           SUMMARY\nusers/myself  GET     /api/v2/users/myself           The user the API key belongs to\nissues/list   GET     /api/v2/issues\nissues/get    GET     /api/v2/issues/{issueIdOrKey}\n" }
+stderr_empty = true
+api_calls = { count = 0 }
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+stdout = { equals = "3\n" }
+api_calls = { count = 0 }
+
+[[expect.runs]]
+run = 2
+exit_code = 0
+stdout = { equals = "/api/v2/issues/PRJ-1\n" }
+api_calls = { count = 1, calls = [{ method = "GET", path = "/api/v2/issues/PRJ-1?apiKey=fake-client-secret" }] }
+
+[[expect.runs]]
+run = 3
+exit_code = 0
+api_calls = { count = 1, calls = [{ method = "GET", path = "/api/v2/issues?count=2&apiKey=fake-client-secret" }] }

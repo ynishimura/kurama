@@ -1,0 +1,21 @@
+# More objects than `--max-source-objects` allows is a refusal after one
+# bounded LIST, not an aggregate over some of them.
+id = "data_s3_candidate_limit_refuses_partial_aggregation"
+feature = "local-analytics"
+
+[combination]
+command = "data"
+source = "aws-profile"
+data_op = "query"
+data_source = "s3"
+format = "csv"
+role = "assume-role"
+
+[input]
+args = ["data", "--from", "s3://data-bucket/many/*.csv", "--aws-profile", "dev", "--max-source-objects", "1", "--query", "SELECT count(*) FROM data"]
+
+[expect]
+error = { code = "DATA_INVALID", exit = 2 }
+sts_actions = ["AssumeRole"]
+api_calls = { count = 1, sigv4 = { service = "s3", region = "ap-northeast-1" }, calls = [{ method = "GET", path = "/data-bucket/?list-type=2&max-keys=1&prefix=many%2F" }] }
+no_files_written = true

@@ -1,0 +1,67 @@
+# A database reached through a Session Manager tunnel. The fake layer holds
+# what the configuration decides before anything is opened: a write the
+# section does not allow is refused with the tunnel never started, no role
+# assumed and no password read. The throwaway layer opens the tunnel to the
+# bastion tests/db/bastion.yaml creates for the run and carries a statement
+# through it to the PostgreSQL the bastion installed at first boot.
+id = "db_throwaway_ssm_tunnel_carries_a_statement"
+feature = "database"
+
+[combination]
+command = "db"
+engine = "postgresql"
+tunnel = "ssm"
+tls = "disable"
+
+[input]
+args = ["db", "bastion", "--execute", "DELETE FROM app.orders WHERE id = ?", "--param", "1", "--commit", "--json"]
+config = """
+[db.bastion]
+engine = "postgresql"
+host = "localhost"
+database = "postgres"
+username = "postgres"
+password = "op://Agent/db/password"
+tls = "disable"
+
+[db.bastion.tunnel]
+kind = "ssm"
+aws_profile = "dev"
+instance_name = "kurama-tunnel-test"
+"""
+
+[fakes]
+op = "enabled"
+
+[expect]
+json_error = { code = "DB_INVALID", exit = 2 }
+stderr_json = { "/error/message" = { contains = "allow_write" }, "/error/hint" = { contains = "allow_write = true" } }
+sts_actions = []
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true
+
+[throwaway]
+stacks = ["bastion"]
+args = ["db", "bastion", "--query", "SELECT count(*) AS n FROM orders", "--json"]
+config = """
+[db.bastion]
+engine = "postgresql"
+host = "localhost"
+database = "postgres"
+username = "postgres"
+# The bastion trusts localhost, so the server never reads the password; its
+# stack keeps a parameter only so the reference names something that exists.
+password = "aws-ssm://{throwaway_profile}/{bastion_stack}/db-password"
+tls = "disable"
+
+[db.bastion.tunnel]
+kind = "ssm"
+aws_profile = "{throwaway_profile}"
+instance_name = "{bastion_stack}"
+"""
+
+[throwaway.expect]
+exit_code = 0
+stdout_json = { "/operation" = "query", "/rows/0/0" = "4", "/row_count" = 1, "/meta/engine/name" = "postgresql" }
+no_files_written = true

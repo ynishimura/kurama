@@ -1,0 +1,58 @@
+# What a person has to do comes out before an agent calls anything: an
+# authorization_code source never logged in, or whose token expired with no
+# refresh token, needs `kurama login <source>`; an MFA profile with no
+# session and no MFA provider needs `kurama login <profile>`; an [api.*] that
+# goes through either says so with the same command; one naming an AWS
+# profile that does not exist is misconfigured.
+id = "agent_ready_names_the_login_a_person_has_to_run"
+feature = "agent-guide"
+
+[combination]
+command = "agent-ready"
+grant = "authorization_code"
+token = "expired"
+
+[input]
+args = ["agent", "ready", "--json"]
+then_run = [["agent", "ready"]]
+stored_tokens = [{ source = "old", access_token = "{stored_access_token}", expires_in = -60, refreshable = false }]
+config = """
+[auth.github]
+kind = "oauth"
+grant_type = "authorization_code"
+auth_url = "{server}/oauth/authorize"
+token_url = "{server}/oauth/token"
+client_id = "gh-client"
+
+[auth.old]
+kind = "oauth"
+grant_type = "device_code"
+device_auth_url = "{server}/oauth/device"
+token_url = "{server}/oauth/token"
+client_id = "old-client"
+
+[api.github]
+base_url = "{server}/api"
+auth = "github"
+
+[api.gone]
+base_url = "{server}/api"
+aws_profile = "no-such-profile"
+"""
+
+[fakes]
+token_store = true
+
+[expect]
+exit_code = 0
+sts_actions = []
+op_calls = 0
+token_grants = []
+oauth_paths = []
+api_calls = { count = 0 }
+stdout = { line_containing = [["auth", "github", "needs_human", "kurama login github"], ["aws", "ops-mfa", "needs_human", "kurama login ops-mfa"]] }
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stdout_json = { "/ready" = false, "/sources/2/name" = "ops-mfa", "/sources/2/state" = "needs_human", "/sources/2/next_actions" = ["kurama login ops-mfa"], "/sources/3/name" = "github", "/sources/3/state" = "needs_human", "/sources/3/reason" = { contains = "no token is stored" }, "/sources/3/next_actions" = ["kurama login github"], "/sources/4/name" = "old", "/sources/4/state" = "needs_human", "/sources/4/reason" = { contains = "no refresh token" }, "/sources/4/next_actions" = ["kurama login old"], "/sources/5/kind" = "api", "/sources/5/name" = "github", "/sources/5/state" = "needs_human", "/sources/5/next_actions" = ["kurama login github"], "/sources/6/name" = "gone", "/sources/6/state" = "misconfigured", "/sources/6/next_actions" = ["kurama config check"] }

@@ -1,0 +1,55 @@
+# A read with a bound parameter: every cell is text and keeps its digits,
+# whatever the engine stores. The SQLite fixture holds an integer nothing
+# smaller than 64 bits can carry; the MySQL 8.4 that `cargo xtask db-up`
+# starts holds a decimal(12,2), which comes back with its two decimals.
+id = "db_local_mysql_binds_a_parameter_and_keeps_every_digit"
+feature = "database"
+
+[combination]
+command = "db"
+engine = "sqlite"
+
+[input]
+args = ["db", "app", "--query", "SELECT id, amount FROM orders WHERE status = ? ORDER BY id", "--param", "open", "--json"]
+config = """
+[db.app]
+engine = "sqlite"
+path = "{repo}/tests/fixtures/db/app.sqlite3"
+"""
+
+[fakes]
+op = "enabled"
+
+[expect]
+exit_code = 0
+sts_actions = []
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true
+stdout_json = { "/operation" = "query", "/rows" = [["1", "42"], ["4", "9223372036854775807"]], "/columns/1/encoding" = "text", "/row_count" = 2, "/truncated" = false }
+
+[local]
+args = ["db", "mysql", "--query", "SELECT id, amount FROM orders WHERE status = ? ORDER BY id", "--param", "open", "--json"]
+config = """
+[db.mysql]
+engine = "mysql"
+host = "127.0.0.1"
+port = {mysql_port}
+database = "app"
+username = "kurama"
+password = "op://Agent/db/password"
+tls = "verify-ca"
+ca_file = "{db_tls_dir}/mysql-ca.pem"
+"""
+
+[local.combination]
+engine = "mysql"
+tls = "verify-ca"
+
+[local.expect]
+exit_code = 0
+sts_actions = []
+op_calls = 1
+api_calls = { count = 0 }
+no_files_written = true
+stdout_json = { "/operation" = "query", "/rows" = [["1", "42.00"], ["4", "9999999999.99"]], "/columns/1/encoding" = "text", "/row_count" = 2, "/truncated" = false }

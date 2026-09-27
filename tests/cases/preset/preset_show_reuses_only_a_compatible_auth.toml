@@ -1,0 +1,63 @@
+# An [auth.google] with the preset's contract is reused: the TOML adds only
+# the API, and the scope the auth lacks is a warning that says how to add it
+# and log in again. An [auth.github] of another kind, and an [auth.google]
+# holding another client_id than the one given, are refused, and `--as` is
+# not offered as the fix.
+id = "preset_show_reuses_only_a_compatible_auth"
+feature = "preset"
+
+[combination]
+command = "preset-show"
+auth = "reuse"
+
+[input]
+args = ["preset", "show", "google-docs"]
+then_run = [
+  ["preset", "show", "github", "--set", "secret=op://Agent/kurama-github/credential"],
+  ["preset", "show", "google-drive", "--set", "client_id=another-client"],
+]
+config = """
+[auth.google]
+kind = "oauth"
+grant_type = "authorization_code"
+issuer = "https://accounts.google.com"
+client_id = "id-1"
+client_secret = "op://Agent/kurama-google/client_secret"
+scopes = ["https://www.googleapis.com/auth/spreadsheets.readonly"]
+redirect_port = 8080
+
+[api.google-sheets]
+base_url = "https://sheets.googleapis.com/v4"
+auth = "google"
+
+[auth.github]
+kind = "oauth"
+grant_type = "device_code"
+token_url = "https://github.com/login/oauth/access_token"
+device_auth_url = "https://github.com/login/device/code"
+client_id = "Iv1.x"
+"""
+
+[expect]
+error = { code = "ARGUMENT_INVALID", exit = 2 }
+stderr_contains = ["[auth.google] in ", "cannot be reused by preset google-drive: the client_id given with --set is not the one it holds"]
+stderr_excludes = ["--as"]
+stdout = "empty"
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stdout = { starts_with = "# kurama preset: google-docs (kurama ", contains = ["[api.google-docs]\ndescription = \"Google Docs API v1\"\nbase_url = \"https://docs.googleapis.com\"\nauth = \"google\"\ndiscovery = \"https://docs.googleapis.com/$discovery/rest?version=v1\"\n"] }
+stdout_excludes = ["[auth.google]"]
+stderr_contains = ["# [auth.google] is already in the file; the API reuses it", "Add https://www.googleapis.com/auth/documents.readonly to the scopes of [auth.google]:\n#        kurama config set auth.google.scopes '[\"https://www.googleapis.com/auth/spreadsheets.readonly\",\"https://www.googleapis.com/auth/documents.readonly\"]'\n", "# warning: [auth.google] lacks the scope https://www.googleapis.com/auth/documents.readonly: add it with `kurama config set auth.google.scopes '[\"https://www.googleapis.com/auth/spreadsheets.readonly\",\"https://www.googleapis.com/auth/documents.readonly\"]'`, then run `kurama login --force google`", "then run `kurama login --force google`"]
+stderr_excludes = ["op item create"]
+
+[[expect.runs]]
+run = 1
+error = { code = "ARGUMENT_INVALID", exit = 2 }
+stderr_contains = ["cannot be reused by preset github: it is kind = \"oauth\", the preset token"]
+stderr_excludes = ["--as"]
+stdout = "empty"

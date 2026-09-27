@@ -1,0 +1,57 @@
+#!/bin/sh
+# Fake `session-manager-plugin`: the real one speaks the Session Manager
+# websocket protocol; this one only does the parts kurama depends on, so a
+# scenario can see them.
+#
+# `--version` prints KURAMA_FAKE_PLUGIN_VERSION (default: a release that reads
+# the session response from the environment).
+#
+# Otherwise it is invoked as
+#   session-manager-plugin <env var name> <region> StartSession <profile> <request> <endpoint>
+# and KURAMA_FAKE_PLUGIN_MODE decides what it does:
+#   open (default) listen on a free port and print the line kurama waits for
+#   silent          stay alive without ever opening a port
+#   exit            end immediately, as a plugin that cannot reach AWS does
+#
+# Every invocation is appended to $KURAMA_FAKE_PLUGIN_LOG, with the argument
+# list only: the session response is in the environment and must stay there.
+set -eu
+
+if [ "${1:-}" = "--version" ]; then
+  echo "${KURAMA_FAKE_PLUGIN_VERSION:-1.2.835.0}"
+  exit 0
+fi
+
+if [ -n "${KURAMA_FAKE_PLUGIN_LOG:-}" ]; then
+  printf '%s\n' "$*" >> "$KURAMA_FAKE_PLUGIN_LOG"
+  # Record whether the response really arrived out of band.
+  if [ -n "${AWS_SSM_START_SESSION_RESPONSE:-}" ]; then
+    printf 'response-in-environment\n' >> "$KURAMA_FAKE_PLUGIN_LOG"
+  fi
+  # The process kurama started, so a test can see that it ended.
+  printf 'pid %s\n' "$$" >> "$KURAMA_FAKE_PLUGIN_LOG"
+fi
+
+case "${KURAMA_FAKE_PLUGIN_MODE:-open}" in
+  exit)
+    # A plugin that cannot reach AWS says so on stderr and ends. kurama has to
+    # repeat that, because the hint for this failure points at a bastion its
+    # own check has already found online.
+    echo "ERROR: Reached maximum retries for the start session API" >&2
+    exit 1
+    ;;
+  silent)
+    # Alive, but never ready: kurama must give up on its own deadline.
+    while true; do sleep 1; done
+    ;;
+  *)
+    # The real plugin makes its mux socket in $TMPDIR and removes it only when
+    # it ends on its own; a killed plugin leaves it. A file stands in for it.
+    : > "${TMPDIR:-/tmp}/$$_session_manager_plugin_mux.sock"
+    port="${KURAMA_FAKE_PLUGIN_PORT:-0}"
+    echo "Starting session with SessionId: fake-session"
+    echo "Port $port opened for sessionId fake-session"
+    echo "Waiting for connections..."
+    while true; do sleep 1; done
+    ;;
+esac

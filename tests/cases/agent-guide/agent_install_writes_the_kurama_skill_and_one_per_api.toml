@@ -1,0 +1,49 @@
+# `agent install` writes kurama's Skill and one per [api.*] with a
+# description under ~/.claude/skills: an older kurama/SKILL.md is replaced,
+# a directory kurama did not write is left alone, an API without a
+# description is skipped with the reason, and so is one whose URL
+# description is not cached when --offline fetches nothing. --dry-run
+# reports what it would write and writes nothing, --dir or not: it reads
+# descriptions from the cache only, as --offline does.
+id = "agent_install_writes_the_kurama_skill_and_one_per_api"
+feature = "agent-guide"
+
+[combination]
+command = "agent-install"
+output = "json"
+
+[input]
+args = ["agent", "install", "--offline", "--json"]
+then_run = [["agent", "install", "--dry-run", "--dir", "{home}/elsewhere", "--json"]]
+home_files = { ".claude/skills/kurama/SKILL.md" = "an older kurama skill\n", ".claude/skills/mine/SKILL.md" = "a person's own skill\n" }
+config = """
+[api.pets]
+base_url = "{server}/api"
+openapi = "{fixtures}/petstore.json"
+
+[api.plain]
+base_url = "{server}/api"
+
+[api.linear]
+base_url = "{server}/api"
+graphql = "/graphql"
+graphql_schema = "{fixtures}/graphql-linear.json"
+
+[api.remote]
+base_url = "{server}"
+openapi = "{server}/spec/petstore.json"
+"""
+
+[expect]
+exit_code = 0
+stdout_json = { "/kind" = "agent_install", "/dry_run" = true, "/dir" = { contains = "/elsewhere" }, "/skills" = { length = 5 }, "/skills/0/status" = "written", "/skills/0/path" = { contains = "/elsewhere/kurama/SKILL.md" }, "/skills/1/status" = "written", "/skills/2/status" = "written", "/skills/3/status" = "skipped", "/skills/4/status" = "skipped" }
+files_written = ["home/.claude/skills/kurama/SKILL.md", "home/.claude/skills/kurama-api-linear/SKILL.md", "home/.claude/skills/kurama-api-pets/SKILL.md"]
+spec_calls = { count = 0 }
+op_calls = 0
+token_grants = []
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stdout_json = { "/kind" = "agent_install", "/dry_run" = false, "/dir" = { contains = "/.claude/skills" }, "/skills" = { length = 5 }, "/skills/0/skill" = "kurama", "/skills/0/api" = "<null>", "/skills/0/status" = "written", "/skills/1/skill" = "kurama-api-linear", "/skills/1/api" = "linear", "/skills/1/status" = "written", "/skills/2/skill" = "kurama-api-pets", "/skills/2/status" = "written", "/skills/2/path" = { contains = "/.claude/skills/kurama-api-pets/SKILL.md" }, "/skills/3/skill" = "kurama-api-plain", "/skills/3/status" = "skipped", "/skills/3/path" = "<null>", "/skills/3/reason" = "no openapi, discovery or graphql description", "/skills/4/skill" = "kurama-api-remote", "/skills/4/status" = "skipped", "/skills/4/reason" = { contains = "no copy is cached and nothing is fetched offline" } }
+spec_calls = { count = 0 }

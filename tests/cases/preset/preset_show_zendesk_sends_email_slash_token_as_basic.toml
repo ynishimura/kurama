@@ -1,0 +1,25 @@
+# Zendesk takes HTTP Basic with `<email>/token` as the username and an API
+# token as the password, on the account's subdomain. Nothing is resolved or
+# contacted.
+id = "preset_show_zendesk_sends_email_slash_token_as_basic"
+feature = "preset"
+
+[combination]
+command = "preset-show"
+output = "text"
+
+[input]
+args = ["preset", "show", "zendesk", "--set", "secret=op://Agent/kurama-zendesk/credential", "--set", "subdomain=example", "--set", "email=me@example.com"]
+
+[fakes]
+op = "enabled"
+
+[expect]
+exit_code = 0
+stdout = { starts_with = "# kurama preset: zendesk (kurama ", contains = ["[auth.zendesk]\nkind = \"token\"\ntoken = \"op://Agent/kurama-zendesk/credential\"\nusername = \"me@example.com/token\"\nenv_var = \"ZENDESK_API_TOKEN\"\n", "[api.zendesk]\ndescription = \"Zendesk Support API\"\nbase_url = \"https://example.zendesk.com\"\nauth = \"zendesk\"\nopenapi = \"https://developer.zendesk.com/zendesk/oas.yaml\"\n"] }
+stderr_contains = ["# Setup for zendesk", "https://support.zendesk.com/hc/en-us/articles/4408889192858", "--title kurama-zendesk", "kurama api zendesk /api/v2/users/me"]
+sts_actions = []
+op_calls = 0
+secret_reads = []
+api_calls = { count = 0 }
+no_files_written = true

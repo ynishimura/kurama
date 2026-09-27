@@ -1,0 +1,69 @@
+# The token is fetched the way `token` fetches it: one grant, then the
+# stored token; the fingerprint asks for nothing more. stdout is the SHA-256 of
+# the granted token on one line, and the token is nowhere; --json carries the
+# fingerprint alone. A failed resolution ends with the same error line and exit
+# code with or without --fingerprint.
+id = "oauth_token_fingerprint_prints_no_value"
+feature = "oauth"
+
+[combination]
+command = "token"
+source = "oauth"
+grant = "client_credentials"
+secret = "op"
+output = "fingerprint"
+
+[input]
+args = ["token", "svc", "--fingerprint"]
+then_run = [["token", "svc", "--fingerprint", "--json"], ["token", "closed"], ["token", "closed", "--fingerprint"]]
+config = """
+[auth.svc]
+kind = "oauth"
+grant_type = "client_credentials"
+token_url = "{server}/oauth/token"
+client_id = "svc-client"
+client_secret = "op://Agent/Service/client_secret"
+scopes = ["read"]
+
+[api.svc]
+description = "Service API"
+base_url = "{server}/api"
+
+[auth.closed]
+kind = "oauth"
+grant_type = "client_credentials"
+token_url = "http://127.0.0.1:1/oauth/token"
+client_id = "id"
+"""
+
+[fakes]
+op = "enabled"
+token_store = true
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+sts_actions = []
+token_grants = ["client_credentials"]
+stdout = { equals = "{sha256:{granted_access_token}}\n" }
+stderr_excludes = ["{granted_access_token}"]
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+token_grants = []
+stdout_json = { "/fingerprint" = "{sha256:{granted_access_token}}", "/access_token" = "<null>" }
+stdout_excludes = ["{granted_access_token}"]
+stdout = { equals = "{\"fingerprint\":\"{sha256:{granted_access_token}}\"}\n" }
+
+[[expect.runs]]
+run = 2
+error = { code = "OAUTH_FAILED", exit = 1 }
+# The whole line but the errno, which differs between macOS and Linux.
+stderr_contains = ["error[OAUTH_FAILED]: Failed to get a token for 'closed': token request failed: could not connect: error sending request for url (http://127.0.0.1:1/oauth/token): client error (Connect): tcp connect error: Connection refused (os error "]
+
+[[expect.runs]]
+run = 3
+error = { code = "OAUTH_FAILED", exit = 1 }
+# The whole line but the errno, which differs between macOS and Linux.
+stderr_contains = ["error[OAUTH_FAILED]: Failed to get a token for 'closed': token request failed: could not connect: error sending request for url (http://127.0.0.1:1/oauth/token): client error (Connect): tcp connect error: Connection refused (os error "]

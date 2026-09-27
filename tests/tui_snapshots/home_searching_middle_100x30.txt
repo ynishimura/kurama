@@ -1,0 +1,30 @@
+ 鞍馬 kurama  AWS credential switcher                             MFA 11h 59m   readonly   console
+  1 AWS   2 Auth   3 API   4 DB   5 Data   6 S3
+┏ Profiles 2/4  /mf_a ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓┏ Details ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃     KIND PROFILE     SESSION                       ┃┃ Profile ops-mfa                            ┃
+┃ ▸ * aws  ops-mfa     valid (11h 59m)               ┃┃ Kind    aws                                ┃
+┃     aws  sandbox-mfa none                          ┃┃ Role    arn:aws:iam::123456789012:role/ops ┃
+┃                                                    ┃┃         -mfa                               ┃
+┃                                                    ┃┃ Region  ap-northeast-1                     ┃
+┃                                                    ┃┃ MFA     arn:aws:iam::123456789012:mfa/agen ┃
+┃                                                    ┃┃         t                                  ┃
+┃                                                    ┃┃ Session valid (11h 59m)                    ┃
+┃                                                    ┃┃ Shell   this shell holds its credentials   ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃ Next    Enter assumes the role             ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+ type filter  Enter keep  Esc clear  ↑↓ move

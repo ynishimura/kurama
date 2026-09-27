@@ -1,0 +1,199 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >-
+  A throwaway RDS MySQL and RDS PostgreSQL with IAM database authentication,
+  and an SSM bastion beside them, so `kurama db` can be shown opening both with
+  a token it signed: directly, and through a Session Manager tunnel. One stack
+  is the whole of it, and deleting the stack removes everything.
+
+  The databases are reachable from one address only, the one `rds-iam-up.sh`
+  passes in, and from the bastion. Their master passwords are made and kept by
+  RDS in Secrets Manager; the script reads them once, to create the users that
+  authenticate with IAM.
+
+Parameters:
+  ClientCidr:
+    Type: String
+    Description: The one address allowed to reach the databases directly, as a /32.
+  Image:
+    Type: AWS::EC2::Image::Id
+    Description: Amazon Linux 2023 on Arm, which ships the SSM agent.
+
+Resources:
+  Vpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.98.0.0/24
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags: [{ Key: Name, Value: !Ref "AWS::StackName" }]
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags: [{ Key: Name, Value: !Ref "AWS::StackName" }]
+
+  Attachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref Vpc
+      InternetGatewayId: !Ref InternetGateway
+
+  # Two subnets, because a DB subnet group needs two availability zones even
+  # for one instance.
+  SubnetA:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      CidrBlock: 10.98.0.0/25
+      AvailabilityZone: !Select [0, !GetAZs ""]
+      MapPublicIpOnLaunch: true
+      Tags: [{ Key: Name, Value: !Ref "AWS::StackName" }]
+
+  SubnetB:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      CidrBlock: 10.98.0.128/25
+      AvailabilityZone: !Select [1, !GetAZs ""]
+      Tags: [{ Key: Name, Value: !Ref "AWS::StackName" }]
+
+  RouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref Vpc
+      Tags: [{ Key: Name, Value: !Ref "AWS::StackName" }]
+
+  DefaultRoute:
+    Type: AWS::EC2::Route
+    DependsOn: Attachment
+    Properties:
+      RouteTableId: !Ref RouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  SubnetARoute:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref SubnetA
+      RouteTableId: !Ref RouteTable
+
+  SubnetBRoute:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref SubnetB
+      RouteTableId: !Ref RouteTable
+
+  # No ingress: a Session Manager session is made from the inside out.
+  BastionSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Session Manager is outbound only; nothing may connect in
+      VpcId: !Ref Vpc
+      Tags: [{ Key: Name, Value: !Ref "AWS::StackName" }]
+
+  DatabaseSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: The databases take the bastion and one client address
+      VpcId: !Ref Vpc
+      SecurityGroupIngress:
+        - { IpProtocol: tcp, FromPort: 3306, ToPort: 3306, SourceSecurityGroupId: !Ref BastionSecurityGroup }
+        - { IpProtocol: tcp, FromPort: 5432, ToPort: 5432, SourceSecurityGroupId: !Ref BastionSecurityGroup }
+        - { IpProtocol: tcp, FromPort: 3306, ToPort: 3306, CidrIp: !Ref ClientCidr }
+        - { IpProtocol: tcp, FromPort: 5432, ToPort: 5432, CidrIp: !Ref ClientCidr }
+      Tags: [{ Key: Name, Value: !Ref "AWS::StackName" }]
+
+  DatabaseSubnets:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Both subnets of the throwaway network
+      SubnetIds: [!Ref SubnetA, !Ref SubnetB]
+
+  # `DeletionPolicy: Delete` on both: the default for a DB instance is a final
+  # snapshot, which would outlive the stack this promises to remove whole.
+  Mysql:
+    Type: AWS::RDS::DBInstance
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    DependsOn: DefaultRoute
+    Properties:
+      Engine: mysql
+      EngineVersion: "8.4"
+      DBInstanceClass: db.t4g.micro
+      AllocatedStorage: "20"
+      StorageEncrypted: true
+      DBName: app
+      MasterUsername: kurama_admin
+      ManageMasterUserPassword: true
+      EnableIAMDatabaseAuthentication: true
+      PubliclyAccessible: true
+      BackupRetentionPeriod: 0
+      DeletionProtection: false
+      DBSubnetGroupName: !Ref DatabaseSubnets
+      VPCSecurityGroups: [!Ref DatabaseSecurityGroup]
+      Tags: [{ Key: Name, Value: !Ref "AWS::StackName" }]
+
+  Postgres:
+    Type: AWS::RDS::DBInstance
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    DependsOn: DefaultRoute
+    Properties:
+      Engine: postgres
+      EngineVersion: "17"
+      DBInstanceClass: db.t4g.micro
+      AllocatedStorage: "20"
+      StorageEncrypted: true
+      DBName: app
+      MasterUsername: kurama_admin
+      ManageMasterUserPassword: true
+      EnableIAMDatabaseAuthentication: true
+      PubliclyAccessible: true
+      BackupRetentionPeriod: 0
+      DeletionProtection: false
+      DBSubnetGroupName: !Ref DatabaseSubnets
+      VPCSecurityGroups: [!Ref DatabaseSecurityGroup]
+      Tags: [{ Key: Name, Value: !Ref "AWS::StackName" }]
+
+  InstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: { Service: ec2.amazonaws.com }
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      Tags: [{ Key: Name, Value: !Ref "AWS::StackName" }]
+
+  InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles: [!Ref InstanceRole]
+
+  Bastion:
+    Type: AWS::EC2::Instance
+    DependsOn: DefaultRoute
+    Properties:
+      ImageId: !Ref Image
+      InstanceType: t4g.nano
+      IamInstanceProfile: !Ref InstanceProfile
+      SubnetId: !Ref SubnetA
+      SecurityGroupIds: [!Ref BastionSecurityGroup]
+      MetadataOptions:
+        HttpTokens: required
+      Tags: [{ Key: Name, Value: !Ref "AWS::StackName" }]
+
+Outputs:
+  InstanceId:
+    Value: !Ref Bastion
+  MysqlHost:
+    Value: !GetAtt Mysql.Endpoint.Address
+  MysqlSecret:
+    Value: !GetAtt Mysql.MasterUserSecret.SecretArn
+  PostgresHost:
+    Value: !GetAtt Postgres.Endpoint.Address
+  PostgresSecret:
+    Value: !GetAtt Postgres.MasterUserSecret.SecretArn

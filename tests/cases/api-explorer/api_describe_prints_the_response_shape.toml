@@ -1,0 +1,41 @@
+# --describe prints the response status, content type and shape before any
+# request, as text and as JSON; a default-only response is described too.
+id = "api_describe_prints_the_response_shape"
+feature = "api-explorer"
+
+[combination]
+command = "api"
+openapi = "file"
+output = "describe"
+description = "responses"
+
+[input]
+args = ["api", "pets", "--describe", "pets/list"]
+then_run = [
+  ["api", "pets", "--describe", "pets/list", "--json"],
+  ["api", "pets", "--describe", "fallback", "--json"],
+]
+config = """
+[api.pets]
+base_url = "{server}/api"
+openapi = "{fixtures}/responses.json"
+"""
+
+[expect]
+exit_code = 0
+api_calls = { count = 0 }
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stdout = { contains = ["Response  200  application/json", "\"name\": \"string\"", "\"content\": ["] }
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+stdout_json = { "/response/status" = "200", "/response/content_type" = "application/json", "/response/shape" = { content = [{ id = "integer", name = "string", parent = {} }], page = "integer" } }
+
+[[expect.runs]]
+run = 2
+stdout_json = { "/response/status" = "default", "/response/shape" = "string" }

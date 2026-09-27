@@ -1,0 +1,107 @@
+#!/usr/bin/env bash
+# Fake 1Password CLI for tests/scenarios/.
+#
+# kurama calls `op --version`, `op item get <item> --otp [--vault v]`,
+# `op item get <item> --format json [--vault v]` (an AWS access key item, or
+# the item an `op://<vault>/<item>/<field>` reference names) and
+# `op read <op://ref>`.
+# Every invocation is appended to $KURAMA_FAKE_OP_LOG so a scenario can assert
+# how often 1Password was consulted. Values are synthetic and only ever reach
+# the fake STS and OAuth servers.
+#
+# KURAMA_FAKE_OP_MODE=not-signed-in makes every `item get` and `read` fail the
+# way the real CLI does before `op signin`.
+# KURAMA_FAKE_OP_MODE=hang makes them block the way the real CLI does while it
+# waits for a person to answer the biometric prompt. Both modes cover every
+# call except `--version`.
+# KURAMA_FAKE_OP_MODE=otp-fails makes only `item get --otp` fail, the way the
+# real CLI does for an item whose one-time password it cannot read, so kurama
+# falls back to the item's JSON. That JSON carries a different code (654321)
+# from `--otp` (123456), so a scenario can tell which call the code came from,
+# in the shape the real CLI prints a one-time password field: `type = "OTP"`,
+# no label, the `otpauth://` URI as its value and the current code in `totp`.
+set -euo pipefail
+
+if [ -n "${KURAMA_FAKE_OP_LOG:-}" ]; then
+  printf '%s\n' "$*" >> "$KURAMA_FAKE_OP_LOG"
+fi
+
+not_signed_in() {
+  echo "[ERROR] 2026/09/16 12:00:00 You are not currently signed in. Please run 'op signin --help' for instructions" >&2
+  exit 1
+}
+
+# The real CLI blocks here until someone touches the sensor. `exec` so the
+# caller's deadline kills the sleep itself and the output pipe closes with it.
+# Well past any [onepassword] timeout a scenario sets, but inside the harness
+# run timeout, so a broken deadline fails the scenario instead of stalling it.
+wait_for_a_person() {
+  exec sleep 30
+}
+
+# The value of a secret field. Name the token, so a scenario can tell which
+# source it came from.
+secret_value() {
+  if [ -n "${OP_SERVICE_ACCOUNT_TOKEN:-}" ]; then
+    echo "fake-client-secret-for-$OP_SERVICE_ACCOUNT_TOKEN"
+  else
+    echo "fake-client-secret"
+  fi
+}
+
+# Every authenticated call answers the mode; only `--version` is exempt.
+case "$*" in
+  --version)
+    # `hang-version` targets the availability probe, which is the one call
+    # `hang` must leave alone or every scenario would stall in it.
+    if [ "${KURAMA_FAKE_OP_MODE:-}" = "hang-version" ]; then
+      wait_for_a_person
+    fi
+    ;;
+  *)
+    case "${KURAMA_FAKE_OP_MODE:-}" in
+      not-signed-in) not_signed_in ;;
+      hang) wait_for_a_person ;;
+    esac
+    ;;
+esac
+
+case "$*" in
+  --version)
+    echo "2.30.0-fake"
+    ;;
+  "read op://"*)
+    secret_value
+    ;;
+  "item get "*)
+    case "$*" in
+      *" --otp"*)
+        if [ "${KURAMA_FAKE_OP_MODE:-}" = "otp-fails" ]; then
+          echo "[ERROR] 2026/09/16 12:00:00 \"one-time password\" isn't a field in the \"$3\" item" >&2
+          exit 1
+        fi
+        echo "123456"
+        ;;
+      *" --format json"*)
+        # The fields an AWS access key item has, and the fields a secret
+        # reference names: `username` is built from the item, the others
+        # hold the value `op read` prints.
+        item="$3"
+        secret="$(secret_value)"
+        printf '{"fields":[{"label":"access_key_id","value":"AKIAOPSOURCEKEY"},{"label":"secret_access_key","value":"op-source-secret"},{"id":"TOTP_fake","section":{"id":"add more"},"type":"OTP","value":"otpauth://totp/fake?secret=FAKEOTPSECRET234&issuer=AWS","reference":"op://Agent/%s/TOTP_fake","totp":"654321"},{"id":"username","label":"username","value":"username-of-%s"}' "$item" "$item"
+        for field in password credential client_secret secret token api-key; do
+          printf ',{"id":"%s","label":"%s","value":"%s"}' "$field" "$field" "$secret"
+        done
+        printf ']}\n'
+        ;;
+      *)
+        echo "fake op: unsupported arguments: $*" >&2
+        exit 1
+        ;;
+    esac
+    ;;
+  *)
+    echo "fake op: unsupported arguments: $*" >&2
+    exit 1
+    ;;
+esac

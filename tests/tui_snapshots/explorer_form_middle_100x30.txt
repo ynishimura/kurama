@@ -1,0 +1,30 @@
+ 鞍馬 kurama api  pets  Petstore 1.2.0                                              bearer   sigv4
+┏ pets/get  GET /pets/{petId} ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃   petId*   path  string    p-1                                                                   ┃
+┃ ▸ X-Trace  header  string  ab日▏本語cd                                                           ┃
+┃                                                                                                  ┃
+┃                                                                                                  ┃
+┃                                                                                                  ┃
+┃                                                                                                  ┃
+┃                                                                                                  ┃
+┃                                                                                                  ┃
+┃                                                                                                  ┃
+┃                                                                                                  ┃
+┃                                                                                                  ┃
+┃                                                                                                  ┃
+┃                                                                                                  ┃
+┃                                                                                                  ┃
+┃                                                                                                  ┃
+┃                                                                                                  ┃
+┃                                                                                                  ┃
+┃                                                                                                  ┃
+┃                                                                                                  ┃
+┃                                                                                                  ┃
+┃                                                                                                  ┃
+┃                                                                                                  ┃
+┃                                                                                                  ┃
+┃                                                                                                  ┃
+┃                                                                                                  ┃
+┃                                                                                                  ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+ Tab next  type value  Enter send  ^Y copy  Esc back  F1 help

@@ -1,0 +1,50 @@
+ 鞍馬 kurama s3  assets  dev  ap-northeast-1  s3://example-assets/reports/                                                                           READ ONLY
+┏ Content search "request-id-123" (2) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓┏ Details ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ ▸ a.log:2  GET /x request-id-123 200                                                         ┃┃ Key         reports/a.log                                    ┃
+┃   b.log.gz:2  POST /z request-id-123 500\u{1b}[31m                                           ┃┃ Line        2                                                ┃
+┃                                                                                              ┃┃ Excerpt     GET /x request-id-123 200                        ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃ Next        Enter previews the object                        ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃ 2 lines · 2/5 objects read · stopped at max_matches; more may exist                          ┃┃                                                              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+ ↑↓ move  Enter open  ← up  / filter  s key search  g content search  d as data  q quit  ? help

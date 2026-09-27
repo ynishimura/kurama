@@ -1,0 +1,76 @@
+# --skill is written from the --schema contract of a local description and
+# only names how the profile authenticates: a token source whose credential
+# is a 1Password reference, an OAuth source with no stored token and an
+# aws_profile API all print their Skill without an op call, a grant, a
+# browser, an STS call or a request to the API, and no reference reaches
+# stdout.
+id = "api_skill_reuses_the_schema_and_calls_nothing"
+feature = "api-explorer"
+
+[combination]
+command = "api"
+openapi = "file"
+auth = "token"
+output = "skill"
+
+[input]
+args = ["api", "voices", "--skill"]
+then_run = [
+  ["api", "gh", "--skill"],
+  ["api", "signed", "--skill"],
+]
+config = """
+[auth.voices]
+kind = "token"
+token = "op://Agent/voices/credential"
+header = "xi-api-key"
+format = "{token}"
+
+[auth.github]
+kind = "oauth"
+grant_type = "authorization_code"
+auth_url = "{server}/oauth/authorize"
+token_url = "{server}/oauth/token"
+client_id = "gh-client"
+
+[api.voices]
+base_url = "{server}/api"
+auth = "voices"
+openapi = "{fixtures}/petstore.json"
+
+[api.gh]
+base_url = "{server}/api"
+auth = "github"
+openapi = "{fixtures}/petstore.json"
+
+[api.signed]
+base_url = "{server}/api"
+aws_profile = "dev"
+service = "execute-api"
+openapi = "{fixtures}/petstore.json"
+"""
+
+[expect]
+exit_code = 0
+stderr_empty = true
+api_calls = { count = 0 }
+spec_calls = { count = 0 }
+op_calls = 0
+token_grants = []
+oauth_paths = []
+sts_actions = []
+open_calls = []
+no_files_written = true
+stdout = { starts_with = "---\nname: kurama-api-signed\n", contains = ["- Authentication: a SigV4 signature with the role credentials of the AWS profile `dev`, service `execute-api`;", "### `pets/list`", "### `pets/create`", "### `pets/get`", "### `DELETE /pets/{petId}`", "### `owners/list-pets`"] }
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stdout = { contains = ["- Authentication: the credential of `[auth.voices]` in the `xi-api-key` header", "### `pets/list`", "### `owners/list-pets`"] }
+stdout_excludes = ["op://", "Agent/voices"]
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+stdout = { contains = ["- Authentication: the bearer token of the OAuth source `[auth.github]`", "exits 3 with `` hint: run `kurama login github` ``"] }
+stdout_excludes = ["gh-client"]

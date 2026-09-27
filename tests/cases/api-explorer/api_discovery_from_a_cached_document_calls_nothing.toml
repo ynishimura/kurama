@@ -1,0 +1,68 @@
+# A Discovery Document from a URL goes through the OpenAPI cache: the first
+# --ops fetches it without a credential (Google serves it publicly), and
+# within the revalidation interval --ops, --describe and an operation
+# target's dry run read the cached copy and send nothing to the description
+# server; --refresh-spec fetches it again.
+id = "api_discovery_from_a_cached_document_calls_nothing"
+feature = "api-explorer"
+
+[combination]
+command = "api"
+spec = "discovery"
+openapi = "url"
+cache = "fresh"
+
+[input]
+args = ["api", "sheets", "--ops"]
+then_run = [
+  ["api", "sheets", "--ops", "-v"],
+  ["api", "sheets", "--describe", "sheets.spreadsheets.get"],
+  ["api", "sheets", "sheets.spreadsheets.get", "-P", "spreadsheetId=abc", "--dry-run"],
+  ["api", "sheets", "--refresh-spec"],
+]
+config = """
+[auth.sheets]
+kind = "oauth"
+grant_type = "authorization_code"
+auth_url = "{server}/oauth/authorize"
+token_url = "{server}/oauth/token"
+client_id = "sheets-client"
+
+[api.sheets]
+base_url = "{server}/api"
+discovery = "{server}/spec/discovery-sheets-v4.json"
+"""
+
+[expect]
+exit_code = 0
+spec_calls = { count = 1, status = 200 }
+api_calls = { count = 0 }
+token_grants = []
+oauth_paths = []
+op_calls = 0
+open_calls = []
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+spec_calls = { count = 1, status = 200 }
+stdout = { contains = ["sheets.spreadsheets.values.get"] }
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+spec_calls = { count = 0 }
+stderr_contains = ["revalidation skipped", "discovery-sheets-v4.json"]
+
+[[expect.runs]]
+run = 2
+exit_code = 0
+spec_calls = { count = 0 }
+stdout = { contains = ["GET /v4/spreadsheets/{spreadsheetId}"] }
+
+[[expect.runs]]
+run = 3
+exit_code = 0
+spec_calls = { count = 0 }
+api_calls = { count = 0 }
+stderr_contains = ["/api/v4/spreadsheets/abc"]

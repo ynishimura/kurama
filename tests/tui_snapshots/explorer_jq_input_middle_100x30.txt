@@ -1,0 +1,30 @@
+ 鞍馬 kurama api  pets  Petstore 1.2.0                                              bearer   sigv4
+┏ pets/get  HTTP 200 OK  42 ms ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ {                                                                                                ┃
+┃   "id": "p-1",                                                                                   ┃
+┃   "name": "Rex",                                                                                 ┃
+┃   "tags": [                                                                                      ┃
+┃     "dog",                                                                                       ┃
+┃     "friendly"                                                                                   ┃
+┃   ],                                                                                             ┃
+┃   "owner": {                                                                                     ┃
+┃     "login": "octo┏ jq filter ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓                   ┃
+┃   }               ┃                                                          ┃                   ┃
+┃ }                 ┃  Filter  .t▏ags[]                                        ┃                   ┃
+┃                   ┃                                                          ┃                   ┃
+┃                   ┃  preview: calculating…                                   ┃                   ┃
+┃                   ┃                                                          ┃                   ┃
+┃                   ┃  Empty filter restores the response body.                ┃                   ┃
+┃                   ┃                                                          ┃                   ┃
+┃                   ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛                   ┃
+┃                                                                                                  ┃
+┃                                                                                                  ┃
+┃                                                                                                  ┃
+┃                                                                                                  ┃
+┃                                                                                                  ┃
+┃                                                                                                  ┃
+┃                                                                                                  ┃
+┃                                                                                                  ┃
+┃                                                                                                  ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+ Tab complete  Enter apply  F1 examples  Esc cancel  ↑↓ history

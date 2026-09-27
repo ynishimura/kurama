@@ -1,0 +1,27 @@
+# With --pages, --shape is applied to each page as it is printed, while the
+# next page is still read from the body the server sent: a cursor at
+# meta.next is followed although the printed page only says "string".
+id = "api_shape_applies_to_each_page_and_paging_reads_the_body"
+feature = "api-client"
+
+[combination]
+command = "api"
+source = "none"
+pages = "cursor"
+fit = "shape"
+
+[input]
+args = ["api", "public", "/items?style=cursor&pages=3", "--pages", "10", "--cursor", "meta.next=cursor", "--shape"]
+config = """
+[api.public]
+base_url = "{server}/api"
+"""
+
+[fakes]
+api = "pages"
+
+[expect]
+exit_code = 0
+stdout = { equals = "{\"page\":\"number\",\"items\":{\"array\":2,\"of\":\"string\"},\"meta\":{\"next\":\"string\"}}\n{\"page\":\"number\",\"items\":{\"array\":2,\"of\":\"string\"},\"meta\":{\"next\":\"string\"}}\n{\"page\":\"number\",\"items\":{\"array\":2,\"of\":\"string\"},\"meta\":{\"next\":\"null\"}}\n" }
+stderr_contains = ["# pages: 3 fetched (--pages 10); stopped: last"]
+api_calls = { count = 3, calls = [{ path = "/api/items?style=cursor&pages=3" }, { path = "/api/items?style=cursor&pages=3&cursor=c2" }, { path = "/api/items?style=cursor&pages=3&cursor=c3" }] }

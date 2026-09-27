@@ -1,0 +1,52 @@
+# A request signed with the AWS profile's role for `execute-api`: the fake
+# layer pins the AssumeRole and the signature's service and region; the
+# throwaway layer sends the same request to an API Gateway REST API with
+# AWS_IAM authorization that tests/api/iam-api.yaml creates for the run, and
+# reads back the caller the endpoint saw -- the role kurama signed as, which
+# only a signature AWS accepted can produce.
+id = "api_sigv4_throwaway_rest_api_accepts_the_signed_request"
+feature = "api-client"
+
+[combination]
+command = "api"
+auth = "aws-profile"
+role = "assume-role"
+service = "configured"
+region = "profile"
+api_response = "ok"
+
+[input]
+args = ["api", "iam-rest", "/echo", "--jq", ".path"]
+config = """
+[api.iam-rest]
+base_url = "{server}/api"
+aws_profile = "dev"
+service = "execute-api"
+"""
+
+[expect]
+exit_code = 0
+sts_actions = ["AssumeRole"]
+token_grants = []
+op_calls = 0
+api_calls = { count = 1, sigv4 = { service = "execute-api", region = "ap-northeast-1" }, calls = [{ path = "/api/echo", signing_access_key = "ASIARESULTKEY000001" }] }
+stdout = { equals = "/api/echo\n" }
+no_files_written = true
+
+[throwaway]
+stacks = ["iam-api"]
+args = ["api", "iam-rest", "/echo", "--jq", ".caller"]
+config = """
+[api.iam-rest]
+base_url = "{iam_api_url}"
+aws_profile = "{throwaway_profile}"
+"""
+
+[throwaway.combination]
+service = "host"
+region = "host"
+
+[throwaway.expect]
+exit_code = 0
+stdout = { contains = [":assumed-role/"] }
+no_files_written = true

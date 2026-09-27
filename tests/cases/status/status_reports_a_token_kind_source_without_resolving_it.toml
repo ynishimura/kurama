@@ -1,0 +1,60 @@
+# `status` must not turn into the one command that reads every API key a
+# person has configured: the row of a `kind = "token"` source says the
+# credential was not checked, names the header rather than a grant, and no
+# store is asked; the OAuth source next to it still reports its grant.
+id = "status_reports_a_token_kind_source_without_resolving_it"
+feature = "status"
+
+[combination]
+command = "status"
+"status.only" = "auth"
+source = "token"
+secret = "aws-ssm"
+resolution = "none"
+
+[input]
+args = ["status", "--only", "auth", "--json"]
+then_run = [["status", "--only", "auth"]]
+config = """
+[auth.example]
+kind = "token"
+token = "aws-ssm://dev/kurama/api-key"
+header = "xi-api-key"
+format = "{token}"
+env_var = "EXAMPLE_TOKEN"
+
+[api.example]
+base_url = "{server}/api"
+
+[auth.github]
+kind = "oauth"
+grant_type = "authorization_code"
+auth_url = "{server}/oauth/authorize"
+token_url = "{server}/oauth/token"
+client_id = "gh-client"
+scopes = ["repo"]
+env_var = "GITHUB_TOKEN"
+
+[api.github]
+base_url = "{server}/api"
+"""
+
+[fakes]
+op = "enabled"
+
+[expect]
+exit_code = 0
+sts_actions = []
+secret_reads = []
+op_calls = 0
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+# The JSON row reports the kind, the header and an unchecked credential;
+# the OAuth source still reports its grant and a missing token.
+stdout_json = { "/0/name" = "example", "/0/kind" = "auth", "/0/auth_kind" = "token", "/0/grant_type" = "<null>", "/0/header" = "xi-api-key", "/0/env_var" = "EXAMPLE_TOKEN", "/0/token" = "not_checked", "/0/logged_in" = false, "/0/needs_human" = false, "/1/name" = "github", "/1/auth_kind" = "oauth", "/1/grant_type" = "authorization_code", "/1/header" = "<null>", "/1/token" = "missing" }
+
+[[expect.runs]]
+run = 1
+stdout = { line_containing = [["example", "not_checked", "token header=xi-api-key"]] }

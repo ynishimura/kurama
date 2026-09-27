@@ -1,0 +1,29 @@
+# status on a SigV4 API reports the API and the AWS profile it signs with,
+# without calling STS or 1Password.
+id = "api_sigv4_status_includes_the_aws_profile"
+feature = "api-client"
+
+[combination]
+command = "status"
+auth = "aws-profile"
+
+[input]
+args = ["status", "apigw", "--json"]
+config = """
+[api.apigw]
+base_url = "{server}/api"
+aws_profile = "dev"
+service = "execute-api"
+[auth.apigw]
+kind = "oauth"
+grant_type = "client_credentials"
+token_url = "{server}/oauth/token"
+client_id = "unused"
+client_secret = "op://Agent/Service/client_secret"
+"""
+
+[expect]
+exit_code = 0
+sts_actions = []
+op_calls = 0
+stdout_json = { "/0/kind" = "aws", "/0/name" = "dev", "/0/needs_human" = false, "/2/kind" = "api", "/2/name" = "apigw", "/2/aws_profile" = "dev" }

@@ -1,0 +1,53 @@
+# Control characters in an API description are removed from every table,
+# description and JSON listing before they reach the terminal, and the text
+# around them stays.
+id = "api_description_control_characters_never_reach_the_terminal"
+feature = "api-explorer"
+
+[combination]
+command = "api"
+openapi = "file"
+output = "ops-describe"
+description = "control-characters"
+
+[input]
+args = ["api", "pets", "--ops"]
+then_run = [
+  ["api", "pets", "--describe", "pets/list"],
+  ["api", "pets", "--ops", "--json"],
+  ["api", "pets", "pets/lis"],
+]
+config = """
+[api.pets]
+base_url = "{server}/api"
+openapi = "{fixtures}/control-characters.json"
+"""
+
+[expect]
+error = { code = "API_OPERATION_NOT_FOUND", exit = 2 }
+stderr_contains = ["did you mean pets/list"]
+api_calls = { count = 0 }
+no_files_written = true
+stdout_excludes = ["\u001b", "\u0007", "\u0085"]
+stderr_excludes = ["\u001b", "\u0007", "\u0085"]
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stdout = { contains = ["List pets [31mRED[0m ]0;title-injected end"] }
+stdout_excludes = ["\u001b", "\u0007", "\u0085"]
+stderr_excludes = ["\u001b", "\u0007", "\u0085"]
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+stdout = { starts_with = "pets/list\n  GET /pets\n", contains = ["max [2Jcleared"] }
+stdout_excludes = ["\u001b", "\u0007", "\u0085"]
+stderr_excludes = ["\u001b", "\u0007", "\u0085"]
+
+[[expect.runs]]
+run = 2
+exit_code = 0
+stdout_json = { "/0/id" = "pets/list" }
+stdout_excludes = ["\u001b", "\u0007", "\u0085"]
+stderr_excludes = ["\u001b", "\u0007", "\u0085"]

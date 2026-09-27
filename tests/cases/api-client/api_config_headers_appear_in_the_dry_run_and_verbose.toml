@@ -1,0 +1,49 @@
+# What --dry-run and -v print is what is sent: the configured headers are on
+# both, and the credential is masked as before.
+id = "api_config_headers_appear_in_the_dry_run_and_verbose"
+feature = "api-client"
+
+[combination]
+command = "api"
+headers = "configured"
+source = "oauth"
+mode = "dry-run-and-verbose"
+
+[input]
+stored_tokens = [{ source = "github", access_token = "stored-access-token", expires_in = 3600 }]
+args = ["api", "github", "/user", "--dry-run"]
+then_run = [["api", "github", "/user", "-v"]]
+config = """
+[auth.github]
+kind = "oauth"
+grant_type = "authorization_code"
+auth_url = "{server}/oauth/authorize"
+token_url = "{server}/oauth/token"
+client_id = "gh-client"
+scopes = ["repo"]
+env_var = "GITHUB_TOKEN"
+
+[api.github]
+base_url = "{server}/api"
+
+[api.github.headers]
+Accept = "application/vnd.github+json"
+X-GitHub-Api-Version = "2022-11-28"
+"""
+
+[expect]
+exit_code = 0
+token_grants = []
+
+[[expect.runs]]
+run = 0
+stderr_contains = ["> Accept: application/vnd.github+json", "> X-GitHub-Api-Version: 2022-11-28", "> Authorization: Bearer ****"]
+stderr_excludes = ["stored-access-token", "> Accept: application/json"]
+api_calls = { count = 0 }
+stdout = "empty"
+
+[[expect.runs]]
+run = 1
+stderr_contains = ["> Accept: application/vnd.github+json", "> X-GitHub-Api-Version: 2022-11-28", "> Authorization: Bearer ****"]
+stderr_excludes = ["stored-access-token", "> Accept: application/json"]
+api_calls = { count = 1, authorization = "Bearer stored-access-token" }

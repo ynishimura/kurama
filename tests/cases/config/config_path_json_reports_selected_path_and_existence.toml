@@ -1,0 +1,22 @@
+# `config path --json` is the whole answer as one document: the file kurama
+# would read, what chose it and whether it is there. A named file that does
+# not exist is still an answer, not an error, because nothing reads it.
+id = "config_path_json_reports_selected_path_and_existence"
+feature = "config"
+
+[combination]
+command = "config-path"
+output = "json"
+config = "missing"
+
+[input]
+args = ["config", "path", "--json"]
+env = { KURAMA_CONFIG_PATH = "/nonexistent/kurama-121/config.toml" }
+
+[expect]
+exit_code = 0
+stderr_empty = true
+stdout_json = { "" = { path = "/nonexistent/kurama-121/config.toml", source = "KURAMA_CONFIG_PATH", exists = false } }
+sts_actions = []
+op_calls = 0
+no_files_written = true

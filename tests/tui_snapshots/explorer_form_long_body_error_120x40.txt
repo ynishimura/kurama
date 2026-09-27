@@ -1,0 +1,40 @@
+ 鞍馬 kurama api  pets  Petstore 1.2.0                                                                  bearer   sigv4
+┏ pets/create  POST /pets ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ ! operation pets/create needs -P dry_run=<value>                                                                     ┃
+┃                                                                                                                      ┃
+┃ ▸ dry_run*  query  boolean  ▏                                                                                        ┃
+┃   body*     application/json  Ctrl-E edits                                                                           ┃
+┃     {                                                                                                                ┃
+┃       "field_01": "",                                                                                                ┃
+┃       "field_02": "",                                                                                                ┃
+┃       "field_03": "",                                                                                                ┃
+┃       "field_04": "",                                                                                                ┃
+┃       "field_05": "",                                                                                                ┃
+┃       "field_06": "",                                                                                                ┃
+┃       "field_07": "",                                                                                                ┃
+┃       "field_08": "",                                                                                                ┃
+┃       "field_09": "",                                                                                                ┃
+┃       "field_10": "",                                                                                                ┃
+┃       "field_11": "",                                                                                                ┃
+┃       "field_12": "",                                                                                                ┃
+┃       "field_13": "",                                                                                                ┃
+┃       "field_14": "",                                                                                                ┃
+┃       "field_15": "",                                                                                                ┃
+┃       "field_16": "",                                                                                                ┃
+┃       "field_17": "",                                                                                                ┃
+┃       "field_18": "",                                                                                                ┃
+┃       "field_19": "",                                                                                                ┃
+┃       "field_20": "",                                                                                                ┃
+┃       "field_21": "",                                                                                                ┃
+┃       "field_22": "",                                                                                                ┃
+┃       "field_23": "",                                                                                                ┃
+┃       "field_24": "",                                                                                                ┃
+┃       "field_25": "",                                                                                                ┃
+┃       "field_26": "",                                                                                                ┃
+┃       "field_27": "",                                                                                                ┃
+┃       "field_28": "",                                                                                                ┃
+┃       "field_29": "",                                                                                                ┃
+┃       "field_30": ""                                                                                                 ┃
+┃     }                                                                                                                ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+ Tab next  type value  Enter send  ^Y copy  Esc back  F1 help

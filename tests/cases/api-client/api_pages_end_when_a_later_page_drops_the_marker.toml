@@ -1,0 +1,29 @@
+# A later page without the marker the earlier pages carried is the last
+# one: no Link header at all on page 3, or no meta.next in its body, ends
+# paging as `last` before the limit, where the same absence on a first page
+# would be `unsupported`.
+id = "api_pages_end_when_a_later_page_drops_the_marker"
+feature = "api-client"
+
+[combination]
+command = "api"
+source = "none"
+pages = "link"
+
+[input]
+args = ["api", "public", "/items?pages=3&bare_last=1", "--pages", "5", "--jq", ".page"]
+then_run = [["api", "public", "/items?style=cursor&pages=3&bare_last=1", "--pages", "5", "--cursor", "meta.next=cursor", "--jq", ".page"]]
+config = """
+[api.public]
+base_url = "{server}/api"
+"""
+
+[fakes]
+api = "pages"
+
+[expect]
+exit_code = 0
+stdout = { equals = "1\n2\n3\n" }
+stderr_json = { "/pages/fetched" = 3, "/pages/stopped" = "last", "/pages/detail" = "<null>" }
+api_calls = { count = 3 }
+no_files_written = true

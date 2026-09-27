@@ -1,0 +1,24 @@
+ 鞍馬 kurama api  pets  Petstore 1.2.0                          bearer   sigv4
+┏ pets/get  HTTP 404 Not Found  42 ms  21-40/162 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃   },                                                                         ┃
+┃   {                                                                          ┃
+┃     "id": 6,                                                                 ┃
+┃     "name": "pet-6"                                                          ┃
+┃   },                                                                         ┃
+┃   {                                                                          ┃
+┃     "id": 7,                                                                 ┃
+┃     "name": "pet-7"                                                          ┃
+┃   },                                                                         ┃
+┃   {                                                                          ┃
+┃     "id": 8,                                                                 ┃
+┃     "name": "pet-8"                                                          ┃
+┃   },                                                                         ┃
+┃   {                                                                          ┃
+┃     "id": 9,                                                                 ┃
+┃     "name": "pet-9"                                                          ┃
+┃   },                                                                         ┃
+┃   {                                                                          ┃
+┃     "id": 10,                                                                ┃
+┃     "name": "pet-10"                                                         ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+ ↑↓ scroll  j jq  t tree  h headers  c copy  Esc back  q quit

@@ -1,0 +1,46 @@
+# What the normalizer cannot represent is in the contract, located by a JSON
+# pointer into the operation, instead of being dropped: an OpenAPI 3.1
+# `oneOf` keeps its first alternative, while the `type: [object, null]` of
+# that alternative is kept whole in the schema; a Swagger 2.0 formData parameter is unsupported and an external $ref
+# stays a $ref, both also in the document's warnings.
+id = "api_schema_reports_an_unsupported_construct_as_a_limitation"
+feature = "api-explorer"
+
+[combination]
+command = "api"
+openapi = "file-yaml"
+output = "schema"
+
+[input]
+args = ["api", "shapes", "--schema"]
+then_run = [
+  ["api", "legacy", "--schema", "upload", "--jq", ".operations[0].limitations"],
+  ["api", "legacy", "--schema", "createItem", "--jq", "[.operations[0].limitations[].kind, .warnings[]]"],
+]
+config = """
+[api.shapes]
+base_url = "{server}/api"
+openapi = "{fixtures}/responses.yaml"
+
+[api.legacy]
+base_url = "{server}/api"
+openapi = "{fixtures}/legacy-swagger.json"
+"""
+
+[expect]
+exit_code = 0
+stdout_lines = 1
+stderr_empty = true
+api_calls = { count = 0 }
+no_files_written = true
+stdout_json = { "/0" = "other_content_types", "/1" = "unresolved_ref", "/2" = { contains = "is not resolved" } }
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stdout_json = { "/operations/0/response/schema/type" = "array", "/operations/0/response/schema/items/type" = ["object", "null"], "/operations/0/limitations" = { length = 1 }, "/operations/0/limitations/0/kind" = "first_alternative_only", "/operations/0/limitations/0/at" = "/response/schema/items", "/operations/0/limitations/0/keyword" = "oneOf", "/operations/0/limitations/0/alternatives" = 2 }
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+stdout_json = { "/0/kind" = "unsupported_parameter", "/0/at" = "/parameters", "/0/detail" = "formData parameter 'file'" }

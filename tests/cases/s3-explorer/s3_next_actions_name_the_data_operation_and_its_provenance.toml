@@ -1,0 +1,42 @@
+# An object in a format `kurama data` reads comes with the request that
+# opens it -- `kind: "data"`, `operation: "describe"`, the exact `from` URI
+# and the `[s3.*]` as `s3_source` -- and what was observed of it as
+# provenance. Nothing runs it: the head reads one HeadObject and no more.
+# An object data does not read gets no action.
+id = "s3_next_actions_name_the_data_operation_and_its_provenance"
+feature = "s3-explorer"
+
+[combination]
+command = "s3"
+source = "aws-profile"
+role = "assume-role"
+s3_op = "head"
+
+[input]
+args = ["s3", "assets", "s3://browse-objects/data/orders.csv", "--head", "--json"]
+then_run = [
+  ["s3", "assets", "s3://browse-objects/data/orders.csv", "--preview", "--json"],
+  ["s3", "assets", "s3://browse-objects/data/report.json", "--head", "--json"],
+]
+config = """
+[s3.assets]
+aws_profile = "dev"
+"""
+
+[expect]
+exit_code = 0
+op_calls = 0
+no_files_written = true
+stdout_json = { "/object/key" = "data/report.json", "/next_actions" = [] }
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+sts_actions = ["AssumeRole"]
+stdout_json = { "/next_actions/0/kind" = "data", "/next_actions/0/operation" = "describe", "/next_actions/0/args/from" = "s3://browse-objects/data/orders.csv", "/next_actions/0/args/s3_source" = "assets", "/next_actions/0/provenance/size" = 20, "/next_actions/0/provenance/etag" = { contains = "\"" }, "/next_actions/0/provenance/last_modified" = { contains = "2026-09-01" }, "/next_actions/0/message" = { contains = "kurama data --from s3://browse-objects/data/orders.csv --s3-source assets --describe" }, "/next_actions/1" = "<null>" }
+api_calls = { count = 1, sigv4 = { service = "s3", region = "ap-northeast-1" }, calls = [{ method = "HEAD", path = "/browse-objects/data/orders.csv" }] }
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+stdout_json = { "/preview/format" = "csv", "/next_actions/0/args/from" = "s3://browse-objects/data/orders.csv", "/next_actions/0/provenance/size" = 20 }

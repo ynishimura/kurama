@@ -1,0 +1,24 @@
+ 鞍馬 kurama s3  assets  dev  ap-northeast-1  s3://example-assets/…  READ ONLY
+┏ List (5+) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ ▸ 2024/                                                                      ┃
+┃   2025/                                                                      ┃
+┃   orders.csv                                                              20 ┃
+┃   summary.json                                                            33 ┃
+┃   events.parquet                                                     1048576 ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃ 5 scanned · more below                                                       ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+ ↑↓ move  Enter open  ← up  / filter  s key search  g content search  d as data

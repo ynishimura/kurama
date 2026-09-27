@@ -1,0 +1,90 @@
+# A plan starts no credential source, even where the run would need every
+# one of them: an expired OAuth token with a 1Password client secret, a
+# kind = "token" source in 1Password, an aws-ssm reference, and a SigV4 API
+# whose profile needs MFA. The plan names those effects (performed false);
+# the fakes see no API, token endpoint, op or STS call, and no file is
+# written.
+id = "api_dry_run_json_calls_no_api_token_endpoint_op_or_sts"
+feature = "api-client"
+
+[combination]
+command = "api"
+mode = "dry-run"
+output = "json"
+token = "expired"
+
+[input]
+stored_tokens = [{ source = "github", access_token = "expired-access-token", expires_in = -60, refreshable = true }]
+args = ["api", "github", "/user", "--dry-run", "--json"]
+then_run = [
+  ["api", "example", "/voices", "--dry-run", "--json"],
+  ["api", "ssm", "/voices", "--dry-run", "--json"],
+  ["api", "apigw", "/items", "--dry-run", "--json"],
+]
+config = """
+[auth.github]
+kind = "oauth"
+grant_type = "client_credentials"
+token_url = "{server}/oauth/token"
+client_id = "gh-client"
+client_secret = "op://Agent/GitHub/client_secret"
+env_var = "GITHUB_TOKEN"
+
+[api.github]
+base_url = "{server}/api"
+
+[auth.example]
+kind = "token"
+token = "op://Agent/Example/credential"
+header = "xi-api-key"
+format = "{token}"
+
+[api.example]
+base_url = "{server}/api"
+
+[auth.ssm]
+kind = "token"
+token = "aws-ssm://dev/kurama/api-key"
+header = "X-Api-Key"
+format = "{token}"
+
+[api.ssm]
+base_url = "{server}/api"
+
+[api.apigw]
+base_url = "{server}/api"
+aws_profile = "ops-mfa"
+service = "execute-api"
+region = "ap-northeast-1"
+"""
+
+[expect]
+exit_code = 0
+api_calls = { count = 0 }
+token_grants = []
+oauth_paths = []
+sts_actions = []
+op_calls = 0
+secret_reads = []
+open_calls = []
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stdout_json = { "/effects/0/effect" = "token_store", "/effects/1/effect" = "authorization_server", "/effects/2/effect" = "1password", "/effects/3/effect" = "api_request", "/effects/0/performed" = false, "/effects/1/performed" = false, "/effects/2/performed" = false, "/effects/3/performed" = false }
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+stdout_json = { "/effects/0/effect" = "1password", "/effects/0/performed" = false, "/effects/1/effect" = "api_request" }
+
+[[expect.runs]]
+run = 2
+exit_code = 0
+stdout_json = { "/auth/kind" = "token", "/effects/0/effect" = "sts", "/effects/0/performed" = false, "/effects/1/effect" = "aws_secret_store", "/effects/1/performed" = false, "/effects/2/effect" = "api_request" }
+
+[[expect.runs]]
+run = 3
+exit_code = 0
+stdout_json = { "/auth/aws_profile" = "ops-mfa", "/effects/0/effect" = "keychain", "/effects/1/effect" = "1password", "/effects/1/when" = "if_needed", "/effects/2/effect" = "sts", "/effects/2/detail" = { contains = "GetSessionToken" }, "/effects/3/effect" = "sts", "/effects/3/detail" = { contains = "AssumeRole" }, "/effects/3/performed" = false, "/effects/4/effect" = "api_request" }

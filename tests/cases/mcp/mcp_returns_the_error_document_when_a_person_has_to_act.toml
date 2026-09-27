@@ -1,0 +1,50 @@
+# The source needs a browser login and nobody is at a terminal: `call_api`
+# does not wait. It answers the OAUTH_LOGIN_REQUIRED error document with its
+# next_actions, without a token request, an API request or a browser, and the
+# server goes on answering: the `ping` after it gets its reply.
+id = "mcp_returns_the_error_document_when_a_person_has_to_act"
+feature = "mcp"
+
+[combination]
+command = "mcp"
+source = "oauth"
+grant = "authorization_code"
+tty = "none"
+token = "missing"
+
+[input]
+args = ["mcp"]
+stdin = """
+{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05"}}
+{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"call_api","arguments":{"api":"github","target":"/user"}}}
+{"jsonrpc":"2.0","id":3,"method":"ping"}
+"""
+config = """
+[auth.github]
+kind = "oauth"
+grant_type = "authorization_code"
+auth_url = "{server}/oauth/authorize"
+token_url = "{server}/oauth/token"
+client_id = "gh-client"
+scopes = ["repo"]
+
+[api.github]
+base_url = "{server}/api"
+"""
+
+[fakes]
+browser = true
+
+[expect]
+exit_code = 0
+stderr_empty = true
+oauth_paths = []
+token_grants = []
+api_calls = { count = 0 }
+open_calls = []
+stdout = { line_count = 3, line_containing = [
+  ["\"id\":1", "\"protocolVersion\":\"2024-11-05\""],
+  ["\"id\":2", "\"isError\":true", "\"code\":\"OAUTH_LOGIN_REQUIRED\"", "\"exit_code\":3", "\"next_actions\":[{", "kurama login github"],
+  ["\"id\":3", "\"result\":{}"],
+] }
+files_written = ["home/.cache/kurama/locks/github.lock", "home/.local/state/kurama/audit.jsonl"]

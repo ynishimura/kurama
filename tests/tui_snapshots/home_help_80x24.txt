@@ -1,0 +1,24 @@
+ 鞍馬 kurama  AWS credential switcher                       readonly   console
+  1 AWS   2 Auth   3 API   4 DB   5 Data   6 S3
+┏ Profiles (4) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃     KIND PROFILE     SESSION                                                 ┃
+┃ ▸   aws  default     -                                                       ┃
+┃     aws ┏ Help ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓         ┃
+┃   * aws ┃                                                          ┃         ┃
+┃     aws ┃  ↑↓ or j/k    move through profiles                      ┃         ┃
+┃         ┃  Enter        assume the selected role                   ┃         ┃
+┃         ┃  /            search profiles                            ┃         ┃
+┃         ┃  1-6 or Tab   switch tabs: AWS Auth API DB Data S3       ┃         ┃
+┃         ┃  Ctrl-K or :  go to a profile, API or operation          ┃         ┃
+┃         ┃  r            toggle readonly mode                       ┃         ┃
+┃         ┃  c            toggle console launch                      ┃         ┃
+┃         ┃  ? or F1      show this help                             ┃         ┃
+┃         ┃  q or Ctrl-C  quit                                       ┃         ┃
+┃         ┃                                                          ┃         ┃
+┃         ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛         ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+ Esc close

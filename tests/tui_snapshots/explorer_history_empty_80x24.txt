@@ -1,0 +1,24 @@
+ 鞍馬 kurama api  pets  Petstore 1.2.0                          bearer   sigv4
+┏ Operations (5) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃   METHOD ID                                                                  ┃
+┃ ▸ GET    pets/list                                                           ┃
+┃   POST   pets/create                                                         ┃
+┃   GET    pets/get                                                            ┃
+┃   DELETE DELETE /pets/{petId}                                                ┃
+┃   GET    owners/list-pets                                                    ┃
+┃                                                                              ┃
+┃         ┏ History ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓         ┃
+┃         ┃                                                          ┃         ┃
+┃         ┃  Nothing sent yet: a request sent from a form is listed  ┃         ┃
+┃         ┃  here.                                                   ┃         ┃
+┃         ┃                                                          ┃         ┃
+┃         ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛         ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+ ↑↓ select  Enter open  s save  Esc close

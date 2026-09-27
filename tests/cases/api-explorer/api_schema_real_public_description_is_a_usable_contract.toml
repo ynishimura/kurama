@@ -1,0 +1,64 @@
+# The contract of one operation from a description fetched over HTTP, then
+# read again from the cache: the parameters, the request body schema and the
+# limitations, each limitation's `at` resolving inside the operation. The
+# fake serves the petstore fixture; the real layer reads the public Swagger
+# Petstore v3 description (no credential) and asks for addPet, whose other
+# request and response media types are limitations. GitHub's description is
+# not used: its examples hold PEM key blocks, which the real layer's
+# on-disk credential scan cannot tell from a leaked key once cached.
+id = "api_schema_real_public_description_is_a_usable_contract"
+feature = "api-explorer"
+
+[combination]
+command = "api"
+openapi = "url"
+output = "schema"
+
+[input]
+args = ["api", "pets", "--schema", "pets/create"]
+then_run = [
+  ["api", "pets", "--schema", "pets/create", "--jq", "[.description.source.kind, (.operations[0] as $o | [$o.limitations[].at | ltrimstr(\"/\") | split(\"/\") | map(gsub(\"~1\"; \"/\") | gsub(\"~0\"; \"~\") | (tonumber? // .)) as $path | $o | getpath($path) != null] | (length > 0 and all))]"],
+]
+config = """
+[api.pets]
+base_url = "{server}/api"
+openapi = "{server}/spec/petstore.json"
+"""
+
+[expect]
+exit_code = 0
+stdout = { equals = "[\"cached\",true]\n" }
+spec_calls = { count = 0 }
+api_calls = { count = 0 }
+op_calls = 0
+token_grants = []
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+spec_calls = { count = 1, status = 200 }
+stdout_json = { "/schema_version" = 1, "/description/source/kind" = "fetched", "/operations" = { length = 1 }, "/operations/0/id" = "pets/create", "/operations/0/request_body/schema/required" = ["name"], "/operations/0/limitations/0/kind" = "other_content_types" }
+
+[real]
+requires = []
+args = ["api", "petstore3", "--schema", "addPet"]
+then_run = [
+  ["api", "petstore3", "--schema", "addPet", "--jq", "[.description.source.kind, (.operations[0] as $o | [$o.limitations[].at | ltrimstr(\"/\") | split(\"/\") | map(gsub(\"~1\"; \"/\") | gsub(\"~0\"; \"~\") | (tonumber? // .)) as $path | $o | getpath($path) != null] | (length > 0 and all))]"],
+]
+config = """
+[api.petstore3]
+base_url = "https://petstore3.swagger.io/api/v3"
+openapi = "https://petstore3.swagger.io/api/v3/openapi.json"
+"""
+
+[real.combination]
+target = "swagger-petstore"
+
+[real.expect]
+exit_code = 0
+stdout = { equals = "[\"cached\",true]\n" }
+
+[[real.expect.runs]]
+run = 0
+exit_code = 0
+stdout_json = { "/schema_version" = 1, "/description/source/kind" = "fetched", "/operations" = { length = 1 }, "/operations/0/id" = "addPet", "/operations/0/method" = "POST", "/operations/0/request_body/content_type" = "application/json", "/operations/0/request_body/schema/required" = ["name", "photoUrls"], "/operations/0/request_body/schema/properties/photoUrls/type" = "array", "/operations/0/limitations/0/kind" = "other_content_types", "/operations/0/limitations/0/at" = "/request_body", "/operations/0/limitations/0/content_types" = ["application/xml", "application/x-www-form-urlencoded"], "/options" = { min_length = 10 } }

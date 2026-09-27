@@ -1,0 +1,227 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >-
+  A throwaway SSM bastion with a PostgreSQL behind it, so `kurama db` can be
+  shown carrying a connection through a real Session Manager tunnel. One stack
+  is the whole of it: deleting the stack removes everything, which a script
+  that creates a dozen resources by hand cannot promise when it fails halfway.
+
+  Nothing is opened towards this instance. Session Manager is outbound only, so
+  the security group has no ingress rule and the instance has no key pair.
+
+Parameters:
+  InstanceType:
+    Type: String
+    Default: t4g.nano
+    Description: The smallest Arm instance is enough to answer one statement.
+  Engine:
+    Type: String
+    Default: postgresql
+    AllowedValues: [postgresql, mysql]
+    Description: >-
+      Which database sits behind the bastion. MySQL is what delete-account.sh
+      talks to, and its `?` placeholders are what that script is written with.
+  Image:
+    Type: AWS::EC2::Image::Id
+    Description: >-
+      Amazon Linux 2023 on Arm, which ships the SSM agent. `bastion-up.sh`
+      finds the current one and passes it in: the public SSM parameter that
+      names it is not readable in every account, and an AMI written into the
+      template would expire.
+
+Conditions:
+  IsMysql: !Equals [!Ref Engine, mysql]
+
+Resources:
+  Vpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.99.0.0/24
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags: [{ Key: Name, Value: !Ref "AWS::StackName" }]
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags: [{ Key: Name, Value: !Ref "AWS::StackName" }]
+
+  Attachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref Vpc
+      InternetGatewayId: !Ref InternetGateway
+
+  # A public subnet, because the agent reaches Session Manager over the
+  # internet. The alternative is three VPC endpoints, which cost more per hour
+  # than this whole stack.
+  Subnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref Vpc
+      CidrBlock: 10.99.0.0/24
+      AvailabilityZone: !Select [0, !GetAZs ""]
+      MapPublicIpOnLaunch: true
+      Tags: [{ Key: Name, Value: !Ref "AWS::StackName" }]
+
+  RouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref Vpc
+      Tags: [{ Key: Name, Value: !Ref "AWS::StackName" }]
+
+  DefaultRoute:
+    Type: AWS::EC2::Route
+    DependsOn: Attachment
+    Properties:
+      RouteTableId: !Ref RouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  SubnetRoute:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref Subnet
+      RouteTableId: !Ref RouteTable
+
+  # No ingress: a Session Manager session is made from the inside out.
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Session Manager is outbound only; nothing may connect in
+      VpcId: !Ref Vpc
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+          Description: The agent reaches Session Manager and the package mirror
+      Tags: [{ Key: Name, Value: !Ref "AWS::StackName" }]
+
+  InstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: { Service: ec2.amazonaws.com }
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      Tags: [{ Key: Name, Value: !Ref "AWS::StackName" }]
+
+  InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles: [!Ref InstanceRole]
+
+  Bastion:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref Image
+      InstanceType: !Ref InstanceType
+      IamInstanceProfile: !Ref InstanceProfile
+      SubnetId: !Ref Subnet
+      SecurityGroupIds: [!Ref SecurityGroup]
+      MetadataOptions:
+        HttpTokens: required
+      Tags: [{ Key: Name, Value: !Ref "AWS::StackName" }]
+      UserData:
+        Fn::Base64: !If
+          - IsMysql
+          - |
+            #!/bin/bash
+            set -eux
+            # The smallest Arm instance has half a gigabyte, which the package
+            # manager runs out of; a swap file is cheaper than a larger machine.
+            dd if=/dev/zero of=/swapfile bs=1M count=2048
+            chmod 600 /swapfile
+            mkswap /swapfile
+            swapon /swapfile
+            dnf install -y https://dev.mysql.com/get/mysql84-community-release-el9-1.noarch.rpm
+            dnf install -y mysql-community-server
+            systemctl enable --now mysqld
+            first=$(grep 'temporary password' /var/log/mysqld.log | tail -1 | sed 's/.*: //')
+            # The password policy would refuse the one the fake 1Password
+            # prints, and what this stack proves is the tunnel, not a policy.
+            mysql --connect-expired-password -uroot -p"$first" \
+              -e "ALTER USER 'root'@'localhost' IDENTIFIED BY 'Kurama-temp-1!'"
+            mysql -uroot -pKurama-temp-1! -e "UNINSTALL COMPONENT 'file://component_validate_password'" || true
+            mysql -uroot -pKurama-temp-1! <<'SQL'
+            ALTER USER 'root'@'localhost' IDENTIFIED BY 'fake-client-secret';
+            CREATE DATABASE app;
+            CREATE USER 'kurama'@'%' IDENTIFIED BY 'fake-client-secret';
+            GRANT ALL ON app.* TO 'kurama'@'%';
+            USE app;
+            CREATE TABLE aws_accounts (
+              account_id char(12) PRIMARY KEY,
+              account_name varchar(64) NOT NULL,
+              enabled tinyint(1) NOT NULL DEFAULT 1,
+              project_id int NOT NULL,
+              payer_id int NOT NULL
+            );
+            CREATE TABLE aws_account_addresses (
+              id int PRIMARY KEY,
+              aws_account_id char(12) NOT NULL,
+              address varchar(128) NOT NULL
+            );
+            INSERT INTO aws_accounts VALUES
+              ('123456789012','doomed',1,7,1),
+              ('210987654321','sibling',1,7,1),
+              ('111111111111','alone',1,9,1);
+            INSERT INTO aws_account_addresses VALUES
+              (1,'123456789012','a@example.com'),
+              (2,'123456789012','b@example.com'),
+              (3,'210987654321','c@example.com');
+            CREATE TABLE orders (id int primary key, status varchar(16));
+            INSERT INTO orders VALUES (1,'open'),(2,'paid'),(3,'void'),(4,'open');
+            SQL
+          - |
+            #!/bin/bash
+            set -eux
+            # The smallest Arm instance has half a gigabyte, which the package
+            # manager runs out of; a swap file is cheaper than a larger machine.
+            dd if=/dev/zero of=/swapfile bs=1M count=1024
+            chmod 600 /swapfile
+            mkswap /swapfile
+            swapon /swapfile
+            dnf install -y postgresql15-server || dnf install -y postgresql16-server
+            /usr/bin/postgresql-setup --initdb
+            systemctl enable --now postgresql
+            sudo -u postgres psql -c "CREATE TABLE orders (id int primary key, status text)"
+            sudo -u postgres psql -c "INSERT INTO orders VALUES (1,'open'),(2,'paid'),(3,'void'),(4,'open')"
+            # What this stack proves is the tunnel, not password authentication,
+            # which the local servers already cover. Trusting localhost keeps
+            # every secret out of the instance and out of its metadata.
+            sed -i 's#^host .*127.0.0.1/32.*#host all all 127.0.0.1/32 trust#' \
+              /var/lib/pgsql/data/pg_hba.conf
+            # TLS, with a certificate for a name nothing connects by. That is the
+            # shape a tunnel always has -- the connection goes to a local port --
+            # and the reason `[db.*]` refuses `verify-full` together with one.
+            cd /var/lib/pgsql
+            openssl req -x509 -newkey rsa:2048 -sha256 -days 365 -nodes \
+              -keyout ca.key -out ca.pem -subj "/CN=kurama-test-ca"
+            openssl req -newkey rsa:2048 -nodes -keyout data/server.key \
+              -out server.csr -subj "/CN=db.test"
+            openssl x509 -req -in server.csr -CA ca.pem -CAkey ca.key -CAcreateserial \
+              -out data/server.crt -days 365 -sha256
+            chown postgres:postgres data/server.crt data/server.key
+            chmod 600 data/server.key
+            echo "ssl = on" >> data/postgresql.conf
+            systemctl restart postgresql
+
+  # `[db.*] password` takes a reference, never the value, and localhost is
+  # trusted above: this parameter only gives the case a reference that exists.
+  # The server never reads what it holds; it goes with the stack.
+  DbPassword:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AWS::StackName}/db-password"
+      Type: String
+      Value: unused-localhost-is-trusted
+
+Outputs:
+  InstanceId:
+    Description: The bastion; `kurama db` finds it by its Name tag instead.
+    Value: !Ref Bastion
+  Name:
+    Description: The Name tag to put in `[db.*.tunnel] instance_name`.
+    Value: !Ref "AWS::StackName"

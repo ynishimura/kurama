@@ -1,0 +1,56 @@
+# env exports the token into GITHUB_TOKEN after unsetting the token
+# variables, env --json prints the token document, exec runs the command with
+# the token in its environment, and unset covers the token variables.
+id = "env_and_exec_on_an_auth_source_use_the_stored_token"
+feature = "oauth"
+
+[combination]
+command = "env"
+source = "oauth"
+grant = "authorization_code"
+token = "stored"
+
+[input]
+args = ["env", "github"]
+then_run = [
+  ["env", "github", "--json"],
+  ["exec", "github", "--", "/bin/sh", "-c", "printf '%s %s\\n' \"$GITHUB_TOKEN\" \"$KURAMA_AUTH\"; [ -z \"$KURAMA_ENV_SCRIPT\" ]"],
+  ["unset"],
+]
+stored_tokens = [{ source = "github", access_token = "{stored_access_token}", expires_in = 3600 }]
+config = """
+[auth.github]
+kind = "oauth"
+grant_type = "authorization_code"
+auth_url = "{server}/oauth/authorize"
+token_url = "{server}/oauth/token"
+client_id = "gh-client"
+scopes = ["repo"]
+env_var = "GITHUB_TOKEN"
+
+[api.github]
+base_url = "{server}/api"
+"""
+
+[expect]
+exit_code = 0
+sts_actions = []
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stdout = { lines_start_with = ["export ", "unset "], contains = ["unset GITHUB_TOKEN", "unset KURAMA_AUTH", "export GITHUB_TOKEN='{stored_access_token}'", "export KURAMA_AUTH='github'"] }
+stderr_contains = ["# Token for 'github' exported into GITHUB_TOKEN"]
+
+[[expect.runs]]
+run = 1
+stdout_json = { "/access_token" = "{stored_access_token}", "/token_type" = "Bearer" }
+
+[[expect.runs]]
+run = 2
+exit_code = 0
+stdout = { equals = "{stored_access_token} github\n" }
+
+[[expect.runs]]
+run = 3
+stdout = { contains = ["unset GITHUB_TOKEN", "unset KURAMA_AUTH"] }

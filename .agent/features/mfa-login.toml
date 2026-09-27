@@ -1,0 +1,14 @@
+[mfa-login]
+summary = "`kurama login` on an AWS profile: get an MFA session for its MFA device and cache it; no-op while the cached session is valid"
+entry = "src/workflows/mfa_login/transitions.rs"
+files = [
+  "src/workflows/mfa_login/",
+  "src/shell/mfa_login_executor.rs",
+  "src/shell/cli/commands/login.rs",
+]
+scenarios = []
+depends_on = ["assume-role", "session-cache", "onepassword-mfa", "oauth"]
+notes = "The invalid-TOTP retry that waits for the next 30-second window is covered by the workflow tests and by the executor test login_retries_invalid_totp_once_and_caches_session on a paused tokio clock (wait, a new code, the second GetSessionToken, the stored session), not by a runtime scenario: the binary waits on the wall clock. `login` on an [auth.*] source runs the oauth feature"
+
+[mfa-login.real]
+pending = "calls real STS GetSessionToken; the fake STS stands in"

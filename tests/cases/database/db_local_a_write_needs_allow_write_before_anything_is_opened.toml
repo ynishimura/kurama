@@ -1,0 +1,54 @@
+# A write to a database its section does not allow is refused by the
+# configuration: exit 2, `DB_INVALID`, the hint names `allow_write = true`,
+# and nothing was opened -- on a server, not even the password was read.
+id = "db_local_a_write_needs_allow_write_before_anything_is_opened"
+feature = "database"
+
+[combination]
+command = "db"
+engine = "sqlite"
+
+[input]
+args = ["db", "app", "--execute", "DELETE FROM orders WHERE id = ?", "--param", "1", "--commit", "--json"]
+config = """
+[db.app]
+engine = "sqlite"
+path = "{repo}/tests/fixtures/db/app.sqlite3"
+"""
+
+[fakes]
+op = "enabled"
+
+[expect]
+json_error = { code = "DB_INVALID", exit = 2 }
+stderr_json = { "/error/message" = { contains = "allow_write" }, "/error/hint" = { contains = "allow_write = true" } }
+sts_actions = []
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true
+
+[local]
+args = ["db", "pg17", "--execute", "DELETE FROM orders WHERE id = ?", "--param", "1", "--commit", "--json"]
+config = """
+[db.pg17]
+engine = "postgresql"
+host = "127.0.0.1"
+port = {pg17_port}
+database = "app"
+username = "kurama"
+password = "op://Agent/db/password"
+tls = "verify-ca"
+ca_file = "{db_tls_dir}/ca.pem"
+"""
+
+[local.combination]
+engine = "postgresql"
+tls = "verify-ca"
+
+[local.expect]
+json_error = { code = "DB_INVALID", exit = 2 }
+stderr_json = { "/error/message" = { contains = "allow_write" }, "/error/hint" = { contains = "allow_write = true" } }
+sts_actions = []
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true

@@ -1,0 +1,35 @@
+[local-analytics]
+summary = "Embedded DuckDB CLI for local/S3 CSV, JSONL and Parquet: schema, preview, SQL/JOIN, bounded JSON and atomic local export; no data TUI"
+entry = "src/shell/cli/commands/data.rs"
+files = [
+  "src/shell/cli/commands/data.rs",
+  "src/shell/cli/commands/data_plan.rs",
+  "src/shell/cli/commands/data_render.rs",
+  "src/shell/cli/commands/data_command.rs",
+  "src/shell/cli/commands/data_command_tests.rs",
+  "src/shell/cli/commands/data_contract.rs",
+  "src/shell/cli/commands/data_contract_tests.rs",
+  "src/domain/types/dataset.rs",
+  "src/domain/types/dataset_error.rs",
+  "src/domain/types/dataset_output.rs",
+  "src/adapters/config/data.rs",
+  "src/adapters/data_inputs.rs",
+  "src/adapters/aws/s3_data.rs",
+  "src/domain/functions/parquet_advice.rs",
+  "src/adapters/duckdb/",
+  "tests/fixtures/data/",
+  "tests/s3/",
+  "build.rs",
+  "docs/development/data.md",
+]
+tests = ["data_"]
+depends_on = ["cli-entry", "config", "errors", "assume-role", "profile-loading", "agent-guide", "api-client", "api-explorer", "tui", "shell-integration", "audit"]
+scenarios = [
+  "data_tty_reports_elapsed_seconds_while_the_engine_runs",
+  "cli_non_interactive_never_rewrites_a_progress_line",
+  "data_sigint_interrupts_worker_and_removes_export",
+]
+notes = "Native DuckDB tests and a signed local S3/STS fake. httpfs v1.5.3 is embedded at build time with per-platform SHA-256 checks and DuckDB signature verification. No real AWS, data TUI, or multi-platform release verification yet."
+
+[local-analytics.real]
+pending = "reads real S3 through DuckDB; the fake S3 endpoint stands in (DuckDB itself runs for real)"

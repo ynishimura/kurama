@@ -1,0 +1,48 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >-
+  One throwaway S3 bucket for `kurama data`, private, named after the account
+  so two accounts never race for the name. tests/s3/s3-up.sh deploys it twice,
+  once in the profile's Region and once in another, because a bucket lives
+  where its stack does; tests/s3/s3-down.sh empties both and removes both.
+
+Parameters:
+  Suffix:
+    Type: String
+    Description: What tells this bucket from the one in the other Region
+    AllowedPattern: "[a-z0-9-]+"
+  OtherBucket:
+    Type: String
+    Default: ""
+    Description: The name of the bucket in the other Region, so one stack's outputs name both
+  OtherRegion:
+    Type: String
+    Default: ""
+    Description: The Region that bucket lives in
+
+Resources:
+  Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "kurama-data-test-${AWS::AccountId}-${Suffix}"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      Tags:
+        - Key: kurama
+          Value: throwaway
+
+Outputs:
+  BucketName:
+    Description: The bucket in this stack's Region
+    Value: !Ref Bucket
+  BucketRegion:
+    Description: Where it lives, which is where a request for it is signed
+    Value: !Ref AWS::Region
+  OtherBucket:
+    Description: The bucket the same script made in the other Region (empty in that stack)
+    Value: !Ref OtherBucket
+  OtherRegion:
+    Description: Where that one lives
+    Value: !Ref OtherRegion

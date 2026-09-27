@@ -1,0 +1,43 @@
+# Each failure keeps its typed code in the JSON document; a human error keeps
+# the active configuration hint in its recovery advice; usage and human
+# failures never reach S3, and a remote rejection stops after one HEAD.
+id = "data_json_usage_human_and_remote_errors_preserve_recovery_hints"
+feature = "local-analytics"
+
+[combination]
+command = "data"
+source = "aws-profile"
+client = "data"
+data_op = "query"
+data_source = "s3"
+role = "assume-role"
+mfa = "manual"
+s3_response = "denied"
+
+[input]
+args = ["data", "--from", "{repo}/tests/fixtures/data/orders.csv", "--query", "SELECT missing_column FROM data", "--json"]
+env = { RUST_LOG = "trace" }
+then_run = [
+  ["data", "--from", "s3://data-bucket/events.jsonl", "--aws-profile", "ops-mfa", "--json"],
+  ["data", "--from", "s3://data-bucket/denied.csv", "--aws-profile", "dev", "--json"],
+]
+
+[expect]
+json_error = { code = "DATA_REJECTED", exit = 4 }
+sts_actions = ["AssumeRole"]
+api_calls = { count = 1, sigv4 = { service = "s3", region = "ap-northeast-1" }, calls = [{ method = "HEAD" }] }
+op_calls = 0
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+json_error = { code = "DATA_INVALID", exit = 2 }
+sts_actions = []
+api_calls = { count = 0 }
+
+[[expect.runs]]
+run = 1
+json_error = { code = "MFA_TOKEN_UNAVAILABLE", exit = 3 }
+sts_actions = []
+api_calls = { count = 0 }
+stderr_json = { "/error/hint" = { contains = ["[onepassword]", "kurama-config.toml"] }, "/error/next_actions/0/message" = { contains = ["[onepassword]", "kurama-config.toml"] } }

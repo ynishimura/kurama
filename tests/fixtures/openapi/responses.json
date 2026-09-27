@@ -1,0 +1,81 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Response shapes",
+    "version": "1"
+  },
+  "paths": {
+    "/pets": {
+      "get": {
+        "operationId": "pets/list",
+        "summary": "List pets",
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Page"
+          }
+        }
+      }
+    },
+    "/fallback": {
+      "get": {
+        "operationId": "fallback",
+        "responses": {
+          "default": {
+            "description": "Fallback",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "responses": {
+      "Page": {
+        "description": "A page",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "content": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Pet"
+                  }
+                },
+                "page": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Pet": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "parent": {
+            "$ref": "#/components/schemas/Pet"
+          }
+        }
+      }
+    }
+  }
+}

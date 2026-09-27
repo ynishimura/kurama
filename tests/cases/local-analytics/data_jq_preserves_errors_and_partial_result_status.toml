@@ -1,0 +1,49 @@
+# A projection cannot turn truncation into success; a failing jq program is
+# one sanitized error without partial stdout; a failed projection never
+# publishes the export.
+id = "data_jq_preserves_errors_and_partial_result_status"
+feature = "local-analytics"
+
+[combination]
+command = "data"
+client = "data"
+data_op = "query"
+data_source = "local"
+format = "jsonl"
+
+[input]
+args = ["data", "{repo}/tests/fixtures/data/events.jsonl", "--max-rows", "1", "--query", "SELECT * FROM data", "--jq", ".rows"]
+then_run = [
+  ["data", "{repo}/tests/fixtures/data/events.jsonl", "--jq", ".rows[]"],
+  ["data", "{repo}/tests/fixtures/data/events.jsonl", "--jq", "error(\"SYNTHETIC_CELL\")"],
+  ["data", "{repo}/tests/fixtures/data/events.jsonl", "--query", "SELECT * FROM data", "--export", "{home}/result.csv", "--jq", "empty"],
+]
+
+[expect]
+sts_actions = []
+op_calls = 0
+no_files_written = true
+exit_code = 2
+stdout = "empty"
+stderr_json = { "/error/code" = "DATA_INVALID" }
+stderr_excludes = ["SYNTHETIC_CELL"]
+
+[[expect.runs]]
+run = 0
+exit_code = 1
+stdout_json = { "" = { length = 1 } }
+stderr_json = { "/error/code" = "DATA_FAILED" }
+
+[[expect.runs]]
+run = 1
+exit_code = 2
+stdout = "empty"
+stderr_json = { "/error/code" = "DATA_INVALID" }
+stderr_excludes = ["SYNTHETIC_CELL"]
+
+[[expect.runs]]
+run = 2
+exit_code = 2
+stdout = "empty"
+stderr_json = { "/error/code" = "DATA_INVALID" }
+stderr_excludes = ["SYNTHETIC_CELL"]

@@ -1,0 +1,52 @@
+# An agent's `db --execute --commit` is refused before the database is
+# opened, whatever allow_write says: AGENT_POLICY_DENIED (exit 3) in the JSON
+# error document, with the hint that asks for a person. `--rollback` keeps
+# nothing and needs nothing more, and `--commit --confirm` keeps the change.
+# The writes run against a copy of the fixture.
+id = "agent_policy_db_commit_needs_a_persons_confirmation"
+feature = "agent-policy"
+
+[combination]
+command = "db"
+client = "db"
+engine = "sqlite"
+db_op = "execute"
+agent = "db-commit"
+
+[input]
+args = ["db", "writable", "--execute", "UPDATE orders SET status = 'open'", "--commit", "--json"]
+then_run = [
+  ["db", "writable", "--execute", "UPDATE orders SET status = 'open'", "--rollback", "--json"],
+  ["db", "writable", "--execute", "UPDATE orders SET status = 'open'", "--commit", "--confirm", "--json"],
+]
+env = { KURAMA_AGENT = "1" }
+copy_files = [{ from = "{repo}/tests/fixtures/db/app.sqlite3", to = "{repo}/target/agent/fixtures/agent_policy_db.sqlite3" }]
+config = """
+[db.writable]
+engine = "sqlite"
+allow_write = true
+path = "{repo}/target/agent/fixtures/agent_policy_db.sqlite3"
+"""
+
+[expect]
+exit_code = 0
+sts_actions = []
+op_calls = 0
+api_calls = { count = 0 }
+# A KURAMA_AGENT run is recorded in the audit log, and nothing else is written.
+files_written = ["home/.local/state/kurama/audit.jsonl"]
+
+[[expect.runs]]
+run = 0
+exit_code = 3
+stderr_json = { "/error/code" = "AGENT_POLICY_DENIED", "/error/category" = "human", "/error/message" = { contains = "db --commit" }, "/error/hint" = { contains = "--confirm" } }
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+stdout_json = { "/meta/transaction/outcome" = "rolled_back" }
+
+[[expect.runs]]
+run = 2
+exit_code = 0
+stdout_json = { "/meta/transaction/outcome" = "committed" }

@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kurama command reference</title>
+<meta name="description" content="Every kurama command and option, what each is for, and examples for people and coding agents.">
+<meta name="theme-color" content="#07101f">
+<link rel="icon" href="assets/kurama-logo.png">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="commands.css">
+</head>
+<body class="ref">
+
+<header class="top scrolled" id="top">
+  <div class="wrap">
+    <a class="brand" href="index.html"><img src="assets/kurama-logo.png" alt="">鞍馬 Kurama</a>
+    <nav aria-label="Sections">
+      <a href="#use-cases"><span class="kanji">用</span>Use cases</a>
+      <a href="#reference"><span class="kanji">令</span>Commands</a>
+      <a href="#exit-codes"><span class="kanji">終</span>Exit codes</a>
+      <a href="https://github.com/ynishimura/kurama">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="ref-hero">
+    <div class="wrap">
+      <p class="eyebrow">Command reference</p>
+      <h1>Every command, <span class="grad">every option.</span></h1>
+      <p class="lead" id="lead">Read off the binary's own definition (<code>kurama agent --json</code>), so it lists exactly what the parser accepts.</p>
+      <div class="search">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+        <input id="q" type="search" placeholder="Search commands, options and use cases: --jq, readonly, parquet…" autocomplete="off" aria-label="Search the reference">
+        <kbd>/</kbd>
+      </div>
+      <div class="stats" id="stats"></div>
+    </div>
+  </div>
+
+  <section id="use-cases">
+    <div class="wrap">
+      <p class="eyebrow">Use cases</p>
+      <h2><span class="kanji">用</span>I want to…</h2>
+      <p class="intro">Pick what you are trying to do; the command links to its full reference below.</p>
+      <div class="scenes" id="scenes"></div>
+    </div>
+  </section>
+
+  <section id="reference">
+    <div class="wrap ref-layout">
+      <aside class="toc" aria-label="Commands">
+        <div class="toc-inner" id="toc"></div>
+      </aside>
+      <div class="ref-body">
+        <p class="eyebrow">Commands</p>
+        <h2><span class="kanji">令</span>At a glance</h2>
+        <div class="glance" id="glance"></div>
+        <div id="commands"></div>
+        <p class="empty" id="empty" hidden>Nothing matches. Try a flag name such as <code>--json</code>, or a word such as <code>token</code>.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="exit-codes" class="band">
+    <div class="wrap">
+      <p class="eyebrow">Exit codes</p>
+      <h2><span class="kanji">終</span>What a failure tells you</h2>
+      <p class="intro">Every failure ends as one <code>error[CODE]: message</code> line and an optional <code>hint:</code> line on stderr; with <code>--json</code> or <code>--jq</code>, as one JSON error document with <code>code</code>, <code>category</code>, <code>exit_code</code>, <code>hint</code>, <code>retry</code> and <code>next_actions</code>.</p>
+      <div class="table-wrap"><table class="exit" id="exits"></table></div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span id="generated">鞍馬 Kurama, released under the MIT License.</span>
+    <span><a href="index.html">Home</a> · <a href="https://github.com/ynishimura/kurama">GitHub</a> · <a href="https://github.com/ynishimura/kurama/tree/main/docs/agents/kurama">Agent guide</a></span>
+  </div>
+</footer>
+
+<script src="commands.js"></script>
+</body>
+</html>

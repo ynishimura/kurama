@@ -1,0 +1,19 @@
+id = "data_missing_source_exits_2"
+feature = "local-analytics"
+
+[combination]
+command = "data"
+client = "data"
+data_op = "preview"
+data_source = "local"
+format = "csv"
+
+[input]
+args = ["data", "--from", "/nonexistent/kurama-input.csv", "--preview", "--json"]
+
+[expect]
+json_error = { code = "DATA_INVALID", exit = 2 }
+sts_actions = []
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true

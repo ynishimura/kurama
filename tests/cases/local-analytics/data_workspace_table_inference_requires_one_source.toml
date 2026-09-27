@@ -1,0 +1,44 @@
+# A workspace with one source needs no table name and keeps JSON string
+# types; one with several is ambiguous and reads no file.
+id = "data_workspace_table_inference_requires_one_source"
+feature = "local-analytics"
+
+[combination]
+command = "data"
+client = "data"
+data_op = "preview"
+data_source = "workspace"
+format = "jsonl"
+
+[input]
+args = ["data", "single", "--preview", "--jq", ".rows[0][0]"]
+config = """
+[data.single]
+root_dir = "{repo}/tests/fixtures/data"
+[[data.single.sources]]
+name = "events"
+path = "events.jsonl"
+[data.multiple]
+root_dir = "/nonexistent"
+[[data.multiple.sources]]
+name = "first"
+path = "first.csv"
+[[data.multiple.sources]]
+name = "second"
+path = "second.csv"
+"""
+then_run = [["data", "multiple", "--preview", "--json"]]
+
+[expect]
+json_error = { code = "DATA_INVALID", exit = 2 }
+stderr_json = { "/error/message" = { contains = "multiple sources" } }
+sts_actions = []
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stdout = { equals = "\"001\"\n" }
+stderr_empty = true

@@ -1,0 +1,49 @@
+# The IAM user behind a bastion, with the tunnel and the token under one AWS
+# profile: two consumers of the role, one AssumeRole (a second one would be
+# a second TOTP). The fake plugin opens no port, so the database is
+# unreachable once the tunnel really opened and was closed; the token is a
+# password nobody reads from 1Password.
+id = "db_iam_behind_a_tunnel_assumes_the_shared_role_once"
+feature = "database"
+
+[combination]
+command = "db"
+client = "db"
+engine = "postgresql"
+tls = "verify-ca"
+auth = "iam"
+tunnel = "ssm"
+db_op = "tables"
+
+[input]
+args = ["db", "both", "--tables", "--json"]
+config = """
+[db.both]
+engine = "postgresql"
+host = "rds.internal.example.com"
+database = "app"
+username = "iam_reader"
+tls = "verify-ca"
+connect_timeout_secs = 2
+
+[db.both.iam]
+aws_profile = "dev"
+
+[db.both.tunnel]
+kind = "ssm"
+aws_profile = "dev"
+instance_name = "bastion"
+"""
+
+[fakes]
+op = "enabled"
+tools = true
+
+[expect]
+json_error = { code = "DB_UNREACHABLE", exit = 1 }
+sts_actions = ["AssumeRole"]
+api_calls = { count = 0 }
+no_files_written = true
+ssm_calls = ["DescribeInstanceInformation", "StartSession", "TerminateSession"]
+# The one item read is the access key of the AWS profile, and no secret.
+op_reads = ["item get aws-agent --format json"]

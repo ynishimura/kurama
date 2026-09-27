@@ -1,0 +1,57 @@
+[config]
+summary = "~/.config/kurama/config.toml: [core] / [aws] / [onepassword] / [auth.*] (kind oauth or token) / [api.*] layout (auth or aws_profile per API), validation, unknown-key errors, environment overrides, `kurama config check [--json]`, which reads each section on its own and lists every problem without a secret store, a keychain or the network, `kurama config path|list|show` (the saved file read for syntax only, literal secrets redacted) `kurama config add`, which appends sections, and `kurama config set|unset|remove`, which edit keys and sections in place (`src/adapters/config/edit.rs`: only the target changes, comments and order kept, an [auth.*] still used is not removed; `layout.rs` decides which comments a removed unit takes; `diff.rs` prints the `--dry-run` hunks), all through the one config writer (`src/adapters/config/writer.rs`: validate the whole candidate once, lock, detect a change since the read, atomic rename keeping mode and symlinks)"
+entry = "src/adapters/config/mod.rs"
+files = [
+  "src/adapters/config/",
+  "src/adapters/utils/",
+  "src/adapters/mod.rs",
+  "tests/config_test.rs",
+  "src/shell/cli/commands/config_check.rs",
+  "src/shell/cli/commands/config.rs",
+  "src/shell/cli/commands/config_show.rs",
+  "src/shell/cli/commands/config_add.rs",
+  "src/shell/cli/commands/config_edit.rs",
+  "tests/scenarios/config.rs",
+]
+tests = ["config"]
+scenarios = [
+  "config_auth_name_collides_with_aws_profile_exits_2",
+  "config_api_auth_reference_unknown_exits_2",
+  "secrets_a_reference_that_is_not_usable_is_refused_by_the_configuration",
+  "secrets_an_arn_and_a_region_that_disagree_are_refused_before_anything_is_read",
+  "config_check_reports_a_valid_configuration_in_text_and_json",
+  "config_check_lists_every_independent_problem_in_one_run",
+  "config_check_names_the_effective_path_and_its_override",
+  "config_check_reads_no_secret_store_keychain_sts_or_network",
+  "config_check_reports_a_corrupt_openapi_cache_with_its_path",
+  "config_without_a_subcommand_under_json_is_an_error_document",
+  "config_check_reports_a_cached_description_that_does_not_parse_as_an_error",
+  "config_check_names_the_aws_config_file_override",
+  "config_check_an_absent_default_file_is_the_default_configuration",
+  "config_path_reports_the_selected_file_without_parsing_it",
+  "config_show_lists_saved_values_without_resolving_secrets",
+  "config_list_names_each_section_and_its_keys",
+  "config_add_accepts_related_sections_in_one_write",
+  "config_add_refuses_collisions_and_keeps_the_file_unchanged",
+  "config_add_rejects_invalid_candidates_without_writing",
+  "config_add_preserves_existing_bytes_and_permissions",
+  "config_add_dry_run_keeps_files_and_mtime_unchanged",
+  "config_add_preserves_a_config_symlink",
+  "config_add_reports_write_failure_without_exposing_secrets",
+  "config_operations_do_not_call_external_services",
+  "config_set_updates_a_key_and_preserves_unrelated_content",
+  "config_set_file_replaces_related_sections_atomically",
+  "config_unset_restores_the_default_value",
+  "config_remove_api_keeps_a_shared_auth",
+  "config_remove_refuses_an_auth_that_is_still_referenced",
+  "config_remove_accepts_related_sections_in_one_write",
+  "config_edit_invalid_candidates_leave_the_file_unchanged",
+  "config_edit_dry_run_redacts_secrets_and_writes_nothing",
+  "config_check_reports_one_problem_for_invalid_colliding_auth",
+  "config_edit_commands_do_not_call_external_services",
+]
+depends_on = ["cli-entry", "errors", "assume-role", "oauth", "api-explorer", "profile-loading", "secrets", "shell-integration", "s3-explorer"]
+notes = "Every CLI scenario loads a config file through KURAMA_CONFIG_PATH; [openapi] revalidate_after is validated and converted from integer seconds once during parsing (default 3600, zero means always revalidate)."
+
+[config.real]
+not_applicable = "reads local configuration files, which the scenarios write and read for real"

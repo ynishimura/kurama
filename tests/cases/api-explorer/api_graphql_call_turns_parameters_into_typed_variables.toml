@@ -1,0 +1,71 @@
+# -P name=value is one variable, typed by the argument's GraphQL type
+# (first: Int is the number 3, includeArchived: Boolean the boolean true),
+# declared in the document in the schema's order; --select is the
+# selection set. -d is the variables object, and a -P replaces the variable
+# of its name.
+id = "api_graphql_call_turns_parameters_into_typed_variables"
+feature = "api-explorer"
+
+[combination]
+command = "api"
+spec = "graphql"
+openapi = "file"
+source = "token"
+
+[input]
+args = ["api", "linear", "query.issues", "-P", "includeArchived=true", "-P", "first=3", "--select", "nodes { id title }", "--jq", ".data"]
+then_run = [
+  ["api", "linear", "mutation.issueCreate", "-d", "{\"input\":{\"teamId\":\"from-d\"}}", "-P", "input={\"teamId\":\"from-P\"}", "--jq", ".data.variables.input.teamId"],
+]
+config = """
+[auth.linear]
+kind = "token"
+token = "op://Agent/linear/credential"
+format = "{token}"
+
+[api.linear]
+base_url = "{server}/api"
+graphql = "/graphql"
+graphql_schema = "{fixtures}/graphql-linear.json"
+"""
+
+[fakes]
+api = "graphql"
+op = "enabled"
+
+[expect]
+exit_code = 0
+stdout = { equals = "from-P\n" }
+api_calls = { count = 1, authorization = "{fake_client_secret}", calls = [{ method = "POST", path = "/api/graphql", body = "{\"query\":\"mutation($input: IssueCreateInput!) { issueCreate(input: $input) { lastSyncId success } }\",\"variables\":{\"input\":{\"teamId\":\"from-P\"}}}" }] }
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+api_calls = { count = 1, authorization = "{fake_client_secret}", calls = [{ method = "POST", path = "/api/graphql", body = "{\"query\":\"query($first: Int, $includeArchived: Boolean) { issues(first: $first, includeArchived: $includeArchived) { nodes { id title } } }\",\"variables\":{\"includeArchived\":true,\"first\":3}}" }] }
+stdout_json = { "/variables" = { first = 3, includeArchived = true }, "/query" = "query($first: Int, $includeArchived: Boolean) { issues(first: $first, includeArchived: $includeArchived) { nodes { id title } } }" }
+
+# The real layer reads the schema from the trimmed fixture: Linear's own
+# introspection result, cached in the sandbox HOME, holds "Bearer " in its
+# descriptions, which the harness's credential scan cannot tell from a token.
+[real]
+requires = ["keychain:OP_SERVICE_ACCOUNT_TOKEN"]
+args = ["api", "linear", "query.issues", "-P", "first=3", "--select", "nodes { id title }", "--jq", ".data.issues.nodes | length"]
+then_run = []
+config = """
+[auth.linear]
+kind = "token"
+token = "op://Agent/xfjngagkbzzl7udtpehrjkrw6a/credential"
+format = "{token}"
+
+[api.linear]
+base_url = "https://api.linear.app"
+graphql = "/graphql"
+graphql_schema = "{fixtures}/graphql-linear.json"
+"""
+
+[real.combination]
+target = "linear"
+
+[real.expect]
+exit_code = 0
+stdout = { equals = "3\n" }

@@ -1,0 +1,20 @@
+# A role that does not exist is exit 4.
+id = "sts_role_not_found_exits_4_with_error_code"
+feature = "assume-role"
+
+[combination]
+command = "env"
+source = "aws-profile"
+role = "assume-role"
+sts_response = "role-not-found"
+
+[input]
+args = ["env", "dev"]
+
+[fakes]
+sts = { error = { code = "NoSuchEntity", message = "The role with name Dev cannot be found." } }
+
+[expect]
+error = { code = "STS_ROLE_NOT_FOUND", exit = 4 }
+sts_actions = ["AssumeRole"]
+no_files_written = true

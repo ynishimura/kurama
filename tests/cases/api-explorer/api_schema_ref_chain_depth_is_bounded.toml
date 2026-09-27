@@ -1,0 +1,35 @@
+# A chain of `$ref`s that adds no object level counts toward the depth bound
+# on its own: `longChain` reaches its object through eight references, one
+# more than `SHAPE.depth` allows, and ends in a `depth_bound` limitation
+# instead of recursing without a bound; `shortChain`, three references long,
+# is followed to the object at its end.
+id = "api_schema_ref_chain_depth_is_bounded"
+feature = "api-explorer"
+
+[combination]
+command = "api"
+openapi = "file"
+output = "schema"
+
+[input]
+args = ["api", "chains", "--schema", "longChain", "--jq", ".operations[0].limitations"]
+then_run = [
+  ["api", "chains", "--schema", "shortChain", "--jq", ".operations[0]"],
+]
+config = """
+[api.chains]
+base_url = "{server}/api"
+openapi = "{fixtures}/ref-chain.json"
+"""
+
+[expect]
+exit_code = 0
+stderr_empty = true
+api_calls = { count = 0 }
+no_files_written = true
+stdout_json = { "/response/schema/type" = "object", "/response/schema/properties/deep/type" = "string", "/limitations" = { length = 0 } }
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stdout_json = { "/0/kind" = "depth_bound", "/0/at" = "/response/schema", "" = { length = 1 } }

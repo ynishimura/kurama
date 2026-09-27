@@ -1,0 +1,75 @@
+# A description fetched from a URL is reused for the revalidation interval
+# without a request: --ops, --describe and a dry run read the cache, -v says
+# the revalidation was skipped and names the cached copy's timestamp, and
+# --refresh-spec fetches again.
+id = "api_spec_within_the_interval_sends_no_request"
+feature = "api-explorer"
+
+[combination]
+command = "api"
+openapi = "url"
+cache = "fresh"
+
+[input]
+args = ["api", "pets", "--ops"]
+then_run = [
+  ["api", "pets", "--ops", "-v"],
+  ["api", "pets", "--describe", "pets/list"],
+  ["api", "pets", "pets/list", "--dry-run"],
+  ["api", "pets", "--refresh-spec"],
+]
+config = """
+[api.pets]
+base_url = "{server}/api"
+openapi = "{server}/spec/petstore.json"
+"""
+
+[expect]
+exit_code = 0
+spec_calls = { count = 1, status = 200 }
+api_calls = { count = 0 }
+sts_actions = []
+oauth_paths = []
+op_calls = 0
+open_calls = []
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+spec_calls = { count = 1, status = 200 }
+api_calls = { count = 0 }
+sts_actions = []
+oauth_paths = []
+op_calls = 0
+open_calls = []
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+spec_calls = { count = 0 }
+stderr_contains = ["revalidation skipped", "cached copy from 20"]
+api_calls = { count = 0 }
+sts_actions = []
+oauth_paths = []
+op_calls = 0
+open_calls = []
+
+[[expect.runs]]
+run = 2
+exit_code = 0
+spec_calls = { count = 0 }
+api_calls = { count = 0 }
+sts_actions = []
+oauth_paths = []
+op_calls = 0
+open_calls = []
+
+[[expect.runs]]
+run = 3
+exit_code = 0
+spec_calls = { count = 0 }
+api_calls = { count = 0 }
+sts_actions = []
+oauth_paths = []
+op_calls = 0
+open_calls = []

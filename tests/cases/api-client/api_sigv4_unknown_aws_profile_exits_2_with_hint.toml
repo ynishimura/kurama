@@ -1,0 +1,25 @@
+# An aws_profile the AWS configuration does not hold is PROFILE_NOT_FOUND,
+# exit 2, before anything is called.
+id = "api_sigv4_unknown_aws_profile_exits_2_with_hint"
+feature = "api-client"
+
+[combination]
+command = "api"
+auth = "aws-profile"
+profile = "unknown"
+
+[input]
+args = ["api", "apigw", "/items"]
+config = """
+[api.apigw]
+base_url = "{server}/api"
+aws_profile = "nope"
+"""
+
+[expect]
+error = { code = "PROFILE_NOT_FOUND", exit = 2 }
+stderr_contains = ["Profile not found: nope"]
+hint = "run `kurama status`"
+sts_actions = []
+api_calls = { count = 0 }
+no_files_written = true

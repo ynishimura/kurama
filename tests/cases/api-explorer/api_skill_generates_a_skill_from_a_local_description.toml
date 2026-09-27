@@ -1,0 +1,56 @@
+# --skill prints one SKILL.md for the profile: frontmatter an Agent Skill
+# loader reads (name, one-line description), the profile's base URL and
+# authentication, how to call and preview an operation, the options of
+# `kurama api` as clap defines them, and each operation with its
+# parameters, body, response and example command. A Swagger 2.0 file gives
+# the same shape; nothing but the file is read.
+id = "api_skill_generates_a_skill_from_a_local_description"
+feature = "api-explorer"
+
+[combination]
+command = "api"
+openapi = "file"
+output = "skill"
+
+[input]
+args = ["api", "pets", "--skill"]
+then_run = [
+  ["api", "legacy", "--skill"],
+]
+config = """
+[api.pets]
+base_url = "{server}/api"
+openapi = "{fixtures}/petstore.json"
+
+[api.legacy]
+base_url = "{server}/api"
+openapi = "{fixtures}/legacy-swagger.json"
+"""
+
+[expect]
+exit_code = 0
+stderr_empty = true
+api_calls = { count = 0 }
+spec_calls = { count = 0 }
+op_calls = 0
+token_grants = []
+no_files_written = true
+stdout = { kind = "plain-text", starts_with = "---\nname: kurama-api-legacy\ndescription: \"Use when a task calls Legacy (version", contains = ["\n---\n\n# `legacy` Legacy", "### `createItem` POST `/items`", "- Body (`-d`, "] }
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stderr_empty = true
+stdout = { kind = "plain-text", starts_with = "---\nname: kurama-api-pets\ndescription: \"Use when a task calls Petstore (version 1.2.0, 5 operations) through the kurama [api.pets] profile.", contains = [
+  "- Authentication: none; requests are sent without a credential.",
+  "- Description: a local file, reread on every use; nothing is fetched.",
+  "- `-P, --param NAME=VALUE` (repeatable): Operation parameter;",
+  "- `--skill`: Print an Agent Skill",
+  "### `pets/list` GET `/pets`: List pets",
+  "- Parameters (`-P name=value`): `limit` (query, integer, default `20`), `status` (query, string, one of `available` `sold`)",
+  "- Body (`-d`, required): application/json object with name*, tags, owner (* required)",
+  "- Example: `kurama api pets pets/list`",
+  "### `owners/list-pets`",
+  "--dry-run --json",
+  "error.next_actions",
+] }

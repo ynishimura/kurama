@@ -1,0 +1,44 @@
+# A YAML description served by the API is parsed like JSON and its
+# operations are called; a document without paths is API_SPEC_INVALID.
+id = "api_spec_yaml_is_accepted_and_an_invalid_document_exits_2"
+feature = "api-explorer"
+
+[combination]
+command = "api"
+openapi = "url-yaml-and-invalid-file"
+
+[input]
+args = ["api", "yaml", "--ops", "--json"]
+then_run = [
+  ["api", "yaml", "pets/create", "-d", "{\"name\":\"rex\"}", "--jq", ".body"],
+  ["api", "broken", "--ops"],
+]
+config = """
+[api.yaml]
+base_url = "{server}/api"
+openapi = "{server}/spec/petstore.yaml"
+
+[api.broken]
+base_url = "{server}/api"
+openapi = "{fixtures}/invalid.json"
+"""
+
+[expect]
+error = { code = "API_SPEC_INVALID", exit = 2 }
+stderr_contains = ["is not usable: the document has no `paths` object"]
+hint = "the openapi document under [api.broken] must be OpenAPI 3.0 / 3.1 or Swagger 2.0, as JSON or YAML"
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stdout_json = { "" = [
+  { id = "pets/list", method = "GET", path = "/pets", summary = "List pets", tags = ["pets"], scopes = [], deprecated = false },
+  { id = "pets/create", method = "POST", path = "/pets", summary = "Create a pet", tags = ["pets"], scopes = [], deprecated = false },
+  { id = "pets/get", method = "GET", path = "/pets/{petId}", summary = "Get a pet", tags = ["pets"], scopes = [], deprecated = false },
+] }
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+stdout = { equals = "{\"name\":\"rex\"}\n" }
+api_calls = { count = 1, calls = [{ method = "POST", path = "/api/pets" }] }

@@ -1,0 +1,46 @@
+# A Discovery method is an operation target: `-P` fills its path under
+# base_url and its query. A `{+name}` (reserved expansion) keeps `/` and
+# `!` as they are, while a plain `{range}` percent-encodes them.
+id = "api_discovery_operation_target_expands_reserved_path_parameters"
+feature = "api-explorer"
+
+[combination]
+command = "api"
+spec = "discovery"
+openapi = "file"
+target = "operation"
+
+[input]
+args = ["api", "people", "people.people.get", "-P", "resourceName=people/me!x", "-P", "personFields=names"]
+then_run = [
+  ["api", "sheets", "sheets.spreadsheets.get", "-P", "spreadsheetId=abc"],
+  ["api", "sheets", "sheets.spreadsheets.values.get", "-P", "spreadsheetId=abc", "-P", "range=Sheet1!A1:B2"],
+]
+config = """
+[api.people]
+base_url = "{server}/api"
+discovery = "{fixtures}/discovery-people-v1.json"
+
+[api.sheets]
+base_url = "{server}/api"
+discovery = "{fixtures}/discovery-sheets-v4.json"
+"""
+
+[expect]
+exit_code = 0
+spec_calls = { count = 0 }
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+api_calls = { count = 1, calls = [{ method = "GET", path = "/api/v1/people/me!x?personFields=names" }] }
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+api_calls = { count = 1, calls = [{ method = "GET", path = "/api/v4/spreadsheets/abc" }] }
+
+[[expect.runs]]
+run = 2
+exit_code = 0
+api_calls = { count = 1, calls = [{ method = "GET", path = "/api/v4/spreadsheets/abc/values/Sheet1%21A1%3AB2" }] }

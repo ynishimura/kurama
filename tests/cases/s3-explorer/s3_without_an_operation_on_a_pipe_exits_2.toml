@@ -1,0 +1,31 @@
+# Without an operation there is nothing to print on a pipe: exit 2 with
+# examples, as text and as a JSON error document, before anything is called.
+id = "s3_without_an_operation_on_a_pipe_exits_2"
+feature = "s3-explorer"
+
+[combination]
+command = "s3"
+source = "aws-profile"
+s3_op = "none"
+
+[input]
+args = ["s3", "assets", "--json"]
+then_run = [["s3", "assets"]]
+config = """
+[s3.assets]
+aws_profile = "dev"
+bucket = "browse-bucket"
+"""
+
+[expect]
+error = { code = "S3_INVALID", exit = 2 }
+hint = "for example: kurama s3 <S3> --list, kurama s3 <S3> s3://bucket/prefix/ --search TEXT, kurama s3 <S3> --buckets"
+sts_actions = []
+op_calls = 0
+api_calls = { count = 0 }
+stdout_lines = 0
+
+[[expect.runs]]
+run = 0
+exit_code = 2
+stderr_json = { "/error/code" = "S3_INVALID", "/error/category" = "usage", "/error/message" = { contains = "--buckets, --list or --search" } }

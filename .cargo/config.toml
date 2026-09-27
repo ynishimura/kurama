@@ -1,0 +1,11 @@
+[build]
+target-dir = "target"
+
+[alias]
+# Agent interface: `cargo xtask --help` lists the commands (see AGENTS.md).
+xtask = "run --quiet --package xtask --"
+
+# Coverage (cargo-llvm-cov)
+coverage = "llvm-cov report"
+coverage-ci = "llvm-cov --lcov --output-path target/coverage/lcov.info"
+coverage-report = "llvm-cov report"

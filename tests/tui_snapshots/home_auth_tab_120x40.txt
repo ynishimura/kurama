@@ -1,0 +1,40 @@
+ 鞍馬 kurama  AWS credential switcher                                                               readonly   console
+  1 AWS   2 Auth   3 API   4 DB   5 Data   6 S3
+┏ Auth sources (2) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓┏ Details ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃     KIND NAME   STATE                                         ┃┃ Source      github                                  ┃
+┃ ▸ * auth github valid (59m)                                   ┃┃ Kind        oauth                                   ┃
+┃     auth openai not_checked                                   ┃┃ Grant       authorization_code                      ┃
+┃                                                               ┃┃ Env var     KURAMA_TOKEN                            ┃
+┃                                                               ┃┃ Token       valid (59m)                             ┃
+┃                                                               ┃┃ Expires     2027-01-15T09:30:00Z                    ┃
+┃                                                               ┃┃ Shell       holds its token                         ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃ Next        Enter runs kurama login github          ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+ ↑↓ move  Enter login  q quit  Tab next tab  ? help

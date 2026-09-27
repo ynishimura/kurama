@@ -1,0 +1,53 @@
+# [api.<name>.agent] replaces the [agent] keys it names for that API only:
+# with POST in its allow_methods an agent's POST is sent, while another API
+# under the global rules still refuses it, and a deny_paths pattern of the
+# global section still refuses a GET the method rule allows. A run without
+# KURAMA_AGENT is a person's and is held to nothing.
+id = "agent_policy_allows_what_the_api_section_widens"
+feature = "agent-policy"
+
+[combination]
+command = "api"
+source = "none"
+agent = "api-section"
+
+[input]
+args = ["api", "open", "/items", "-d", "{\"name\":\"x\"}"]
+then_run = [
+  ["api", "closed", "/items", "-d", "{\"name\":\"x\"}"],
+  ["api", "closed", "/admin/users"],
+]
+env = { KURAMA_AGENT = "1" }
+config = """
+[agent]
+deny_paths = ["/api/admin*"]
+
+[api.open]
+base_url = "{server}/api"
+
+[api.open.agent]
+allow_methods = ["GET", "POST"]
+
+[api.closed]
+base_url = "{server}/api"
+"""
+
+[expect]
+token_grants = []
+# A KURAMA_AGENT run is recorded in the audit log, and nothing else is written.
+files_written = ["home/.local/state/kurama/audit.jsonl"]
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+api_calls = { count = 1, calls = [{ method = "POST", path = "/api/items", no_authorization = true }] }
+
+[[expect.runs]]
+run = 1
+error = { code = "AGENT_POLICY_DENIED", exit = 3, message = "the [agent] policy refuses POST /api/items: POST is not in allow_methods" }
+api_calls = { count = 0 }
+
+[[expect.runs]]
+run = 2
+error = { code = "AGENT_POLICY_DENIED", exit = 3, message = "the [agent] policy refuses GET /api/admin/users: the path matches deny_paths \"/api/admin*\"" }
+api_calls = { count = 0 }

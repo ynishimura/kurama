@@ -1,0 +1,17 @@
+id = "data_missing_sql_file_exits_2"
+feature = "local-analytics"
+
+[combination]
+command = "data"
+data_op = "query"
+data_source = "local"
+format = "csv"
+
+[input]
+args = ["data", "--from", "{repo}/tests/fixtures/data/orders.csv", "--file", "/nonexistent/kurama-query.sql"]
+
+[expect]
+error = { code = "DATA_INVALID", exit = 2 }
+sts_actions = []
+op_calls = 0
+no_files_written = true

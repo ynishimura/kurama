@@ -1,0 +1,29 @@
+# `--allow-spill false` is recorded in the plan the dry run prints, and the
+# query still runs in memory.
+id = "data_allow_spill_false_plans_without_temporary_disk"
+feature = "local-analytics"
+
+[combination]
+command = "data"
+client = "data"
+data_op = "dry-run"
+data_source = "local"
+format = "csv"
+"data.allow-spill" = "false"
+
+[input]
+args = ["data", "{repo}/tests/fixtures/data/ids.csv", "--allow-spill", "false", "--dry-run", "--json"]
+then_run = [["data", "{repo}/tests/fixtures/data/ids.csv", "--allow-spill", "false", "--preview", "--max-rows", "1", "--json"]]
+
+[expect]
+exit_code = 0
+stdout_json = { "/row_count" = 1, "/meta/limits/allow_spill" = false }
+sts_actions = []
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stdout_json = { "/dry_run" = true, "/meta/limits/allow_spill" = false }

@@ -1,0 +1,28 @@
+# A description URL that cannot be fetched, with no cached copy, is
+# API_SPEC_UNAVAILABLE, exit 1, with the hint to check the URL.
+id = "api_spec_unreachable_without_a_cache_exits_1"
+feature = "api-explorer"
+
+[combination]
+command = "api"
+openapi = "url"
+cache = "none"
+spec_server = "down"
+
+[input]
+args = ["api", "pets", "--ops"]
+config = """
+[api.pets]
+base_url = "{server}/api"
+openapi = "{server}/spec/petstore.json"
+"""
+
+[fakes]
+spec = "down"
+
+[expect]
+error = { code = "API_SPEC_UNAVAILABLE", exit = 1 }
+stderr_contains = ["cannot load the API description http://", "HTTP 503: spec server down"]
+hint = "check the openapi URL under [api.pets]; `kurama api pets --refresh-spec` fetches it again"
+spec_calls = { count = 1, status = 503 }
+no_files_written = true

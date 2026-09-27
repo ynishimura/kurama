@@ -1,0 +1,51 @@
+# A section the file already has refuses the whole input -- the new auth
+# beside it is not added either, nothing is merged -- and so does an auth
+# named like an AWS profile, which would make `kurama login dev` ambiguous.
+# The file is not touched.
+id = "config_add_refuses_collisions_and_keeps_the_file_unchanged"
+feature = "config"
+
+[combination]
+command = "config-add"
+config = "rejected"
+input = "file"
+
+[input]
+args = ["config", "add", "--file", "{home}/add/collides.toml"]
+then_run = [["config", "add", "--file", "{home}/add/aws-name.toml", "--json"]]
+config = """
+[api.svc]
+base_url = "https://old.example.com"
+"""
+
+[input.home_files]
+"add/collides.toml" = """
+[auth.svc]
+kind = "token"
+token = "op://Agent/svc/credential"
+
+[api.svc]
+base_url = "https://new.example.com"
+auth = "svc"
+"""
+"add/aws-name.toml" = """
+[auth.dev]
+kind = "token"
+token = "op://Agent/dev/credential"
+"""
+
+[expect]
+json_error = { code = "CONFIG_INVALID", exit = 2 }
+stderr_lines = 1
+stderr_json = { "/error/message" = { contains = "[auth.dev] has the same name as the AWS profile 'dev'" }, "/error/hint" = "fix the input; the file was not changed" }
+sts_actions = []
+op_calls = 0
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+error = { code = "CONFIG_INVALID", exit = 2 }
+stderr_contains = ["[api.svc] is already in", "/kurama-config.toml", "nothing was added"]
+stderr_excludes = ["[auth.svc]", "new.example.com"]
+hint = "choose another name for the new section, or leave it out of the input; the file was not changed"
+stdout = "empty"

@@ -1,0 +1,30 @@
+ 鞍馬 kurama  AWS credential switcher                                           readonly   console
+  1 AWS   2 Auth   3 API   4 DB   5 Data   6 S3
+┏ Profiles (2) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓┏ Details ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃     KIND PROFILE                   SESSION         ┃┃ Profile platform-engineering-production-ad ┃
+┃     aws  dev                       -               ┃┃         ministrator-eu-central-1-very-long ┃
+┃ ▸ * aws  platform-engineering-pro… valid (11h 59m) ┃┃         -profile-name                      ┃
+┃                                                    ┃┃ Kind    aws                                ┃
+┃                                                    ┃┃ Role    arn:aws:iam::123456789012:role/org ┃
+┃                                                    ┃┃         anization-wide-platform-engineerin ┃
+┃                                                    ┃┃         g-administrator-with-a-very-long-n ┃
+┃                                                    ┃┃         ame                                ┃
+┃                                                    ┃┃ Region  ap-northeast-1                     ┃
+┃                                                    ┃┃ MFA     arn:aws:iam::123456789012:mfa/agen ┃
+┃                                                    ┃┃         t                                  ┃
+┃                                                    ┃┃ Session valid (11h 59m)                    ┃
+┃                                                    ┃┃ Shell   this shell holds its credentials   ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃ Next    Enter assumes the role             ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+ ↑↓ move  Enter assume  q quit  / search  ^K go to  ? help  r readonly  c console  Tab next tab

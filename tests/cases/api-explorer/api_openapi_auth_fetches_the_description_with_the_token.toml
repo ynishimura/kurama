@@ -1,0 +1,58 @@
+# openapi_auth sends the API's bearer token for the description and the call
+# uses it too; without openapi_auth an authenticated API fetches its
+# description with no credential and the call still has it.
+id = "api_openapi_auth_fetches_the_description_with_the_token"
+feature = "api-explorer"
+
+[combination]
+command = "api"
+openapi = "url"
+source = "oauth"
+token = "stored"
+openapi_auth = "both"
+
+[input]
+stored_tokens = [{ source = "github", access_token = "stored-access-token", expires_in = 3600 }]
+args = ["api", "github", "--ops", "pets/get", "--json"]
+then_run = [
+  ["api", "github", "pets/get", "-P", "petId=1", "--jq", ".authorization"],
+  ["api", "gh", "pets/get", "-P", "petId=1", "--jq", ".authorization"],
+]
+config = """
+[auth.github]
+kind = "oauth"
+grant_type = "authorization_code"
+auth_url = "{server}/oauth/authorize"
+token_url = "{server}/oauth/token"
+client_id = "gh-client"
+
+[api.github]
+base_url = "{server}/api"
+openapi = "{server}/spec/petstore.json"
+openapi_auth = true
+
+[api.gh]
+base_url = "{server}/api"
+auth = "github"
+openapi = "{server}/spec/petstore.yaml"
+
+[openapi]
+revalidate_after = 0
+"""
+
+[expect]
+exit_code = 0
+token_grants = []
+spec_calls = { count = 1, status = 200 }
+api_calls = { count = 1, authorization = "Bearer stored-access-token" }
+stdout = { equals = "Bearer stored-access-token\n" }
+
+[[expect.runs]]
+run = 0
+spec_calls = { count = 1, status = 200, authorization = "Bearer stored-access-token" }
+api_calls = { count = 0 }
+
+[[expect.runs]]
+run = 1
+spec_calls = { count = 1, conditional = true, status = 304, authorization = "Bearer stored-access-token" }
+stdout = { equals = "Bearer stored-access-token\n" }

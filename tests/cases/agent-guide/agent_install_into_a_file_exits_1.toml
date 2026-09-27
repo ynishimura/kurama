@@ -1,0 +1,20 @@
+# A --dir that cannot hold directories -- here a regular file -- is
+# AGENT_INSTALL_FAILED (exit 1), naming the Skill it could not write, with
+# a hint; the file there is left as it was.
+id = "agent_install_into_a_file_exits_1"
+feature = "agent-guide"
+
+[combination]
+command = "agent-install"
+output = "text"
+
+[input]
+args = ["agent", "install", "--dir", "{home}/notadir"]
+home_files = { "notadir" = "not a directory\n" }
+
+[expect]
+error = { code = "AGENT_INSTALL_FAILED", exit = 1 }
+stderr_contains = ["cannot write the Agent Skill ", "/notadir/kurama/SKILL.md"]
+hint = "name a --dir that is a writable directory; the Skills written before this one stay, and a rerun writes only what differs"
+stdout = "empty"
+no_files_written = true

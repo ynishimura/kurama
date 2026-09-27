@@ -1,0 +1,36 @@
+# A deadline is `Instant + Duration`, and a number nobody can wait out made
+# that addition overflow: the process ended with a panic and exit 101 instead
+# of one error line. The flag is bounded by the parser, so the refusal is one
+# usage error document, and never a panic.
+id = "db_a_deadline_nobody_can_wait_out_is_refused_before_anything_is_opened"
+feature = "database"
+
+[combination]
+command = "db"
+client = "db"
+engine = "sqlite"
+db_op = "tables"
+
+[input]
+args = ["db", "app", "--tables", "--timeout", "18446744073709551615", "--json"]
+config = """
+[db.app]
+engine = "sqlite"
+path = "{repo}/tests/fixtures/db/app.sqlite3"
+
+[db.writable]
+engine = "sqlite"
+allow_write = true
+path = "{repo}/tests/fixtures/db/app.sqlite3"
+"""
+
+[expect]
+json_error = { code = "DB_INVALID", exit = 2 }
+sts_actions = []
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true
+stderr_json = { "/error/category" = "usage" }
+stderr_excludes = ["panicked"]
+stderr_lines = 1
+stdout = "empty"

@@ -1,0 +1,58 @@
+# --describe of a Discovery method prints its path parameter, its scopes and
+# the response schema its `response.$ref` names, resolved from the
+# document's `schemas`; a method with `request.$ref` has a required JSON
+# body whose optional properties are named.
+id = "api_discovery_describe_carries_scopes_and_the_response_schema"
+feature = "api-explorer"
+
+[combination]
+command = "api"
+spec = "discovery"
+openapi = "file"
+output = "describe"
+
+[input]
+args = ["api", "sheets", "--describe", "sheets.spreadsheets.get"]
+then_run = [
+  ["api", "sheets", "--describe", "sheets.spreadsheets.get", "--json"],
+  ["api", "sheets", "--describe", "sheets.spreadsheets.batchUpdate", "--json"],
+  ["api", "sheets", "--schema", "sheets.spreadsheets.get", "--jq", ".operations[0].scopes | length"],
+]
+config = """
+[api.sheets]
+base_url = "{server}/api"
+discovery = "{fixtures}/discovery-sheets-v4.json"
+"""
+
+[expect]
+exit_code = 0
+api_calls = { count = 0 }
+spec_calls = { count = 0 }
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stdout = { contains = [
+  "sheets.spreadsheets.get\n  GET /v4/spreadsheets/{spreadsheetId}\n",
+  "spreadsheetId                path   string",
+  "Response  200  application/json",
+  "\"spreadsheetUrl\": \"string\"",
+  "Scopes\n  https://www.googleapis.com/auth/drive, ",
+  "https://www.googleapis.com/auth/spreadsheets.readonly",
+] }
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+stdout_json = { "/parameters/0/name" = "spreadsheetId", "/parameters/0/in" = "path", "/parameters/0/required" = true, "/response/shape" = { spreadsheetId = "string", spreadsheetUrl = "string", properties = { title = "string", locale = "string", timeZone = "string" } } }
+
+[[expect.runs]]
+run = 2
+exit_code = 0
+stdout_json = { "/method" = "POST", "/request_body/content_type" = "application/json", "/request_body/required" = true, "/request_body/optional" = ["includeSpreadsheetInResponse", "responseRanges"], "/response/shape/spreadsheetId" = "string" }
+
+[[expect.runs]]
+run = 3
+exit_code = 0
+stdout = { equals = "5\n" }

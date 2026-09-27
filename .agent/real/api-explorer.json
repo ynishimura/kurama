@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "feature": "api-explorer",
+  "status": "verified",
+  "reason": null,
+  "commit": "dfda49629bf72cd0d6411c8a1def4e5956d50593",
+  "feature_hash": "c60dae6279f3b9e3",
+  "diff_hash": "cbf29ce484222325",
+  "environment": "real-services",
+  "access": "read-only",
+  "command": [
+    "cargo",
+    "xtask",
+    "verify",
+    "--layer",
+    "real",
+    "api-explorer"
+  ],
+  "generated_at": "2026-09-27T17:23:29.627506+00:00",
+  "observed": [
+    {
+      "test": "api_graphql_call_sends_the_default_selection",
+      "result": "passed",
+      "mock": [
+        "api_graphql_call_sends_the_default_selection"
+      ]
+    },
+    {
+      "test": "api_graphql_call_turns_parameters_into_typed_variables",
+      "result": "passed",
+      "mock": [
+        "api_graphql_call_turns_parameters_into_typed_variables"
+      ]
+    },
+    {
+      "test": "api_schema_real_public_description_is_a_usable_contract",
+      "result": "passed",
+      "mock": [
+        "api_schema_real_public_description_is_a_usable_contract"
+      ]
+    }
+  ],
+  "fixtures": {}
+}

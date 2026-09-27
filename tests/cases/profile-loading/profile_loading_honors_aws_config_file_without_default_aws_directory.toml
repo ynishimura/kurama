@@ -1,0 +1,26 @@
+# A HOME without ~/.aws still reads the profiles of the file AWS_CONFIG_FILE
+# names, rather than falling back to `default` alone.
+id = "profile_loading_honors_aws_config_file_without_default_aws_directory"
+feature = "profile-loading"
+
+[combination]
+command = "status"
+"status.only" = "aws"
+source = "aws-profile"
+output = "json"
+
+[input]
+args = ["status", "--only", "aws", "--json"]
+# AWS_CONFIG_FILE stays the sandbox's {home}/.aws/config; HOME moves to a
+# directory with no .aws in it.
+env = { HOME = "{home}/without-aws" }
+aws_config = """
+[profile deploy]
+region = ap-northeast-1
+"""
+
+[expect]
+exit_code = 0
+sts_actions = []
+op_calls = 0
+stdout_json = { "/0/name" = "deploy", "/0/kind" = "aws", "/1" = "<null>" }

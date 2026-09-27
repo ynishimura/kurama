@@ -1,0 +1,33 @@
+# `--dry-run` checks the candidate and prints the lines it would append,
+# each with `+`, and writes nothing: the file keeps its bytes and its mtime
+# (the harness compares both) and no temporary file is left. The JSON form
+# says it was not applied.
+id = "config_add_dry_run_keeps_files_and_mtime_unchanged"
+feature = "config"
+
+[combination]
+command = "config-add"
+output = "dry-run"
+input = "stdin"
+
+[input]
+args = ["config", "add", "--file", "-", "--dry-run"]
+then_run = [["config", "add", "--file", "-", "--dry-run", "--json"]]
+stdin = """
+[api.docs]
+base_url = "https://docs.example.com"
+"""
+
+[expect]
+exit_code = 0
+stderr_empty = true
+stdout_json = { "/changed" = true, "/applied" = false, "/changes/0/section" = "api.docs", "/changes" = { length = 1 } }
+sts_actions = []
+op_calls = 0
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stdout = { lines_start_with = ["+"], contains = ["+[api.docs]\n+base_url = \"https://docs.example.com\"\n"] }
+stderr_contains = ["# dry run: [api.docs] would be added to", "nothing was written"]

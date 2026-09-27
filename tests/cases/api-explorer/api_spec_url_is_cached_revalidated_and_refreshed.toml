@@ -1,0 +1,57 @@
+# With revalidate_after = 0 the second run revalidates with the validators
+# and gets 304; --refresh-spec fetches unconditionally and reports what came
+# back; the description is cached under ~/.cache/kurama/openapi/.
+id = "api_spec_url_is_cached_revalidated_and_refreshed"
+feature = "api-explorer"
+
+[combination]
+command = "api"
+openapi = "url"
+cache = "revalidate-every-time"
+
+[input]
+args = ["api", "pets", "--ops", "pets/list"]
+then_run = [
+  ["api", "pets", "--ops", "pets/list"],
+  ["api", "pets", "--refresh-spec"],
+  ["api", "pets", "--describe", "pets/list", "--refresh-spec", "--json"],
+]
+config = """
+[api.pets]
+base_url = "{server}/api"
+openapi = "{server}/spec/petstore.json"
+
+[openapi]
+revalidate_after = 0
+"""
+
+[expect]
+exit_code = 0
+spec_calls = { count = 1, status = 200 }
+api_calls = { count = 0 }
+stdout = "plain-text"
+files_written = { include = ["*.cache/kurama/openapi/*.body", "*.cache/kurama/openapi/*.json"] }
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+spec_calls = { count = 1, status = 200 }
+stdout = { equals = "ID         METHOD  PATH   SUMMARY\npets/list  GET     /pets  List pets\n" }
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+spec_calls = { count = 1, conditional = true, status = 304 }
+stdout = { equals = "ID         METHOD  PATH   SUMMARY\npets/list  GET     /pets  List pets\n" }
+
+[[expect.runs]]
+run = 2
+exit_code = 0
+spec_calls = { count = 1, status = 200 }
+stdout = "empty"
+stderr_contains = ["# pets: Petstore 1.2.0 with 5 operations, from http://", "/spec/petstore.json (fetched)"]
+
+[[expect.runs]]
+run = 3
+exit_code = 0
+stdout_json = { "/id" = "pets/list" }

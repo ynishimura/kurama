@@ -1,0 +1,39 @@
+# A glob and a key with spaces, a plus, a percent and Japanese aggregate
+# correctly; HEAD and GET address the same encoded key.
+id = "data_s3_glob_and_unicode_csv_use_exact_keys"
+feature = "local-analytics"
+
+[combination]
+command = "data"
+source = "aws-profile"
+client = "data"
+data_op = "query"
+data_source = "s3"
+format = "csv"
+role = "assume-role"
+
+[input]
+args = ["data", "--from", "s3://data-bucket/*.parquet", "--aws-profile", "dev", "--query", "SELECT sum(amount) FROM data", "--json"]
+then_run = [["data", "--from", "s3://data-bucket/日本語 +%//orders.csv", "--aws-profile", "dev", "--type", "amount=DECIMAL(18,2)", "--query", "SELECT sum(amount) FROM data", "--json"]]
+
+[expect]
+exit_code = 0
+sts_actions = ["AssumeRole"]
+stdout_json = { "/rows" = [["33.00"]] }
+api_calls = { count = 8, sigv4 = { service = "s3", region = "ap-northeast-1" }, calls = [
+  { method = "HEAD", path = "/data-bucket/%E6%97%A5%E6%9C%AC%E8%AA%9E%20%2B%25//orders.csv" },
+  { method = "HEAD", path = "/data-bucket/%E6%97%A5%E6%9C%AC%E8%AA%9E%20%2B%25//orders.csv" },
+  { method = "GET", path = "/data-bucket/%E6%97%A5%E6%9C%AC%E8%AA%9E%20%2B%25//orders.csv" },
+  { method = "HEAD", path = "/data-bucket/%E6%97%A5%E6%9C%AC%E8%AA%9E%20%2B%25//orders.csv" },
+  { method = "GET", path = "/data-bucket/%E6%97%A5%E6%9C%AC%E8%AA%9E%20%2B%25//orders.csv" },
+  { method = "GET", path = "/data-bucket/%E6%97%A5%E6%9C%AC%E8%AA%9E%20%2B%25//orders.csv" },
+  { method = "GET", path = "/data-bucket/%E6%97%A5%E6%9C%AC%E8%AA%9E%20%2B%25//orders.csv" },
+  { method = "HEAD", path = "/data-bucket/%E6%97%A5%E6%9C%AC%E8%AA%9E%20%2B%25//orders.csv" },
+] }
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+sts_actions = ["AssumeRole"]
+stdout_json = { "/rows" = [["97.00"]] }

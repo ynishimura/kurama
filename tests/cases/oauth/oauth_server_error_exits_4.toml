@@ -1,0 +1,35 @@
+# The authorization server answers 500: the remote side rejected.
+id = "oauth_server_error_exits_4"
+feature = "oauth"
+
+[combination]
+command = "token"
+source = "oauth"
+grant = "client_credentials"
+secret = "op"
+token_response = "server-error"
+
+[input]
+args = ["token", "svc"]
+config = """
+[auth.svc]
+kind = "oauth"
+grant_type = "client_credentials"
+token_url = "{server}/oauth/token"
+client_id = "svc-client"
+client_secret = "op://Agent/Service/client_secret"
+scopes = ["read"]
+
+[api.svc]
+description = "Service API"
+base_url = "{server}/api"
+"""
+
+[fakes]
+op = "enabled"
+oauth = "unavailable"
+token_store = true
+
+[expect]
+error = { code = "OAUTH_REJECTED", exit = 4 }
+stderr_contains = ["HTTP 500"]

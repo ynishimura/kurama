@@ -1,0 +1,53 @@
+# --schema OP narrows the document to that operation: its parameters with
+# their location, required flag and schema, the request body's content type
+# and whole schema ($ref followed, arrays, optional properties kept, the
+# required list), and the success response's schema -- a cycle included --
+# with the example command. An unknown OP is the --describe error.
+id = "api_schema_for_one_operation_carries_its_parameters_and_bodies"
+feature = "api-explorer"
+
+[combination]
+command = "api"
+openapi = "file"
+output = "schema"
+description = "responses"
+
+[input]
+args = ["api", "pets", "--schema", "pets/create"]
+then_run = [
+  ["api", "pets", "--schema", "pets/get"],
+  ["api", "shapes", "--schema", "pets/list"],
+  ["api", "pets", "--schema", "pets/nope"],
+]
+config = """
+[api.pets]
+base_url = "{server}/api"
+openapi = "{fixtures}/petstore.json"
+
+[api.shapes]
+base_url = "{server}/api"
+openapi = "{fixtures}/responses.json"
+"""
+
+[expect]
+error = { code = "API_OPERATION_NOT_FOUND", exit = 2 }
+stdout = "empty"
+api_calls = { count = 0 }
+spec_calls = { count = 0 }
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stdout_lines = 1
+stdout_json = { "/operations" = { length = 1 }, "/operations/0/id" = "pets/create", "/operations/0/method" = "POST", "/operations/0/scopes" = ["read:pets", "write:pets"], "/operations/0/request_body/content_type" = "application/json", "/operations/0/request_body/required" = true, "/operations/0/request_body/schema/type" = "object", "/operations/0/request_body/schema/required" = ["name"], "/operations/0/request_body/schema/properties/tags/items/type" = "string", "/operations/0/request_body/schema/properties/owner/properties/login/example" = "octocat", "/operations/0/example_command" = "kurama api pets pets/create -d '{\"name\":\"\"}'", "/operations/0/limitations/0/kind" = "other_content_types", "/operations/0/limitations/0/content_types" = ["application/xml"] }
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+stdout_json = { "/operations/0/parameters" = { length = 2 }, "/operations/0/parameters/0/name" = "petId", "/operations/0/parameters/0/in" = "path", "/operations/0/parameters/0/required" = true, "/operations/0/parameters/0/schema/type" = "string", "/operations/0/parameters/1/name" = "X-Trace", "/operations/0/parameters/1/in" = "header", "/operations/0/request_body" = "<null>", "/operations/0/limitations" = [] }
+
+[[expect.runs]]
+run = 2
+exit_code = 0
+stdout_json = { "/operations/0/response/status" = "200", "/operations/0/response/content_type" = "application/json", "/operations/0/response/schema/properties/content/items/required" = ["id"], "/operations/0/response/schema/properties/content/items/properties/parent/type" = "object", "/operations/0/limitations/0/kind" = "cycle", "/operations/0/limitations/0/at" = "/response/schema/properties/content/items/properties/parent", "/operations/0/limitations/0/ref" = "#/components/schemas/Pet" }

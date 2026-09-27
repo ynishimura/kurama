@@ -1,0 +1,50 @@
+# A URL description behind openapi_auth: the first --skill fetches it with
+# the token source's credential (one op read); within the revalidation
+# interval the next --skill reads the cached copy and sends no request,
+# reads no secret and prints the same Skill (the source it was read from
+# is not part of it).
+id = "api_skill_from_a_cached_url_calls_nothing"
+feature = "api-explorer"
+
+[combination]
+command = "api"
+openapi = "url"
+cache = "fresh"
+output = "skill"
+
+[input]
+args = ["api", "voices", "--skill"]
+then_run = [
+  ["api", "voices", "--skill"],
+]
+config = """
+[auth.voices]
+kind = "token"
+token = "op://Agent/voices/credential"
+header = "xi-api-key"
+format = "{token}"
+
+[api.voices]
+base_url = "{server}/api"
+auth = "voices"
+openapi = "{server}/spec/petstore.json"
+openapi_auth = true
+"""
+
+[expect]
+exit_code = 0
+stderr_empty = true
+spec_calls = { count = 0 }
+api_calls = { count = 0 }
+op_calls = 0
+token_grants = []
+sts_actions = []
+stdout = { starts_with = "---\nname: kurama-api-voices\n", contains = ["- Description: a URL, fetched with the API's credential (`openapi_auth`) and cached;", "### `pets/list`", "### `owners/list-pets`"] }
+stdout_excludes = ["op://", "fetched_at", "revalidation"]
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+spec_calls = { count = 1, status = 200 }
+op_calls = 1
+stdout = { starts_with = "---\nname: kurama-api-voices\n", contains = ["### `pets/list`", "### `owners/list-pets`"] }

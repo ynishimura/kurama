@@ -1,0 +1,25 @@
+# One usage message, said once, in text and in the JSON error document.
+id = "data_invalid_input_errors_report_each_cause_once"
+feature = "local-analytics"
+
+[combination]
+command = "data"
+client = "data"
+data_op = "tables"
+data_source = "none"
+
+[input]
+args = ["data", "--tables"]
+then_run = [["data", "--tables", "--json"]]
+
+[expect]
+json_error = { code = "DATA_INVALID", exit = 2 }
+stderr_json = { "/error/message" = "choose a workspace or --from, exclusively" }
+sts_actions = []
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+error = { code = "DATA_INVALID", exit = 2, message = "choose a workspace or --from, exclusively" }

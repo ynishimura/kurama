@@ -1,0 +1,24 @@
+ 鞍馬 kurama s3  assets  dev  ap-northeast-1  s3://example-assets/…  READ ONLY
+┏ Preview ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Key         reports/orders.csv                                               ┃
+┃ Size        120000 bytes                                                     ┃
+┃ Type        text/csv                                                         ┃
+┃ ETag        "9b2cf535f27731c974343645a3985328"                               ┃
+┃ Class       STANDARD                                                         ┃
+┃ Range       bytes 0-65536 (identity); n reads from 65536                     ┃
+┃                                                                              ┃
+┃ id,amount,note                                                               ┃
+┃ 1,10,日本語                                                                  ┃
+┃ 2,20,tab\there                                                               ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+ ↑↓ scroll  n next range  d as data  Esc list  q quit  ? help

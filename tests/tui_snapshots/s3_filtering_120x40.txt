@@ -1,0 +1,40 @@
+ 鞍馬 kurama s3  assets  dev  ap-northeast-1  s3://example-assets/reports/                                   READ ONLY
+┏ List 1/5+  filter /csv_ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓┏ Details ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ ▸ orders.csv                                               20 ┃┃ Key         reports/orders.csv                      ┃
+┃                                                               ┃┃ Size        20 bytes                                ┃
+┃                                                               ┃┃ Modified    2026-09-01T00:00:00Z                    ┃
+┃                                                               ┃┃ ETag        "9b2cf535f27731c974343645a3985328"      ┃
+┃                                                               ┃┃ Class       STANDARD                                ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃ Next        Enter previews it; d opens it as data   ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃ 5 scanned · more below                                        ┃┃                                                     ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+ type filter  Enter keep  Esc clear

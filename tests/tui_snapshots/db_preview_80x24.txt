@@ -1,0 +1,24 @@
+ 鞍馬 kurama db  cmp-dev  mysql 8.4.3  portnoy  via ssm i-0abc1234…  READ ONLY
+┏ Columns  [Preview]  SQL  Result  aws_accounts ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃   id    note                              name          amount               ┃
+┃   10    ∅                                 ACME          12345678901234567…   ┃
+┃ ▸ 11                                      日本語の名前  0.0000000001         ┃
+┃   12    a very long note that goes on a…  tab\there     ∅                    ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃ 3 rows  12 ms  truncated at max_rows, more rows exist  … cell cut to fit (E… ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+ ↑↓←→ cell  Enter cell detail  y copy cell  Y copy row  Tab next tab  Esc tables

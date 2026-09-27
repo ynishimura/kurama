@@ -1,0 +1,47 @@
+# The device flow needs a person to enter the code, so without a terminal
+# `login` refuses before any request: no discovery, no device request, no
+# browser, and `status` still reports the source as needing a person.
+id = "oauth_login_device_code_without_a_terminal_is_refused_before_any_request"
+feature = "oauth"
+
+[combination]
+command = "login"
+source = "oauth"
+grant = "device_code"
+tty = "none"
+token = "none"
+
+[input]
+args = ["login", "device"]
+then_run = [["status", "device", "--json"]]
+config = """
+[auth.device]
+kind = "oauth"
+grant_type = "device_code"
+issuer = "{server}"
+client_id = "device-client"
+"""
+
+[fakes]
+browser = true
+token_store = true
+
+[expect]
+exit_code = 0
+sts_actions = []
+op_calls = 0
+api_calls = { count = 0 }
+token_grants = []
+oauth_paths = []
+open_calls = []
+stdout_json = { "/0/grant_type" = "device_code", "/0/token" = "missing", "/0/logged_in" = false, "/0/needs_human" = true, "/1" = "<null>" }
+files_written = ["home/.cache/kurama/locks/device.lock"]
+
+[[expect.runs]]
+run = 0
+error = { code = "OAUTH_LOGIN_REQUIRED", exit = 3, message = "Failed to get a token for 'device': profile 'device' has no usable token and getting one needs a person" }
+hint = "run `kurama login device` in a terminal"
+stdout = "empty"
+token_grants = []
+oauth_paths = []
+open_calls = []

@@ -1,0 +1,45 @@
+# An API with no `auth` and no `aws_profile` sends the request as it is:
+# the fake sees no Authorization header, and GitHub's public `/meta` answers
+# 200 with its metadata as JSON, which is the bytes kurama prints on a pipe.
+id = "api_real_github_public_request_succeeds"
+feature = "api-client"
+
+[combination]
+command = "api"
+source = "none"
+header = "configured"
+api_response = "ok"
+
+[input]
+args = ["api", "github-public", "/meta"]
+config = """
+[api.github-public]
+base_url = "{server}/api"
+headers = { "X-GitHub-Api-Version" = "2022-11-28" }
+"""
+
+[fakes]
+api = "ok"
+
+[expect]
+exit_code = 0
+sts_actions = []
+token_grants = []
+op_calls = 0
+api_calls = { count = 1, headers = { "x-github-api-version" = "2022-11-28" } }
+no_files_written = true
+
+[real]
+requires = []
+config = """
+[api.github-public]
+base_url = "https://api.github.com"
+headers = { "X-GitHub-Api-Version" = "2022-11-28" }
+"""
+
+[real.combination]
+target = "github"
+
+[real.expect]
+exit_code = 0
+stdout_json = { "" = "<object>", "/ssh_keys" = { min_length = 1 } }

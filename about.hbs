@@ -1,0 +1,24 @@
+Third-party notices for kurama
+
+kurama is distributed under the MIT License (LICENSE). A kurama binary also
+contains the software listed below, each under its own license.
+
+The DuckDB httpfs extension
+------------------------------------------------------------------
+kurama embeds the httpfs extension of DuckDB, downloaded from
+extensions.duckdb.org when it is built and checked against a SHA-256. It is
+distributed under the same MIT License as DuckDB itself, whose text appears
+below with the libduckdb-sys crate that bundles DuckDB.
+
+{{#each licenses}}
+==============================================================================
+{{name}} ({{id}})
+
+Used by:
+{{#each used_by}}
+- {{crate.name}} {{crate.version}}{{#if crate.repository}} ({{crate.repository}}){{/if}}
+{{/each}}
+
+{{{text}}}
+
+{{/each}}

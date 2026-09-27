@@ -1,0 +1,35 @@
+# `status --kind s3` lists the [s3.*] connections as configured, like the
+# other JSON clients: no AssumeRole, no S3 request, no 1Password. A name the
+# configuration lacks is S3_INVALID.
+id = "s3_status_kind_lists_connections_without_reaching_s3"
+feature = "s3-explorer"
+
+[combination]
+command = "status"
+client = "s3"
+"status.kind" = "s3"
+output = "json"
+
+[input]
+args = ["status", "--kind", "s3", "--json"]
+then_run = [["status", "nope", "--kind", "s3", "--json"]]
+config = """
+[s3.assets]
+aws_profile = "dev"
+bucket = "browse-objects"
+prefix = "data/"
+"""
+
+[expect]
+json_error = { code = "S3_INVALID", exit = 2 }
+stderr_lines = 1
+stderr_json = { "/error/message" = { contains = "no [s3.nope] in the configuration" } }
+sts_actions = []
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stdout_json = { "/0/kind" = "s3", "/0/name" = "assets", "/0/aws_profile" = "dev", "/0/bucket" = "browse-objects", "/0/prefix" = "data/", "/0/connection_status" = "not_checked", "/1" = "<null>" }

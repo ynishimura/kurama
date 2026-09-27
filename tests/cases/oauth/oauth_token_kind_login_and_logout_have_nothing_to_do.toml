@@ -1,0 +1,70 @@
+# There is no grant to run and no token store entry to remove, and both
+# verbs say so instead of failing. Neither verb resolves the credential:
+# nothing is authorized and nothing is cached, so nothing has to be read to
+# say so. `logout --all` clears the oauth source's token and does not name
+# this one.
+id = "oauth_token_kind_login_and_logout_have_nothing_to_do"
+feature = "oauth"
+
+[combination]
+command = "login"
+source = "token"
+secret = "aws-ssm"
+verb = "nothing-to-do"
+
+[input]
+args = ["login", "example"]
+then_run = [["logout", "example"], ["logout", "--all"]]
+stored_tokens = [{ source = "svc", access_token = "{stored_access_token}", expires_in = 3600 }]
+config = """
+[auth.example]
+kind = "token"
+token = "aws-ssm://dev/kurama/api-key"
+header = "xi-api-key"
+format = "{token}"
+env_var = "EXAMPLE_TOKEN"
+
+[api.example]
+base_url = "{server}/api"
+
+[auth.svc]
+kind = "oauth"
+grant_type = "client_credentials"
+token_url = "{server}/oauth/token"
+client_id = "svc-client"
+client_secret = "op://Agent/Service/client_secret"
+scopes = ["read"]
+
+[api.svc]
+description = "Service API"
+base_url = "{server}/api"
+"""
+
+[fakes]
+op = "enabled"
+aws_secrets = "from-id"
+session_cache = true
+
+[expect]
+exit_code = 0
+token_grants = []
+secret_reads = []
+op_calls = 0
+sts_actions = []
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stdout = "empty"
+stderr_contains = ["Source 'example' uses a credential issued elsewhere"]
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+stderr_contains = ["there is nothing to remove"]
+
+[[expect.runs]]
+run = 2
+exit_code = 0
+stderr_contains = ["# Cleared token: svc"]
+stderr_excludes = ["example"]

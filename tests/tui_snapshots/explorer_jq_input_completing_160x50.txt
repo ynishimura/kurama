@@ -1,0 +1,50 @@
+ 鞍馬 kurama api  pets  Petstore 1.2.0                                                                                                          bearer   sigv4
+┏ pets/get  HTTP 200 OK  42 ms ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ {                                                                                                                                                            ┃
+┃   "securityAdminGuardrails": {                                                                                                                               ┃
+┃     "organizationConfiguration": {                                                                                                                           ┃
+┃       "accounts": [                                                                                                                                          ┃
+┃         {                                                                                                                                                    ┃
+┃           "accountId": 15,                                                                                                                                   ┃
+┃           "accountName": "fukuda_test_aws_account_2024",                                                                                                     ┃
+┃           "enabled": false                                                                                                                                   ┃
+┃         }                                                                                                                                                    ┃
+┃       ]                                                                                                                                                      ┃
+┃     }                                                                                                                                                        ┃
+┃   }                                                                                                                                                          ┃
+┃ }                                                                                                                                                            ┃
+┃                                                                                                                                                              ┃
+┃                                                                                                                                                              ┃
+┃                                                                                                                                                              ┃
+┃                                                 ┏ jq filter ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓                                                 ┃
+┃                                                 ┃                                                          ┃                                                 ┃
+┃                                                 ┃  Filter  …drails.organizationConfiguration.accounts[].▏  ┃                                                 ┃
+┃                                                 ┃                                                          ┃                                                 ┃
+┃                                                 ┃  Complete (1/3)                                          ┃                                                 ┃
+┃                                                 ┃  ▸ accountId  integer  15                                ┃                                                 ┃
+┃                                                 ┃    accountName  string  "fukuda_test_aws_account_2024"   ┃                                                 ┃
+┃                                                 ┃    enabled  boolean  false                               ┃                                                 ┃
+┃                                                 ┃                                                          ┃                                                 ┃
+┃                                                 ┃  preview: calculating…                                   ┃                                                 ┃
+┃                                                 ┃                                                          ┃                                                 ┃
+┃                                                 ┃  Empty filter restores the response body.                ┃                                                 ┃
+┃                                                 ┃                                                          ┃                                                 ┃
+┃                                                 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛                                                 ┃
+┃                                                                                                                                                              ┃
+┃                                                                                                                                                              ┃
+┃                                                                                                                                                              ┃
+┃                                                                                                                                                              ┃
+┃                                                                                                                                                              ┃
+┃                                                                                                                                                              ┃
+┃                                                                                                                                                              ┃
+┃                                                                                                                                                              ┃
+┃                                                                                                                                                              ┃
+┃                                                                                                                                                              ┃
+┃                                                                                                                                                              ┃
+┃                                                                                                                                                              ┃
+┃                                                                                                                                                              ┃
+┃                                                                                                                                                              ┃
+┃                                                                                                                                                              ┃
+┃                                                                                                                                                              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+ ↑↓ select  Enter insert  Esc back  Tab complete

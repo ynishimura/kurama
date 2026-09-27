@@ -1,0 +1,49 @@
+# The same signed request for service `lambda`: on the throwaway layer the
+# target is a Lambda function URL with AuthType AWS_IAM, whose host names
+# the service and the region, so the section configures neither.
+id = "api_sigv4_throwaway_function_url_accepts_the_signed_request"
+feature = "api-client"
+
+[combination]
+command = "api"
+auth = "aws-profile"
+role = "assume-role"
+service = "configured"
+region = "profile"
+api_response = "ok"
+
+[input]
+args = ["api", "iam-lambda", "/echo", "--jq", ".path"]
+config = """
+[api.iam-lambda]
+base_url = "{server}/api"
+aws_profile = "dev"
+service = "lambda"
+"""
+
+[expect]
+exit_code = 0
+sts_actions = ["AssumeRole"]
+token_grants = []
+op_calls = 0
+api_calls = { count = 1, sigv4 = { service = "lambda", region = "ap-northeast-1" }, calls = [{ path = "/api/echo", signing_access_key = "ASIARESULTKEY000001" }] }
+stdout = { equals = "/api/echo\n" }
+no_files_written = true
+
+[throwaway]
+stacks = ["iam-api"]
+args = ["api", "iam-lambda", "/echo", "--jq", ".caller"]
+config = """
+[api.iam-lambda]
+base_url = "{lambda_url}"
+aws_profile = "{throwaway_profile}"
+"""
+
+[throwaway.combination]
+service = "host"
+region = "host"
+
+[throwaway.expect]
+exit_code = 0
+stdout = { contains = [":assumed-role/"] }
+no_files_written = true

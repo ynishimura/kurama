@@ -1,0 +1,93 @@
+# A preview reads one range with a conditional GET: a range that cuts a
+# character ends before it and names the next offset; the next offset reads
+# the next range; an offset inside a character skips to the next whole one;
+# the last range is complete. JSON cut short is text, not an error, and a
+# whole object that is not JSON says so.
+id = "s3_preview_reads_one_range_and_reports_the_next_offset"
+feature = "s3-explorer"
+
+[combination]
+command = "s3"
+source = "aws-profile"
+role = "assume-role"
+s3_op = "preview"
+
+[input]
+args = ["s3", "assets", "s3://browse-objects/data/report.json", "--preview", "--bytes", "10", "--json"]
+then_run = [
+  ["s3", "assets", "s3://browse-objects/data/report.json", "--preview", "--offset-bytes", "9", "--bytes", "10", "--json"],
+  ["s3", "assets", "s3://browse-objects/data/report.json", "--preview", "--offset-bytes", "10", "--json"],
+  ["s3", "assets", "s3://browse-objects/data/broken.json", "--preview", "--json"],
+  ["s3", "assets", "s3://browse-objects/data/report.json", "--preview"],
+]
+config = """
+[s3.assets]
+aws_profile = "dev"
+"""
+
+[expect]
+exit_code = 0
+op_calls = 0
+no_files_written = true
+stdout = { equals = "{\"name\":\"βeta\",\"items\":[1,2,3]}\n" }
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+sts_actions = ["AssumeRole"]
+stdout_json = { "/operation" = "preview", "/bytes" = 10, "/offset_bytes" = 0, "/object/size" = 33, "/preview/kind" = "text", "/preview/format" = "json", "/preview/encoding" = "identity", "/preview/text" = "{\"name\":\"", "/preview/range_start" = 0, "/preview/range_end" = 10, "/preview/utf8_tail_cut" = 1, "/preview/next_offset" = 9, "/preview/well_formed" = false, "/complete" = false, "/stop_reason" = "max_bytes", "/bytes_read" = 10 }
+api_calls = { count = 2, sigv4 = { service = "s3", region = "ap-northeast-1" }, calls = [
+  { method = "HEAD", path = "/browse-objects/data/report.json" },
+  { method = "GET", path = "/browse-objects/data/report.json?x-id=GetObject", headers = { range = "bytes=0-9" }, headers_include = ["if-match"] },
+] }
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+stdout_json = { "/preview/text" = "βeta\",\"it", "/preview/range_start" = 9, "/preview/range_end" = 19, "/preview/utf8_head_skipped" = 0, "/preview/utf8_tail_cut" = 0, "/preview/next_offset" = 19, "/complete" = false }
+api_calls = { count = 2, sigv4 = { service = "s3", region = "ap-northeast-1" }, calls = [
+  { method = "HEAD" },
+  { method = "GET", headers = { range = "bytes=9-18" } },
+] }
+
+[[expect.runs]]
+run = 2
+exit_code = 0
+stdout_json = { "/preview/text" = "eta\",\"items\":[1,2,3]}\n", "/preview/utf8_head_skipped" = 1, "/preview/range_end" = 33, "/preview/next_offset" = "<null>", "/complete" = true, "/stop_reason" = "<null>" }
+
+[[expect.runs]]
+run = 3
+exit_code = 0
+stdout_json = { "/preview/kind" = "text", "/preview/format" = "json", "/preview/text" = "{\"name\": [1, 2", "/preview/well_formed" = false, "/complete" = true }
+
+[real]
+requires = ["profile:cm", "keychain:OP_SERVICE_ACCOUNT_TOKEN"]
+args = ["s3", "public", "s3://noaa-ghcn-pds/ghcnd-stations.txt", "--preview", "--bytes", "200", "--json"]
+then_run = [
+  ["s3", "public", "s3://noaa-ghcn-pds/ghcnd-stations.txt", "--preview", "--offset-bytes", "200", "--bytes", "100", "--json"],
+  ["s3", "public", "s3://noaa-ghcn-pds/csv.gz/1763.csv.gz", "--preview", "--bytes", "300", "--json"],
+]
+config = """
+[s3.public]
+aws_profile = "cm"
+region = "ap-northeast-1"
+"""
+
+[real.combination]
+target = "s3-public-bucket"
+mfa = "onepassword"
+region = "bucket"
+
+[real.expect]
+exit_code = 0
+stdout_json = { "/region" = "us-east-1", "/preview/encoding" = "gzip", "/preview/format" = "csv", "/preview/next_offset" = "<null>", "/bytes_decoded" = 300, "/complete" = false, "/stop_reason" = "max_bytes" }
+
+[[real.expect.runs]]
+run = 0
+exit_code = 0
+stdout_json = { "/preview/kind" = "text", "/preview/range_end" = 200, "/preview/next_offset" = 200, "/bytes_read" = 200, "/complete" = false }
+
+[[real.expect.runs]]
+run = 1
+exit_code = 0
+stdout_json = { "/preview/range_start" = 200, "/preview/range_end" = 300, "/preview/next_offset" = 300 }

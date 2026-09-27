@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# Fake browser launcher (`open` on macOS, `xdg-open` on Linux) for
+# tests/scenarios/. Records the URL it was asked to open in
+# $KURAMA_FAKE_OPEN_LOG and opens nothing.
+#
+# An OAuth authorization request (`response_type=code`) is answered the way
+# a person approving it would be: the "browser" is sent to the redirect_uri
+# with an authorization code and the request's state, in the background, so
+# kurama's loopback listener receives it while it waits.
+#
+# KURAMA_FAKE_OPEN_EXIT is the status it exits with after recording the URL
+# (default 0), so a scenario can have the launcher fail.
+set -euo pipefail
+
+if [ -n "${KURAMA_FAKE_OPEN_LOG:-}" ]; then
+  printf '%s\n' "$*" >> "$KURAMA_FAKE_OPEN_LOG"
+fi
+
+url="${1:-}"
+case "$url" in
+  *response_type=code*)
+    redirect=$(printf '%s' "$url" | sed -n 's/.*[?&]redirect_uri=\([^&]*\).*/\1/p')
+    state=$(printf '%s' "$url" | sed -n 's/.*[?&]state=\([^&]*\).*/\1/p')
+    decoded=$(printf '%b' "${redirect//%/\\x}")
+    (
+      sleep 0.2
+      curl -s -o /dev/null "${decoded}?code=fake-auth-code&state=${state}"
+    ) >/dev/null 2>&1 &
+    ;;
+esac
+
+exit "${KURAMA_FAKE_OPEN_EXIT:-0}"

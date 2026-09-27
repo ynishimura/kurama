@@ -1,0 +1,26 @@
+# `openapi` and `discovery` name one description each; both on one
+# `[api.*]` is refused when the file is read, before anything is fetched.
+id = "api_discovery_with_openapi_exits_2"
+feature = "api-explorer"
+
+[combination]
+command = "api"
+spec = "discovery"
+config = "rejected"
+
+[input]
+args = ["api", "sheets", "--ops"]
+config = """
+[api.sheets]
+base_url = "{server}/api"
+openapi = "{fixtures}/petstore.json"
+discovery = "{fixtures}/discovery-sheets-v4.json"
+"""
+
+[expect]
+error = { code = "CONFIG_INVALID", exit = 2 }
+stderr_contains = ["openapi and discovery are exclusive: keep one of them"]
+stdout = "empty"
+api_calls = { count = 0 }
+spec_calls = { count = 0 }
+no_files_written = true

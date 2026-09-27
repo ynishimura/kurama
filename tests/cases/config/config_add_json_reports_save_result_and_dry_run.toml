@@ -1,0 +1,65 @@
+# `config add --json` is the save result: the path, whether anything changed,
+# whether it was applied, each section with its action and the warnings. A
+# dry run is the same document with `applied` false and leaves the file as
+# it was, so `config list` still lacks the section until the real run adds
+# it. A warning goes in the document, and stderr stays empty; the text form
+# prints it on stderr instead.
+id = "config_add_json_reports_save_result_and_dry_run"
+feature = "config"
+
+[combination]
+command = "config-add"
+output = "json"
+input = "stdin"
+
+[input]
+args = ["config", "add", "--file", "-", "--dry-run", "--json"]
+then_run = [
+  ["config", "list", "--json"],
+  ["config", "add", "--file", "-", "--dry-run"],
+  ["config", "add", "--file", "-", "--json"],
+  ["config", "list", "--json"],
+]
+env = { AWS_CONFIG_FILE = "/nonexistent/kurama-aws/config" }
+replace_config = """
+[core]
+log_level = "info"
+"""
+stdin = """
+[api.signed]
+base_url = "https://execute-api.ap-northeast-1.amazonaws.com/prod"
+aws_profile = "dev"
+"""
+
+[expect]
+exit_code = 0
+stderr_empty = true
+stdout_json = { "/sections" = [{ name = "core", keys = ["log_level"] }, { name = "api.signed", keys = ["base_url", "aws_profile"] }] }
+sts_actions = []
+op_calls = 0
+api_calls = { count = 0 }
+files_written = ["kurama-config.toml"]
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stderr_empty = true
+stdout_json = { "" = { length = 5 }, "/path" = { contains = "/kurama-config.toml" }, "/changed" = true, "/applied" = false, "/changes" = [{ section = "api.signed", action = "add" }], "/warnings" = ["/nonexistent/kurama-aws/config does not exist: aws_profile references are not checked"] }
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+stderr_empty = true
+stdout_json = { "/sections" = [{ name = "core", keys = ["log_level"] }] }
+
+[[expect.runs]]
+run = 2
+exit_code = 0
+stdout = { contains = ["+[api.signed]\n+base_url = "] }
+stderr_contains = ["# warning: /nonexistent/kurama-aws/config does not exist: aws_profile references are not checked", "nothing was written"]
+
+[[expect.runs]]
+run = 3
+exit_code = 0
+stderr_empty = true
+stdout_json = { "" = { length = 5 }, "/path" = { contains = "/kurama-config.toml" }, "/changed" = true, "/applied" = true, "/changes" = [{ section = "api.signed", action = "add" }], "/warnings" = ["/nonexistent/kurama-aws/config does not exist: aws_profile references are not checked"] }

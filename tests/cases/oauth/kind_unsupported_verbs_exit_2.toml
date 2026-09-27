@@ -1,0 +1,45 @@
+# console and --readonly on an oauth source, and token on an AWS profile, are
+# refused before any token work.
+id = "kind_unsupported_verbs_exit_2"
+feature = "oauth"
+
+[combination]
+command = "console"
+source = "oauth"
+verb = "unsupported-for-kind"
+
+[input]
+args = ["console", "github"]
+then_run = [["env", "github", "--readonly"], ["token", "dev"]]
+config = """
+[auth.github]
+kind = "oauth"
+grant_type = "authorization_code"
+auth_url = "{server}/oauth/authorize"
+token_url = "{server}/oauth/token"
+client_id = "gh-client"
+scopes = ["repo"]
+env_var = "GITHUB_TOKEN"
+
+[api.github]
+base_url = "{server}/api"
+"""
+
+[expect]
+error = { code = "KIND_UNSUPPORTED", exit = 2 }
+stderr_contains = ["profile 'dev': kind aws does not support token"]
+sts_actions = []
+oauth_paths = []
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+error = { code = "KIND_UNSUPPORTED", exit = 2 }
+stderr_contains = ["kind oauth does not support console"]
+oauth_paths = []
+
+[[expect.runs]]
+run = 1
+error = { code = "KIND_UNSUPPORTED", exit = 2 }
+stderr_contains = ["kind oauth does not support --readonly"]
+oauth_paths = []

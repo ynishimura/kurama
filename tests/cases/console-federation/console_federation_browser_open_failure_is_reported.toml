@@ -1,0 +1,28 @@
+# The sign-in token is fetched, but the URL opener exits non-zero: `console`
+# fails with BROWSER_FAILED and names the opener instead of reporting that
+# the console was opened.
+id = "console_federation_browser_open_failure_is_reported"
+feature = "console-federation"
+
+[combination]
+command = "console"
+source = "aws-profile"
+role = "assume-role"
+federation = "ok"
+
+[input]
+args = ["console", "dev"]
+env = { KURAMA_FAKE_OPEN_EXIT = "1" }
+
+[fakes]
+browser = true
+
+[expect]
+error = { code = "BROWSER_FAILED", exit = 1 }
+sts_actions = ["AssumeRole"]
+federation_calls = [{ action = "getSigninToken", session_access_key = "{result_access_key}" }]
+open_calls_containing = [["Action=login", "SigninToken={signin_token}"]]
+stdout = "empty"
+stderr_contains = ["# Console URL:", "exited with exit status: 1", "hint: open the URL printed above in a browser"]
+stderr_excludes = ["AWS console opened in browser"]
+no_files_written = true

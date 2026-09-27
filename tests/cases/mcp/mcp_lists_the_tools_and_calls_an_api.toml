@@ -1,0 +1,91 @@
+# An MCP client on stdio: `initialize`, the `initialized` notification (not
+# answered), `tools/list`, then three calls. `call_api` is `kurama api --json`
+# run as an agent, so its answer is the {status, headers, body} envelope, and
+# a POST the default [agent] policy refuses is the AGENT_POLICY_DENIED error
+# document with nothing sent; `query_db` reads the SQLite fixture. The server
+# never set KURAMA_AGENT in its own environment, yet the audit log records
+# every call as an agent's.
+id = "mcp_lists_the_tools_and_calls_an_api"
+feature = "mcp"
+
+[combination]
+command = "mcp"
+source = "none"
+agent = "mcp"
+
+[input]
+args = ["mcp"]
+stdin = """
+{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"harness","version":"0"}}}
+{"jsonrpc":"2.0","method":"notifications/initialized"}
+{"jsonrpc":"2.0","id":2,"method":"tools/list"}
+{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"call_api","arguments":{"api":"pets","target":"/pet/findByStatus?status=available","sample":1}}}
+{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"call_api","arguments":{"api":"pets","target":"/pet","body":{"name":"x"}}}}
+{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"query_db","arguments":{"database":"app","request":{"operation":"query","args":{"sql":"SELECT count(*) AS n FROM orders"}}}}}
+"""
+then_run = [["audit", "--json"]]
+config = """
+[api.pets]
+base_url = "{server}/api"
+
+[db.app]
+engine = "sqlite"
+path = "{repo}/tests/fixtures/db/app.sqlite3"
+"""
+
+[expect]
+exit_code = 0
+token_grants = []
+files_written = ["home/.local/state/kurama/audit.jsonl"]
+files_unchanged = ["{repo}/tests/fixtures/db/app.sqlite3"]
+
+[[expect.runs]]
+run = 0
+stderr_empty = true
+api_calls = { count = 1, calls = [{ method = "GET", path = "/api/pet/findByStatus?status=available" }] }
+stdout = { line_count = 5, lines_start_with = ["{\"jsonrpc\":\"2.0\""], line_containing = [
+  ["\"id\":1", "\"protocolVersion\":\"2025-06-18\"", "\"serverInfo\":{\"name\":\"kurama\""],
+  ["\"id\":2", "\"name\":\"ready\"", "\"name\":\"list_apis\"", "\"name\":\"list_operations\"", "\"name\":\"describe_operation\"", "\"name\":\"call_api\"", "\"name\":\"query_data\"", "\"name\":\"query_db\""],
+  ["\"id\":3", "\"isError\":false", "\"structuredContent\":{\"status\":200", "\"path\":\"/api/pet/findByStatus\""],
+  ["\"id\":4", "\"isError\":true", "\"code\":\"AGENT_POLICY_DENIED\"", "POST is not in allow_methods"],
+  ["\"id\":5", "\"isError\":false", "\"operation\":\"query\"", "\"target\":\"app\""],
+] }
+
+[[expect.runs]]
+run = 1
+api_calls = { count = 0 }
+stdout_json = { "/entries" = { length = 3 }, "/entries/0/command" = "api", "/entries/0/agent" = true, "/entries/0/method" = "GET", "/entries/0/path" = "/api/pet/findByStatus", "/entries/0/status" = 200, "/entries/0/exit_code" = 0, "/entries/1/method" = "POST", "/entries/1/status" = "<null>", "/entries/1/exit_code" = 3, "/entries/2/command" = "db", "/entries/2/target" = "app", "/entries/2/agent" = true, "/entries/2/exit_code" = 0 }
+
+# The same session against the public Swagger Petstore v3 (no credential):
+# the GET is answered by the real API, the POST is still refused before it
+# is sent, and the audit log in the sandbox HOME holds the three calls.
+[real]
+requires = []
+config = """
+[api.pets]
+base_url = "https://petstore3.swagger.io/api/v3"
+
+[db.app]
+engine = "sqlite"
+path = "{repo}/tests/fixtures/db/app.sqlite3"
+"""
+
+[real.combination]
+target = "swagger-petstore"
+
+[real.expect]
+exit_code = 0
+files_written = ["home/.local/state/kurama/audit.jsonl"]
+
+[[real.expect.runs]]
+run = 0
+stderr_empty = true
+stdout = { line_count = 5, line_containing = [
+  ["\"id\":3", "\"isError\":false", "\"status\":200", "\"omitted\""],
+  ["\"id\":4", "\"isError\":true", "\"code\":\"AGENT_POLICY_DENIED\"", "POST /api/v3/pet"],
+  ["\"id\":5", "\"isError\":false", "\"target\":\"app\""],
+] }
+
+[[real.expect.runs]]
+run = 1
+stdout_json = { "/entries" = { length = 3 }, "/entries/0/agent" = true, "/entries/0/path" = "/api/v3/pet/findByStatus", "/entries/0/status" = 200, "/entries/1/method" = "POST", "/entries/1/exit_code" = 3, "/entries/2/command" = "db" }

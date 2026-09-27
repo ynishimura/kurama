@@ -1,0 +1,31 @@
+# `preset show --json` is the plan as one document: the preset, where its
+# credential is created, the file it would be added to, the API name, the
+# auth and whether it is added or reused, the TOML to append, each setup
+# step with its command, and the warnings. Nothing goes to stderr, and
+# nothing is resolved, contacted or written.
+id = "preset_show_json_reports_the_setup_plan"
+feature = "preset"
+
+[combination]
+command = "preset-show"
+output = "json"
+
+[input]
+args = ["preset", "show", "github", "--set", "secret=op://Agent/kurama-github/credential", "--json"]
+replace_config = """
+[core]
+log_level = "info"
+"""
+
+[fakes]
+op = "enabled"
+
+[expect]
+exit_code = 0
+stderr_empty = true
+stdout_json = { "" = { length = 8 }, "/id" = "github", "/docs_url" = "https://github.com/settings/personal-access-tokens/new", "/path" = { contains = "/kurama-config.toml" }, "/api" = "github", "/auth" = { name = "github", action = "add" }, "/toml" = { contains = ["# kurama preset: github (kurama ", "\n[auth.github]\nkind = \"token\"\ntoken = \"op://Agent/kurama-github/credential\"\nenv_var = \"GITHUB_TOKEN\"\n\n[api.github]\ndescription = \"GitHub REST API\"\nbase_url = \"https://api.github.com\"\nauth = \"github\"\n"] }, "/setup" = { length = 4 }, "/setup/0" = "Create a fine-grained personal access token with read access to what you will call: https://github.com/settings/personal-access-tokens/new", "/setup/1" = "Store it in 1Password under a title an op:// reference can name (no parentheses, no spaces):\nop item create --category='API Credential' --vault '<vault>' --title kurama-github 'credential=<token>'", "/setup/2" = { contains = ["Append the sections to ", "/kurama-config.toml:\nkurama preset add github --set secret=op://Agent/kurama-github/credential"] }, "/setup/3" = "Call the API:\nkurama api github /user", "/warnings" = [] }
+sts_actions = []
+op_calls = 0
+secret_reads = []
+api_calls = { count = 0 }
+no_files_written = true

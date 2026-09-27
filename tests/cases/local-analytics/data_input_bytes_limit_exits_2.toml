@@ -1,0 +1,21 @@
+# The input byte limit is named before any query runs.
+id = "data_input_bytes_limit_exits_2"
+feature = "local-analytics"
+
+[combination]
+command = "data"
+client = "data"
+data_op = "query"
+data_source = "local"
+format = "csv"
+
+[input]
+args = ["data", "--from", "{repo}/tests/fixtures/data/orders.csv", "--query", "SELECT count(*) FROM data", "--max-source-bytes", "10", "--json"]
+
+[expect]
+json_error = { code = "DATA_INVALID", exit = 2 }
+stderr_contains = ["max_source_bytes"]
+sts_actions = []
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true

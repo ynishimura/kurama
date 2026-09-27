@@ -1,0 +1,48 @@
+# A status outside 2xx, a timeout and a refused connection each keep the
+# file --output names as it was and leave nothing beside it: the body is
+# only written, and renamed into place, after a 2xx.
+id = "api_output_keeps_the_existing_file_when_the_call_fails"
+feature = "api-client"
+
+[combination]
+command = "api"
+source = "none"
+output = "file"
+api_response = "failure"
+
+[input]
+args = ["api", "public", "/echo?status=404", "-d", "not found", "--output", "{home}/keep.json"]
+then_run = [
+  ["api", "public", "/echo?delay=3", "-d", "late", "--timeout", "1", "--output", "{home}/keep.json"],
+  ["api", "closed", "/echo", "--output", "{home}/keep.json"],
+]
+home_files = { "keep.json" = "{\"kept\":true}\n" }
+config = """
+[api.public]
+base_url = "{server}/api"
+
+[api.closed]
+base_url = "http://127.0.0.1:9/api"
+"""
+
+[fakes]
+api = "echo"
+
+[expect]
+error = { code = "API_REQUEST_FAILED", exit = 1 }
+stdout = "empty"
+api_calls = { count = 0 }
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+error = { code = "API_HTTP_ERROR", exit = 4 }
+stderr_contains = ["error[API_HTTP_ERROR]: HTTP 404 Not Found: not found\n"]
+stdout = "empty"
+api_calls = { count = 1 }
+
+[[expect.runs]]
+run = 1
+error = { code = "API_REQUEST_FAILED", exit = 1 }
+stderr_contains = ["request timed out after 1s"]
+stdout = "empty"

@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "feature": "oauth",
+  "status": "verified",
+  "reason": null,
+  "commit": "dfda49629bf72cd0d6411c8a1def4e5956d50593",
+  "feature_hash": "fc14c558ea3cb8dc",
+  "diff_hash": "eac7b9b7a7758642",
+  "environment": "real-services",
+  "access": "read-only",
+  "command": [
+    "cargo",
+    "xtask",
+    "verify",
+    "--layer",
+    "real",
+    "oauth"
+  ],
+  "generated_at": "2026-09-27T17:23:43.319914+00:00",
+  "observed": [
+    {
+      "test": "oauth_real_client_credentials_grant_issues_a_token",
+      "result": "passed",
+      "mock": [
+        "oauth_real_client_credentials_grant_issues_a_token"
+      ]
+    }
+  ],
+  "fixtures": {}
+}

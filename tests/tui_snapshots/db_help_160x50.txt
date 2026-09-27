@@ -1,0 +1,50 @@
+ 鞍馬 kurama db  cmp-dev  mysql 8.4.3  portnoy  via ssm i-0abc1234def567890                                                                          READ ONLY
+┏ Tables (4+) ━━━━━━━━━━━━━━━━━┓┏ [Columns]  Preview  SQL  Result ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ ▸ aws_accounts               ┃┃ Enter on a table shows its columns.                                                                                          ┃
+┃   aws_account_addresses      ┃┃                                                                                                                              ┃
+┃   projects                   ┃┃                                                                                                                              ┃
+┃   open_projects (view)       ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                 ┏ Help ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓                                                 ┃
+┃                              ┃┃                 ┃                                                          ┃                                                 ┃
+┃                              ┃┃                 ┃  ↑↓ or j/k    move through the tables or the rows        ┃                                                 ┃
+┃                              ┃┃                 ┃  /            filter the tables fetched so far           ┃                                                 ┃
+┃                              ┃┃                 ┃  Enter        columns of a table; a cell in full         ┃                                                 ┃
+┃                              ┃┃                 ┃  p            first rows of the table                    ┃                                                 ┃
+┃                              ┃┃                 ┃  s            type one statement; Enter or F5 runs it    ┃                                                 ┃
+┃                              ┃┃                 ┃  e or Ctrl-E  edit the statement in $EDITOR              ┃                                                 ┃
+┃                              ┃┃                 ┃  Tab          the result side, then the next tab         ┃                                                 ┃
+┃                              ┃┃                 ┃  ←→           move through the columns of a result       ┃                                                 ┃
+┃                              ┃┃                 ┃  y / Y        copy the cell / the row as TSV             ┃                                                 ┃
+┃                              ┃┃                 ┃  Esc          stop what runs; back to the tables         ┃                                                 ┃
+┃                              ┃┃                 ┃  q or Ctrl-C  quit (Ctrl-C while typing SQL)             ┃                                                 ┃
+┃                              ┃┃                 ┃                                                          ┃                                                 ┃
+┃                              ┃┃                 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛                                                 ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+ Esc close

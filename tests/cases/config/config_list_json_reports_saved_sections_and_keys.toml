@@ -1,0 +1,47 @@
+# `config list --json` is the file's path and every saved section with its
+# keys, in file order and as saved (no default added); a table name narrows
+# the list to its sections. Nothing is resolved, contacted or written.
+id = "config_list_json_reports_saved_sections_and_keys"
+feature = "config"
+
+[combination]
+command = "config-list"
+output = "json"
+config = "valid"
+
+[input]
+args = ["config", "list", "--json"]
+then_run = [["config", "list", "api", "--json"]]
+replace_config = """
+[core]
+log_level = "info"
+
+[auth.svc]
+kind = "token"
+token = "op://Agent/svc/credential"
+
+[api.svc]
+base_url = "https://svc.example.com"
+auth = "svc"
+
+[api.plain]
+base_url = "https://plain.example.com"
+"""
+
+[fakes]
+op = "enabled"
+
+[expect]
+exit_code = 0
+stderr_empty = true
+stdout_json = { "" = { length = 2 }, "/path" = { contains = "/kurama-config.toml" }, "/sections" = [{ name = "api.svc", keys = ["base_url", "auth"] }, { name = "api.plain", keys = ["base_url"] }] }
+sts_actions = []
+op_calls = 0
+secret_reads = []
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stderr_empty = true
+stdout_json = { "" = { length = 2 }, "/path" = { contains = "/kurama-config.toml" }, "/sections" = [{ name = "core", keys = ["log_level"] }, { name = "auth.svc", keys = ["kind", "token"] }, { name = "api.svc", keys = ["base_url", "auth"] }, { name = "api.plain", keys = ["base_url"] }] }

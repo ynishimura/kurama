@@ -1,0 +1,49 @@
+# A 301 that does not name the bucket's region (no x-amz-bucket-region) is
+# still a region mismatch: kurama cannot follow it, so it stops after the one
+# HEAD and says which region the request was signed for, with a hint to set the
+# bucket's region. Whether the region came from the profile (correctable) or
+# from --region, the error names that region and never permissions.
+id = "data_s3_permanent_redirect_without_a_header_still_hints_at_the_region"
+feature = "local-analytics"
+
+[combination]
+command = "data"
+source = "aws-profile"
+client = "data"
+data_op = "describe"
+data_source = "s3"
+format = "parquet"
+role = "assume-role"
+region = "bucket"
+s3_response = "redirect-without-region"
+
+[input]
+args = ["data", "--from", "s3://moved-bucket/orders.parquet", "--aws-profile", "dev", "--describe"]
+then_run = [
+  ["data", "--from", "s3://moved-bucket/orders.parquet", "--aws-profile", "dev", "--describe", "--json"],
+  ["data", "--from", "s3://moved-bucket/orders.parquet", "--aws-profile", "dev", "--region", "eu-west-1", "--describe", "--json"],
+]
+
+[expect]
+json_error = { code = "DATA_REJECTED", exit = 4 }
+stderr_json = { "/error/message" = { contains = ["signed for eu-west-1", "HTTP 301"] }, "/error/hint" = { contains = ["--region", "[s3.*]"] }, "/error/next_actions/0/message" = { contains = ["--region"] } }
+stderr_excludes = ["permission", "AWS credentials"]
+sts_actions = ["AssumeRole"]
+api_calls = { count = 1, sigv4 = { service = "s3", region = "eu-west-1" }, calls = [{ method = "HEAD", path = "/moved-bucket/orders.parquet" }] }
+op_calls = 0
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+error = { code = "DATA_REJECTED", exit = 4 }
+stderr_contains = ["signed for ap-northeast-1", "HTTP 301"]
+hint = "set --region"
+stderr_excludes = ["permission", "AWS credentials"]
+api_calls = { count = 1, sigv4 = { service = "s3", region = "ap-northeast-1" }, calls = [{ method = "HEAD", path = "/moved-bucket/orders.parquet" }] }
+
+[[expect.runs]]
+run = 1
+json_error = { code = "DATA_REJECTED", exit = 4 }
+stderr_json = { "/error/message" = { contains = ["signed for ap-northeast-1"] }, "/error/hint" = { contains = ["--region"] } }
+stderr_excludes = ["permission", "AWS credentials"]
+api_calls = { count = 1, sigv4 = { service = "s3", region = "ap-northeast-1" } }

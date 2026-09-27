@@ -1,0 +1,27 @@
+# The configuration is invalid on purpose: an agent reads the contract to
+# write or fix config.toml, so the command must not depend on it.
+id = "agent_prints_the_contract_without_reading_config"
+feature = "agent-guide"
+
+[combination]
+command = "agent"
+config = "unread"
+
+[input]
+args = ["agent"]
+replace_config = """
+[mfa.onepassword]
+enabled = false
+"""
+
+[expect]
+exit_code = 0
+stdout = { kind = "plain-text", contains = [
+  "# kurama for agents and scripts",
+  "## Setup",
+  "`kurama status --json`",
+] }
+stderr_empty = true
+sts_actions = []
+op_calls = 0
+no_files_written = true

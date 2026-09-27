@@ -1,0 +1,20 @@
+# `--readonly` attaches the ReadOnlyAccess policy to AssumeRole and marks the
+# exported session.
+id = "uc12_readonly_attaches_policy_and_marks_the_session"
+feature = "assume-role"
+
+[combination]
+command = "env"
+source = "aws-profile"
+role = "assume-role"
+session = "readonly"
+
+[input]
+args = ["env", "dev", "--readonly"]
+
+[expect]
+exit_code = 0
+sts_actions = ["AssumeRole"]
+sts_calls = [{ action = "AssumeRole", policy_arns = ["arn:aws:iam::aws:policy/ReadOnlyAccess"] }]
+stdout = { kind = "export-script", contains = ["export AWS_READONLY_SESSION='true'"] }
+stderr_contains = ["# Running in readonly mode"]

@@ -1,0 +1,33 @@
+# A regional S3 URL plans its own region without calling anything, and the
+# run reads in that region from the first request.
+id = "data_s3_a_regional_url_keeps_its_region_in_the_plan"
+feature = "local-analytics"
+
+[combination]
+command = "data"
+source = "aws-profile"
+client = "data"
+data_op = "query"
+data_source = "https"
+format = "parquet"
+role = "assume-role"
+region = "host"
+
+[input]
+args = ["data", "https://west-bucket.s3.us-west-2.amazonaws.com/orders.parquet", "--aws-profile", "dev", "--dry-run", "--json"]
+then_run = [["data", "https://west-bucket.s3.us-west-2.amazonaws.com/orders.parquet", "--aws-profile", "dev", "--query", "SELECT count(*) AS rows FROM data", "--json"]]
+
+[expect]
+exit_code = 0
+op_calls = 0
+no_files_written = true
+sts_actions = ["AssumeRole"]
+stdout_json = { "/rows" = [["3"]], "/meta/region" = "us-west-2" }
+api_calls = { count = 5, sigv4 = { service = "s3", region = "us-west-2" } }
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+sts_actions = []
+api_calls = { count = 0 }
+stdout_json = { "/dry_run" = true, "/meta/region" = "us-west-2", "/meta/sources/0/path" = "s3://west-bucket/orders.parquet" }

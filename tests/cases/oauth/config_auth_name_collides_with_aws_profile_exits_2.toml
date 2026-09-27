@@ -1,0 +1,28 @@
+# An `[auth.*]` with the name of an AWS profile: one namespace, refused by
+# status and by token alike.
+id = "config_auth_name_collides_with_aws_profile_exits_2"
+feature = "oauth"
+
+[combination]
+command = "status"
+config = "auth-name-collides-with-aws-profile"
+
+[input]
+args = ["status"]
+then_run = [["token", "dev"]]
+config = """
+[auth.dev]
+kind = "oauth"
+grant_type = "client_credentials"
+token_url = "{server}/oauth/token"
+client_id = "id"
+"""
+
+[expect]
+error = { code = "CONFIG_INVALID", exit = 2 }
+stderr_contains = ["[auth.dev] has the same name as the AWS profile 'dev'"]
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+error = { code = "CONFIG_INVALID", exit = 2 }

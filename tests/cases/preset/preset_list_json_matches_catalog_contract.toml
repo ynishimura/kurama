@@ -1,0 +1,22 @@
+# `preset --json` is the catalog as one array: every preset with its id,
+# title, the auth and API it adds, the inputs it asks for (which of them is
+# a secret) and where its credential is created. A token preset and an
+# OAuth one are pinned whole; nothing is read, contacted or written.
+id = "preset_list_json_matches_catalog_contract"
+feature = "preset"
+
+[combination]
+command = "preset"
+output = "json"
+
+[input]
+args = ["preset", "--json"]
+
+[expect]
+exit_code = 0
+stderr_empty = true
+stdout_json = { "" = { length = 15 }, "/0" = { id = "github", title = "GitHub REST API with a personal access token", auth = { name = "github", kind = "token" }, api = { name = "github", base_url = "https://api.github.com" }, inputs = [{ key = "secret", help = "reference to the token, such as op://<vault>/<item>/credential", secret = true }], setup = "https://github.com/settings/personal-access-tokens/new" }, "/1" = { id = "github-oauth", title = "GitHub REST API through an OAuth app (device flow)", auth = { name = "github", kind = "oauth device_code" }, api = { name = "github", base_url = "https://api.github.com" }, inputs = [{ key = "client_id", help = "the OAuth client ID", secret = false }], setup = "https://github.com/settings/applications/new" }, "/5/id" = "linear", "/14/id" = "backlog" }
+sts_actions = []
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true

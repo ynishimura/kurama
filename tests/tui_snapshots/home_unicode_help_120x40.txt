@@ -1,0 +1,40 @@
+ 鞍馬 kurama  AWS credential switcher                                                               readonly   console
+  1 AWS   2 Auth   3 API   4 DB   5 Data   6 S3
+┏ Profiles (4) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓┏ Details ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃     KIND PROFILE                   SESSION                    ┃┃ Profile ステージング-読み取り専用                   ┃
+┃   * aws  本番環境-管理者           valid (1h 30m)             ┃┃ Kind    aws                                         ┃
+┃     aws  開発環境                  -                          ┃┃ Role    arn:aws:iam::123456789012:role/ステージング ┃
+┃ ▸   aws  ステージング-読み取り専用 none                       ┃┃         -読み取り専用                               ┃
+┃     aws  naïve-café                -                          ┃┃ Region  ap-northeast-1                              ┃
+┃                                                               ┃┃ MFA     arn:aws:iam::123456789012:mfa/agent         ┃
+┃                                                               ┃┃ Session none                                        ┃
+┃                                                               ┃┃ Shell   not active                                  ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃ Next    Enter asks for the MFA code (no provider    ┃
+┃                             ┏ Help ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓                             ┃
+┃                             ┃                                                          ┃                             ┃
+┃                             ┃  ↑↓ or j/k    move through profiles                      ┃                             ┃
+┃                             ┃  Enter        assume the selected role                   ┃                             ┃
+┃                             ┃  /            search profiles                            ┃                             ┃
+┃                             ┃  1-6 or Tab   switch tabs: AWS Auth API DB Data S3       ┃                             ┃
+┃                             ┃  Ctrl-K or :  go to a profile, API or operation          ┃                             ┃
+┃                             ┃  r            toggle readonly mode                       ┃                             ┃
+┃                             ┃  c            toggle console launch                      ┃                             ┃
+┃                             ┃  ? or F1      show this help                             ┃                             ┃
+┃                             ┃  q or Ctrl-C  quit                                       ┃                             ┃
+┃                             ┃                                                          ┃                             ┃
+┃                             ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛                             ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+ Esc close

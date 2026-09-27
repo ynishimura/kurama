@@ -1,0 +1,19 @@
+[console-federation]
+summary = "Open the AWS console through the federation endpoint with the assumed credentials"
+entry = "src/domain/functions/federation.rs"
+files = [
+  "src/domain/functions/federation.rs",
+  "src/adapters/aws/federation.rs",
+  "tests/fakes/open",
+  "tests/fakes/xdg-open",
+]
+tests = ["federation"]
+scenarios = [
+  "tui_console_toggle_generates_and_opens_federated_session",
+  "tui_console_browser_failure_shows_an_error_and_keeps_the_credentials",
+]
+depends_on = ["assume-role", "config"]
+notes = "KURAMA_FEDERATION_ENDPOINT points the sign-in token request at the fake; tests/fakes/open records the login URL instead of opening a browser, and exits with KURAMA_FAKE_OPEN_EXIT (default 0)"
+
+[console-federation.real]
+pending = "calls the real federation endpoint and opens a browser; fakes stand in for both"

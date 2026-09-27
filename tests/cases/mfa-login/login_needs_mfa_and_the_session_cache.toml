@@ -1,0 +1,32 @@
+# A profile without mfa_serial has nothing to log in to (exit 0, no call);
+# one with it needs the session cache enabled, or the login is refused.
+id = "login_needs_mfa_and_the_session_cache"
+feature = "mfa-login"
+
+[combination]
+command = "login"
+source = "aws-profile"
+mfa = "onepassword"
+session_cache = "disabled"
+
+[input]
+args = ["login", "dev"]
+then_run = [["login", "ops-mfa"]]
+
+[fakes]
+op = "enabled"
+
+[expect]
+error = { code = "CONFIG_INVALID", exit = 2 }
+sts_actions = []
+op_calls = 0
+stderr_contains = ["[aws.session_cache] enabled = false"]
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+sts_actions = []
+op_calls = 0
+stdout = "empty"
+stderr_contains = ["has no mfa_serial"]

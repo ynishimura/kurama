@@ -1,0 +1,64 @@
+# One level under the configured prefix: the common prefixes and the objects
+# apart, in S3's key order, from one ListObjectsV2 signed with the role; the
+# same listing as text is a header and one line per entry. On the real layer
+# a public bucket in another region than the profile's is listed where it
+# lives.
+id = "s3_lists_a_prefix_as_common_prefixes_and_objects"
+feature = "s3-explorer"
+
+[combination]
+command = "s3"
+source = "aws-profile"
+role = "assume-role"
+s3_op = "list"
+
+[input]
+args = ["s3", "assets", "--list", "--json"]
+then_run = [["s3", "assets", "--list"]]
+config = """
+[s3.assets]
+aws_profile = "dev"
+bucket = "browse-bucket"
+prefix = "reports/"
+"""
+
+[expect]
+exit_code = 0
+sts_actions = ["AssumeRole"]
+op_calls = 0
+stdout_lines = 9
+stdout_excludes = ["null"]
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stdout_json = { "/bucket" = "browse-bucket", "/prefix" = "reports/", "/region" = "ap-northeast-1", "/prefixes" = ["reports/2024/", "reports/2025/", "reports/a b/", "reports/日本語 +%/"], "/objects/0/key" = "reports/Invoice-003.pdf", "/objects/1/key" = "reports/invoice-001.pdf", "/objects/2/key" = "reports/invoice-002.pdf", "/objects/3/key" = "reports/summary.txt", "/objects/3/size" = 19, "/scanned_objects" = 8, "/complete" = true, "/stop_reason" = "<null>", "/cursor" = "<null>" }
+api_calls = { count = 1, calls = [
+  { method = "GET", path = "/browse-bucket/?list-type=2&delimiter=%2F&max-keys=200&prefix=reports%2F", signing_region = "ap-northeast-1" },
+] }
+
+[real]
+requires = ["profile:cm", "keychain:OP_SERVICE_ACCOUNT_TOKEN"]
+args = ["s3", "overture", "--list", "--json"]
+then_run = [["s3", "overture", "--list"]]
+config = """
+[s3.overture]
+aws_profile = "cm"
+region = "ap-northeast-1"
+bucket = "overturemaps-us-west-2"
+prefix = "release/"
+"""
+
+[real.combination]
+target = "s3-public-bucket"
+mfa = "onepassword"
+region = "bucket"
+
+[real.expect]
+exit_code = 0
+
+[[real.expect.runs]]
+run = 0
+exit_code = 0
+stdout_json = { "/bucket" = "overturemaps-us-west-2", "/region" = "us-west-2", "/complete" = true, "/prefixes/0" = { contains = "release/" } }

@@ -1,0 +1,17 @@
+# No subcommand opens the TUI, which needs a terminal; without one the answer
+# is the hint, not a hang.
+id = "cli_without_command_or_terminal_exits_2_with_hint"
+feature = "cli-entry"
+
+[combination]
+tty = "none"
+
+[input]
+args = []
+
+[expect]
+error = { code = "TERMINAL_REQUIRED", exit = 2 }
+hint = "run `kurama status`"
+sts_actions = []
+op_calls = 0
+no_files_written = true

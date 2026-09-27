@@ -1,0 +1,58 @@
+# An [auth.*] an API left in the file still uses is not removed: the
+# refusal names every such API -- one naming it with `auth`, and one that
+# uses it by having its name and no `auth` -- and nothing is removed, not
+# even the sections given with it. Removed together with every API using
+# it, it would go (see config_remove_accepts_related_sections_in_one_write).
+id = "config_remove_refuses_an_auth_that_is_still_referenced"
+feature = "config"
+
+[combination]
+command = "config-remove"
+config = "rejected"
+
+[input]
+args = ["config", "remove", "auth.google"]
+then_run = [
+  ["config", "remove", "api.docs", "auth.google", "--json"],
+  ["config", "remove", "auth.gh"],
+]
+config = """
+[auth.google]
+kind = "token"
+token = "op://Agent/google/credential"
+
+[api.sheets]
+base_url = "https://sheets.example.com"
+auth = "google"
+
+[api.docs]
+base_url = "https://docs.example.com"
+auth = "google"
+
+[auth.gh]
+kind = "token"
+token = "op://Agent/gh/credential"
+
+[api.gh]
+base_url = "https://api.github.com"
+"""
+
+[expect]
+error = { code = "CONFIG_INVALID", exit = 2 }
+stderr_contains = ["[auth.gh] is still used by [api.gh]; nothing was removed"]
+hint = "remove those APIs in the same `kurama config remove`, or give them another auth with `kurama config set` first; the file was not changed"
+stdout = "empty"
+sts_actions = []
+op_calls = 0
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+error = { code = "CONFIG_INVALID", exit = 2 }
+stderr_contains = ["[auth.google] is still used by [api.sheets], [api.docs]; nothing was removed"]
+
+[[expect.runs]]
+run = 1
+json_error = { code = "CONFIG_INVALID", exit = 2 }
+stderr_lines = 1
+stderr_json = { "/error/message" = "[auth.google] is still used by [api.sheets]; nothing was removed" }

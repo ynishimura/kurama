@@ -1,0 +1,20 @@
+# A session cache that cannot be read is exit 3 with what to do about the
+# keychain; nothing is called and nothing is written.
+id = "session_cache_unreadable_on_logout_exits_3_with_hint"
+feature = "session-cache"
+
+[combination]
+command = "logout"
+session_cache = "unreadable"
+
+[input]
+args = ["logout", "--all"]
+
+[fakes]
+corrupt_session_cache = true
+
+[expect]
+error = { code = "SESSION_CACHE_ERROR", exit = 3 }
+sts_actions = []
+hint = "unlock the login keychain"
+no_files_written = true

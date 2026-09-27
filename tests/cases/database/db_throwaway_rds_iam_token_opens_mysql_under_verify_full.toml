@@ -1,0 +1,60 @@
+# The same IAM token for MySQL, which takes it through mysql_clear_password
+# over the verified connection. The fake layer holds the plan; the throwaway
+# layer opens the RDS MySQL of tests/db/rds-iam.yaml under verify-full.
+id = "db_throwaway_rds_iam_token_opens_mysql_under_verify_full"
+feature = "database"
+
+[combination]
+command = "db"
+engine = "mysql"
+auth = "iam"
+tls = "verify-full"
+
+[input]
+args = ["db", "rds-mysql", "--dry-run", "--json"]
+config = """
+[db.rds-mysql]
+engine = "mysql"
+host = "127.0.0.1"
+port = 1
+database = "app"
+username = "iam_reader"
+tls = "verify-full"
+ca_file = "{repo}/tests/fixtures/db/ca.pem"
+connect_timeout_secs = 2
+
+[db.rds-mysql.iam]
+aws_profile = "dev"
+"""
+
+[fakes]
+op = "enabled"
+
+[expect]
+exit_code = 0
+stdout_json = { "/dry_run" = true }
+sts_actions = []
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true
+
+[throwaway]
+stacks = ["rds-iam"]
+args = ["db", "rds-mysql", "--tables", "--json"]
+config = """
+[db.rds-mysql]
+engine = "mysql"
+host = "{rds_mysql_host}"
+database = "app"
+username = "iam_reader"
+tls = "verify-full"
+ca_file = "{rds_ca_file}"
+
+[db.rds-mysql.iam]
+aws_profile = "{throwaway_profile}"
+"""
+
+[throwaway.expect]
+exit_code = 0
+stdout_json = { "/operation" = "tables", "/target" = "rds-mysql", "/meta/engine/name" = "mysql" }
+no_files_written = true

@@ -1,0 +1,46 @@
+# A full listing page carries the cursor that continues it, the cursor
+# starts the next page after exactly that row, and a cursor from another
+# database names no rows here.
+id = "db_listing_pages_continue_only_their_own_listing"
+feature = "database"
+
+[combination]
+command = "db"
+client = "db"
+engine = "sqlite"
+db_op = "tables"
+
+[input]
+args = ["db", "app", "--tables", "--limit", "1", "--json"]
+then_run = [
+  ["db", "app", "--tables", "--limit", "1", "--cursor", "eyJ0YXJnZXQiOiJhcHAiLCJvcGVyYXRpb24iOiJ0YWJsZXMiLCJzY2hlbWEiOiJtYWluIiwiYWZ0ZXIiOiJjdXN0b21lcnMifQ", "--json"],
+  ["db", "app", "--tables", "--cursor", "eyJ0YXJnZXQiOiJvdGhlciIsIm9wZXJhdGlvbiI6InRhYmxlcyIsInNjaGVtYSI6Im1haW4iLCJhZnRlciI6ImN1c3RvbWVycyJ9", "--json"],
+]
+config = """
+[db.app]
+engine = "sqlite"
+path = "{repo}/tests/fixtures/db/app.sqlite3"
+
+[db.writable]
+engine = "sqlite"
+allow_write = true
+path = "{repo}/tests/fixtures/db/app.sqlite3"
+"""
+
+[expect]
+exit_code = 2
+sts_actions = []
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true
+stderr_json = { "/error/code" = "DB_INVALID", "/error/message" = { contains = "another database" } }
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stdout_json = { "/rows" = [["main", "customers", "table"]], "/meta/next_cursor" = "eyJ0YXJnZXQiOiJhcHAiLCJvcGVyYXRpb24iOiJ0YWJsZXMiLCJzY2hlbWEiOiJtYWluIiwiYWZ0ZXIiOiJjdXN0b21lcnMifQ" }
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+stdout_json = { "/rows" = [["main", "open_orders", "view"]] }

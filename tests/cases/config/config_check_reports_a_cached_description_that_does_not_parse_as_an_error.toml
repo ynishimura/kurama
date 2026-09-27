@@ -1,0 +1,30 @@
+# The cached copy of a URL description has readable metadata and a body that
+# does not parse. `kurama api` would use that body as it is and fail, so the
+# check reports an error naming the cached body, and the run fails.
+id = "config_check_reports_a_cached_description_that_does_not_parse_as_an_error"
+feature = "config"
+
+[combination]
+command = "config-check"
+output = "json"
+config = "openapi-cache-corrupt"
+
+[input]
+args = ["config", "check", "--json"]
+replace_config = """
+[api.remote]
+base_url = "https://api.example.com"
+openapi = "https://api.example.com/openapi.json"
+"""
+
+[input.home_files]
+".cache/kurama/openapi/1b2b05bdb639d126.json" = '{"url":"https://api.example.com/openapi.json","etag":null,"last_modified":null,"fetched_at":"2026-09-01T00:00:00Z"}'
+".cache/kurama/openapi/1b2b05bdb639d126.body" = "{broken"
+
+[expect]
+json_error = { code = "CONFIG_INVALID", exit = 2 }
+stderr_lines = 1
+stdout_json = { "/openapi/0/state" = "invalid", "/openapi/0/path" = { contains = ".cache/kurama/openapi/1b2b05bdb639d126.body" }, "/diagnostics" = { length = 1 }, "/diagnostics/0/severity" = "error", "/diagnostics/0/code" = "API_SPEC_INVALID", "/diagnostics/0/section" = "api.remote", "/diagnostics/0/message" = { contains = ".cache/kurama/openapi/1b2b05bdb639d126.body" } }
+sts_actions = []
+op_calls = 0
+no_files_written = true

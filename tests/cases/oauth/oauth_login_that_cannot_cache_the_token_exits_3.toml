@@ -1,0 +1,37 @@
+# `login` exists to fill the cache, so an uncacheable token is a failure even
+# though `token` and `api` would have used it. No success line is printed.
+id = "oauth_login_that_cannot_cache_the_token_exits_3"
+feature = "oauth"
+
+[combination]
+command = "login"
+source = "oauth"
+grant = "client_credentials"
+secret = "op"
+token_store = "corrupt"
+
+[input]
+args = ["login", "svc"]
+config = """
+[auth.svc]
+kind = "oauth"
+grant_type = "client_credentials"
+token_url = "{server}/oauth/token"
+client_id = "svc-client"
+client_secret = "op://Agent/Service/client_secret"
+scopes = ["read"]
+
+[api.svc]
+description = "Service API"
+base_url = "{server}/api"
+"""
+
+[fakes]
+op = "enabled"
+corrupt_token_store = true
+
+[expect]
+error = { code = "TOKEN_STORE_ERROR", exit = 3 }
+stderr_contains = ["was issued but could not be stored"]
+stderr_excludes = ["Logged in"]
+stdout = "plain-text"

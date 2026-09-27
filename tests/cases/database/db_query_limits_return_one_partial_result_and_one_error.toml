@@ -1,0 +1,42 @@
+# A read cut by its row or byte bound prints the partial result on stdout
+# and one `DB_FAILED` document on stderr, each naming its own stop reason.
+id = "db_query_limits_return_one_partial_result_and_one_error"
+feature = "database"
+
+[combination]
+command = "db"
+client = "db"
+engine = "sqlite"
+db_op = "query"
+
+[input]
+args = ["db", "app", "--query", "SELECT id FROM orders ORDER BY id", "--max-rows", "2", "--json"]
+then_run = [
+  ["db", "app", "--query", "SELECT id, note FROM orders ORDER BY id", "--max-result-bytes", "20", "--json"],
+]
+config = """
+[db.app]
+engine = "sqlite"
+path = "{repo}/tests/fixtures/db/app.sqlite3"
+
+[db.writable]
+engine = "sqlite"
+allow_write = true
+path = "{repo}/tests/fixtures/db/app.sqlite3"
+"""
+
+[expect]
+exit_code = 1
+sts_actions = []
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true
+stdout_json = { "/row_count" = 1, "/stop_reason" = "max_result_bytes", "/result_bytes" = 13 }
+
+[[expect.runs]]
+run = 0
+exit_code = 1
+stderr_json = { "/error/code" = "DB_FAILED", "/error/retry" = "never" }
+stderr_lines = 1
+stdout = { line_count = 1 }
+stdout_json = { "/row_count" = 2, "/truncated" = true, "/stop_reason" = "max_rows", "/meta/next_actions/0" = "<object>" }

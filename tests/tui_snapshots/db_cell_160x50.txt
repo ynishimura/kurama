@@ -1,0 +1,50 @@
+ 鞍馬 kurama db  cmp-dev  mysql 8.4.3  portnoy  via ssm i-0abc1234def567890                                                                          READ ONLY
+┏ Tables (4+) ━━━━━━━━━━━━━━━━━┓┏ Columns  [Preview]  SQL  Result  aws_accounts ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ ▸ aws_accounts               ┃┃   id                   id    note                              name          amount                           payload   set… ┃
+┃   aws_account_addresses      ┃┃   1                    10    ∅                                 ACME          12345678901234567890.1234567890  AAEC/w==  {…   ┃
+┃   projects                   ┃┃ ▸ 9223372036854775807  11                                      日本語の名前  0.0000000001                     ∅         {}   ┃
+┃   open_projects (view)       ┃┃   3                    12    a very long note that goes on a…  tab\there     ∅                                          []   ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                 ┏ Cell ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓                                                 ┃
+┃                              ┃┃                 ┃                                                          ┃                                                 ┃
+┃                              ┃┃                 ┃  column    note                                          ┃                                                 ┃
+┃                              ┃┃                 ┃  type      text                                          ┃                                                 ┃
+┃                              ┃┃                 ┃  encoding  text                                          ┃                                                 ┃
+┃                              ┃┃                 ┃                                                          ┃                                                 ┃
+┃                              ┃┃                 ┃  a very long note that goes on and on well past any      ┃                                                 ┃
+┃                              ┃┃                 ┃  column width the table would give it                    ┃                                                 ┃
+┃                              ┃┃                 ┃                                                          ┃                                                 ┃
+┃                              ┃┃                 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛                                                 ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃                                                                                                                              ┃
+┃                              ┃┃ 3 rows  12 ms  truncated at max_rows, more rows exist  … cell cut to fit (Enter)                                             ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+ Esc close

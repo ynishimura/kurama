@@ -1,0 +1,52 @@
+# An auth and the API that names it are added in one run from stdin: the
+# file gets both, `config show` reads them back and `status` lists the API,
+# so the sections are ones kurama uses. Only the config file is written, and
+# nothing is resolved or contacted on the way.
+id = "config_add_accepts_related_sections_in_one_write"
+feature = "config"
+
+[combination]
+command = "config-add"
+output = "json"
+input = "stdin"
+
+[input]
+args = ["config", "add", "--file", "-", "--json"]
+then_run = [["config", "show", "api.svc", "--json"], ["status", "--only", "api", "--json"]]
+stdin = """
+# my own service
+[auth.svc]
+kind = "token"
+token = "op://Agent/svc/credential"
+header = "X-Api-Key"
+format = "{token}"
+
+[api.svc]
+base_url = "https://svc.example.com/v1"
+auth = "svc"
+"""
+
+[fakes]
+op = "enabled"
+
+[expect]
+exit_code = 0
+stdout_json = { "/0/name" = "svc", "/0/kind" = "api" }
+sts_actions = []
+op_calls = 0
+secret_reads = []
+api_calls = { count = 0 }
+files_written = ["kurama-config.toml"]
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stderr_empty = true
+stdout_json = { "/changed" = true, "/applied" = true, "/changes/0/section" = "auth.svc", "/changes/0/action" = "add", "/changes/1/section" = "api.svc", "/changes" = { length = 2 }, "/warnings" = { length = 0 }, "/path" = { contains = "/kurama-config.toml" } }
+op_calls = 0
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+stderr_empty = true
+stdout_json = { "/key" = "api.svc", "/value/base_url" = "https://svc.example.com/v1", "/value/auth" = "svc" }

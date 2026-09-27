@@ -1,0 +1,30 @@
+ 鞍馬 kurama api  pets  Petstore 1.2.0                                              bearer   sigv4
+┏ Operations (5) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓┏ Operation ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃   METHOD ID                                        ┃┃ Operation pets/create                      ┃
+┃   GET    pets/list                                 ┃┃ Request   POST /pets                       ┃
+┃ ▸ POST   pets/create                               ┃┃ Summary   Create a pet                     ┃
+┃   GET    pets/get                                  ┃┃ Tags      pets                             ┃
+┃   DELETE DELETE /pets/{petId}                      ┃┃ Scopes    read:pets, write:pets            ┃
+┃   GET    owners/list-pets                          ┃┃ Params    -                                ┃
+┃                                                    ┃┃ Body      application/json (required)      ┃
+┃                                                    ┃┃ Docs      https://docs.example.com/pets#cr ┃
+┃                                                    ┃┃           eate                             ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃ Next      Enter opens the form             ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+ ↑↓ move  Enter open  / search  q quit  h history  ? help  c copy  o docs

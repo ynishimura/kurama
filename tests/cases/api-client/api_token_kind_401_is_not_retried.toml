@@ -1,0 +1,42 @@
+# A rejected issued credential is the answer: nothing was cached and nothing
+# can be refreshed, so reading the reference again would build the same
+# request and spend a second call on the same rejection.
+id = "api_token_kind_401_is_not_retried"
+feature = "api-client"
+
+[combination]
+command = "api"
+source = "token"
+secret = "aws-ssm"
+header = "named"
+api_response = "unauthorized"
+
+[input]
+args = ["api", "example", "/voices", "-v"]
+config = """
+[auth.example]
+kind = "token"
+token = "aws-ssm://dev/kurama/api-key"
+header = "xi-api-key"
+format = "{token}"
+
+[api.example]
+base_url = "{server}/api"
+"""
+
+[fakes]
+aws_secrets = "from-id"
+api = "unauthorized"
+
+[expect]
+error = { code = "API_HTTP_ERROR", exit = 4 }
+token_grants = []
+op_calls = 0
+# One read, one request: no second attempt at either.
+secret_reads = [{ operation = "ssm:GetParameter", id = "/kurama/api-key", region = "ap-northeast-1" }]
+# -v says the same: one read, one line.
+stderr_lines_containing = { "< secret read:" = 1 }
+api_calls = { count = 1, headers = { "xi-api-key" = "parameter-of/kurama/api-key" } }
+# The credential is not in the error line.
+stderr_excludes = ["parameter-of/kurama/api-key"]
+no_files_written = true

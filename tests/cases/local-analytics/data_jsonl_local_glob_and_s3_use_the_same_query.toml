@@ -1,0 +1,42 @@
+# The same JSONL query over a local glob and over S3 aggregates every row,
+# nested fields and Unicode included; only the S3 input performs HEAD and
+# GET, on the resolved key.
+id = "data_jsonl_local_glob_and_s3_use_the_same_query"
+feature = "local-analytics"
+
+[combination]
+command = "data"
+source = "aws-profile"
+client = "data"
+data_op = "query"
+data_source = "s3"
+format = "jsonl"
+role = "assume-role"
+region = "profile"
+
+[input]
+args = ["data", "--from", "{repo}/tests/fixtures/data/*.jsonl", "--query", "SELECT event.name AS event, count(*), sum(amount) FROM data GROUP BY event.name ORDER BY event", "--json"]
+then_run = [["data", "--from", "s3://data-bucket/events.jsonl", "--aws-profile", "dev", "--query", "SELECT event.name AS event, count(*), sum(amount) FROM data GROUP BY event.name ORDER BY event", "--json"]]
+
+[expect]
+exit_code = 0
+stderr_empty = true
+sts_actions = ["AssumeRole"]
+op_calls = 0
+stdout_json = { "/truncated" = false, "/rows" = [["return", "1", "20"], ["購入", "2", "12"]] }
+api_calls = { count = 5, sigv4 = { service = "s3", region = "ap-northeast-1" }, calls = [
+  { method = "HEAD", path = "/data-bucket/events.jsonl" },
+  { method = "HEAD", path = "/data-bucket/events.jsonl" },
+  { method = "GET", path = "/data-bucket/events.jsonl" },
+  { method = "HEAD", path = "/data-bucket/events.jsonl" },
+  { method = "HEAD", path = "/data-bucket/events.jsonl" },
+] }
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stderr_empty = true
+sts_actions = []
+api_calls = { count = 0 }
+stdout_json = { "/truncated" = false, "/rows" = [["return", "1", "20"], ["購入", "2", "12"]] }

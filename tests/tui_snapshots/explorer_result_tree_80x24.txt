@@ -1,0 +1,24 @@
+ 鞍馬 kurama api  pets  Petstore 1.2.0                          bearer   sigv4
+┏ pets/get  HTTP 200 OK  42 ms  tree ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ ▾ {4}                                                                        ┃
+┃     id: "p-1"                                                                ┃
+┃     name: "Rex"                                                              ┃
+┃   ▸ tags [2]                                                                 ┃
+┃   ▾ owner {1}                                                                ┃
+┃       login: "octocat"                                                       ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+ ↑↓ move  ←→ fold  y copy path  j jq path  t text  Esc back  q quit

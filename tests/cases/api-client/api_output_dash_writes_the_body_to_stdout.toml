@@ -1,0 +1,56 @@
+# `--output -` is stdout named explicitly: the server's bytes exactly, as a
+# pipe gets them (no newline added), and --json still prints the envelope. `--output PATH` takes the
+# body itself, so with --json or --jq outside a dry run it is refused before
+# anything is sent, as one JSON error document under --json.
+id = "api_output_dash_writes_the_body_to_stdout"
+feature = "api-client"
+
+[combination]
+command = "api"
+source = "none"
+output = "file-dash"
+
+[input]
+args = ["api", "public", "/user", "--output", "-"]
+then_run = [
+  ["api", "public", "/user", "--output", "-", "--json"],
+  ["api", "public", "/user", "--output", "{home}/body.json", "--json"],
+  ["api", "public", "/user", "-o", "{home}/body.json", "--jq", ".[0].login"],
+]
+config = """
+[api.public]
+base_url = "{server}/api"
+"""
+
+[fakes]
+api = "compact-array"
+
+[expect]
+json_error = { code = "API_ARGUMENT_INVALID", exit = 2 }
+stderr_lines = 1
+stderr_json = { "/error/category" = "usage", "/error/message" = "--output PATH takes the response body; drop --json / --jq, or use --output - to print them" }
+stdout = "empty"
+api_calls = { count = 0 }
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stderr_empty = true
+stdout = { equals = "[{\"login\":\"octocat\",\"path\":\"/api/user\",\"amount\":10.00}]" }
+api_calls = { count = 1 }
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+stderr_empty = true
+stdout_json = { "/status" = 200, "/body/0/login" = "octocat" }
+api_calls = { count = 1 }
+
+[[expect.runs]]
+run = 2
+json_error = { code = "API_ARGUMENT_INVALID", exit = 2 }
+stderr_lines = 1
+stderr_json = { "/error/category" = "usage", "/error/message" = { contains = "--output PATH" } }
+stdout = "empty"
+api_calls = { count = 0 }

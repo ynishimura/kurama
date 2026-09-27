@@ -1,0 +1,48 @@
+# One HeadObject of the object named, and nothing else: its size, type,
+# modification time, ETag and storage class. An archived object is named as
+# such, and a preview of it reads no byte.
+id = "s3_head_reports_size_type_etag_and_storage_class"
+feature = "s3-explorer"
+
+[combination]
+command = "s3"
+source = "aws-profile"
+role = "assume-role"
+s3_op = "head"
+
+[input]
+args = ["s3", "assets", "s3://browse-objects/data/report.json", "--head", "--json"]
+then_run = [
+  ["s3", "assets", "s3://browse-objects/archive/old.csv", "--head", "--json"],
+  ["s3", "assets", "s3://browse-objects/archive/old.csv", "--preview", "--json"],
+  ["s3", "assets", "s3://browse-objects/data/report.json", "--head"],
+]
+config = """
+[s3.assets]
+aws_profile = "dev"
+"""
+
+[expect]
+exit_code = 0
+op_calls = 0
+no_files_written = true
+stdout = { line_words = [["storage_class", "STANDARD"], ["size", "33"], ["content_type", "application/json"]] }
+api_calls = { count = 1, sigv4 = { service = "s3", region = "ap-northeast-1" }, calls = [{ method = "HEAD", path = "/browse-objects/data/report.json" }] }
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+sts_actions = ["AssumeRole"]
+stdout_json = { "/operation" = "head", "/bucket" = "browse-objects", "/object/key" = "data/report.json", "/object/size" = 33, "/object/content_type" = "application/json", "/object/etag" = { contains = "\"" }, "/object/last_modified" = { contains = "2026-09-01" }, "/object/storage_class" = "STANDARD", "/complete" = true, "/preview" = "<null>" }
+api_calls = { count = 1, sigv4 = { service = "s3", region = "ap-northeast-1" }, calls = [{ method = "HEAD", path = "/browse-objects/data/report.json" }] }
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+stdout_json = { "/object/storage_class" = "GLACIER", "/object/size" = 8 }
+
+[[expect.runs]]
+run = 2
+exit_code = 0
+stdout_json = { "/operation" = "preview", "/object/storage_class" = "GLACIER", "/skipped/0/key" = "archive/old.csv", "/skipped/0/reason" = "archived", "/preview" = "<null>", "/complete" = false, "/bytes_read" = 0 }
+api_calls = { count = 1, sigv4 = { service = "s3", region = "ap-northeast-1" }, calls = [{ method = "HEAD", path = "/browse-objects/archive/old.csv" }] }

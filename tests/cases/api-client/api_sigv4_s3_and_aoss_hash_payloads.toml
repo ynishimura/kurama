@@ -1,0 +1,41 @@
+# s3 and aoss requests carry the payload hash header, whatever the service.
+id = "api_sigv4_s3_and_aoss_hash_payloads"
+feature = "api-client"
+
+[combination]
+command = "api"
+auth = "aws-profile"
+service = "cli"
+region = "profile"
+payload = "hashed"
+
+[input]
+args = ["api", "apigw", "/a//b%2Fc", "--service", "s3", "-d", "data"]
+then_run = [["api", "apigw", "/items", "--service", "aoss", "-d", "data", "-H", "X-Tag: one", "-H", "X-Tag: two"]]
+config = """
+[api.apigw]
+base_url = "{server}/api"
+aws_profile = "dev"
+service = "execute-api"
+[auth.apigw]
+kind = "oauth"
+grant_type = "client_credentials"
+token_url = "{server}/oauth/token"
+client_id = "unused"
+client_secret = "op://Agent/Service/client_secret"
+"""
+
+[expect]
+exit_code = 0
+token_grants = []
+op_calls = 0
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+api_calls = { count = 1, sigv4 = { service = "s3", region = "ap-northeast-1" }, headers = { "x-amz-content-sha256" = "3a6eb0790f39ac87c94f3856b2dd2c5d110e6811602261a9a923d3bb23adc8b7" } }
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+api_calls = { count = 1, sigv4 = { service = "aoss", region = "ap-northeast-1" }, headers = { "x-amz-content-sha256" = "3a6eb0790f39ac87c94f3856b2dd2c5d110e6811602261a9a923d3bb23adc8b7" } }

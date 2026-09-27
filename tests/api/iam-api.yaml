@@ -1,0 +1,206 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >-
+  A throwaway API that answers a SigV4-signed request and nothing else, so
+  `kurama api` with `[api.*] aws_profile` can be shown against real AWS. One
+  Lambda function sits behind both endpoints whose hostnames kurama reads the
+  signing service and region off: an API Gateway REST API with AWS_IAM
+  authorization (`<id>.execute-api.<region>.amazonaws.com`, service
+  `execute-api`) and a Lambda function URL with AuthType AWS_IAM
+  (`<id>.lambda-url.<region>.on.aws`, service `lambda`).
+
+  The function echoes the request as it arrived -- method, path, query, body,
+  the headers a check sets -- and the ARN IAM authenticated, so a run says
+  which role the signature was accepted for and whether anything was mangled
+  on the way. It also serves an OpenAPI description at `/openapi.json`, which
+  only a signed request reaches: that is what `openapi_auth = true` fetches.
+
+  Nothing in it is billed at rest, and deleting the stack removes all of it.
+
+Resources:
+  FunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: { Service: lambda.amazonaws.com }
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+  # Named after the function, and made here so the logs of a check are gone a
+  # day later instead of kept forever by the group Lambda would create.
+  EchoLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${AWS::StackName}-echo"
+      RetentionInDays: 1
+
+  EchoFunction:
+    Type: AWS::Lambda::Function
+    DependsOn: EchoLogs
+    Properties:
+      FunctionName: !Sub "${AWS::StackName}-echo"
+      Role: !GetAtt FunctionRole.Arn
+      Runtime: python3.13
+      Handler: index.handler
+      Timeout: 10
+      Code:
+        ZipFile: |
+          """Echo a signed request back, and serve the description of doing so."""
+          import json
+
+          SPEC = {
+              "openapi": "3.0.3",
+              "info": {"title": "kurama IAM echo", "version": "1"},
+              "paths": {
+                  "/echo": {
+                      "get": {
+                          "operationId": "getEcho",
+                          "summary": "Echo the signed request back",
+                          "parameters": [
+                              {"name": "q", "in": "query",
+                               "schema": {"type": "string"}}
+                          ],
+                          "responses": {
+                              "200": {"description": "the request as it arrived"}
+                          },
+                      },
+                      "post": {
+                          "operationId": "postEcho",
+                          "summary": "Echo a JSON body back",
+                          "requestBody": {
+                              "required": True,
+                              "content": {
+                                  "application/json": {
+                                      "schema": {"type": "object"}
+                                  }
+                              },
+                          },
+                          "responses": {
+                              "200": {"description": "the request as it arrived"}
+                          },
+                      },
+                  }
+              },
+          }
+
+
+          def handler(event, _context):
+              """What arrived, and for whom IAM accepted the signature."""
+              context = event.get("requestContext", {})
+              if event.get("version") == "2.0":
+                  iam = context.get("authorizer", {}).get("iam", {})
+                  arrived = {
+                      "shape": "function-url",
+                      "method": context["http"]["method"],
+                      "path": event.get("rawPath"),
+                      "query": event.get("rawQueryString"),
+                      "caller": iam.get("userArn"),
+                  }
+              else:
+                  arrived = {
+                      "shape": "rest-api",
+                      "method": event.get("httpMethod"),
+                      "path": event.get("path"),
+                      "query": event.get("multiValueQueryStringParameters"),
+                      "caller": context.get("identity", {}).get("userArn"),
+                  }
+              headers = event.get("headers") or {}
+              # The Authorization header is not echoed: a signature belongs in
+              # neither a log group nor the output of a check.
+              arrived["headers"] = {
+                  name: value
+                  for name, value in headers.items()
+                  if name.lower().startswith("x-kurama")
+                  or name.lower() == "content-type"
+              }
+              arrived["body"] = event.get("body")
+              path = arrived["path"] or ""
+              body = SPEC if path.endswith("/openapi.json") else arrived
+              return {
+                  "statusCode": 200,
+                  "headers": {"Content-Type": "application/json"},
+                  "body": json.dumps(body),
+              }
+
+  EchoUrl:
+    Type: AWS::Lambda::Url
+    Properties:
+      TargetFunctionArn: !GetAtt EchoFunction.Arn
+      AuthType: AWS_IAM
+
+  # A function URL checks the resource policy, so without this every signed
+  # request is 403 however much the caller's own policy allows.
+  EchoUrlPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref EchoFunction
+      Action: lambda:InvokeFunctionUrl
+      Principal: !Ref AWS::AccountId
+      FunctionUrlAuthType: AWS_IAM
+
+  # The resource policy names this account, so any role in it may invoke; the
+  # methods still require AWS_IAM, which is what is being checked.
+  RestApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: !Ref AWS::StackName
+      EndpointConfiguration: { Types: [REGIONAL] }
+      Policy:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal: { AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root" }
+            Action: execute-api:Invoke
+            Resource: execute-api:/*
+
+  ProxyResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref RestApi
+      ParentId: !GetAtt RestApi.RootResourceId
+      PathPart: "{proxy+}"
+
+  ProxyMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref RestApi
+      ResourceId: !Ref ProxyResource
+      HttpMethod: ANY
+      AuthorizationType: AWS_IAM
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub >-
+          arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${EchoFunction.Arn}/invocations
+
+  ApiPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref EchoFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${RestApi}/*"
+
+  Deployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn: ProxyMethod
+    Properties:
+      RestApiId: !Ref RestApi
+
+  Stage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      RestApiId: !Ref RestApi
+      DeploymentId: !Ref Deployment
+      StageName: prod
+
+Outputs:
+  FunctionUrl:
+    Description: The function URL, which signs as service `lambda`.
+    Value: !GetAtt EchoUrl.FunctionUrl
+  RestApiUrl:
+    Description: The REST API stage, which signs as service `execute-api`.
+    Value: !Sub "https://${RestApi}.execute-api.${AWS::Region}.amazonaws.com/${Stage}"

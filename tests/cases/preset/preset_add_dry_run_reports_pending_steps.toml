@@ -1,0 +1,26 @@
+# A dry run has appended nothing, so its `next_steps` start with the append
+# itself, then the login and the first call, in that order; the file keeps
+# its bytes.
+id = "preset_add_dry_run_reports_pending_steps"
+feature = "preset"
+
+[combination]
+command = "preset-add"
+output = "dry-run"
+
+[input]
+args = ["preset", "add", "google-sheets", "--set", "client_id=cid", "--set", "client_secret=op://Agent/kurama-google/client_secret", "--dry-run", "--json"]
+config = """
+# mine
+[core]
+log_level = "info"
+"""
+
+[expect]
+exit_code = 0
+stderr_empty = true
+stdout_json = { "/applied" = false, "/next_steps" = { length = 3 }, "/next_steps/0" = { contains = ["Append the sections to ", "kurama-config.toml:\nkurama preset add google-sheets --set client_id=cid --set client_secret=op://Agent/kurama-google/client_secret"] }, "/next_steps/1" = "Authorize kurama:\nkurama login google", "/next_steps/2" = "Call the API:\nkurama api google-sheets sheets.spreadsheets.get -P spreadsheetId=<spreadsheet-id>" }
+sts_actions = []
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true

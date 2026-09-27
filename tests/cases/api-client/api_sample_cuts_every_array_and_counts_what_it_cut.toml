@@ -1,0 +1,35 @@
+# --sample N keeps the first N elements of every array, at any depth, and
+# ends an array it cut with {"…": {"omitted": M}}; the other values are the
+# server's. It is applied before --jq.
+id = "api_sample_cuts_every_array_and_counts_what_it_cut"
+feature = "api-client"
+
+[combination]
+command = "api"
+source = "none"
+fit = "sample"
+
+[input]
+args = ["api", "public", "POST /echo", "-d", "{\"items\":[{\"id\":1,\"tags\":[\"a\",\"b\",\"c\"]},{\"id\":2,\"tags\":[]},{\"id\":3,\"tags\":[\"d\"]}],\"total\":3}", "--sample", "2"]
+then_run = [
+  ["api", "public", "POST /echo", "-d", "{\"items\":[1,2,3,4,5]}", "--sample", "0", "--jq", ".items[0][\"…\"].omitted"],
+]
+config = """
+[api.public]
+base_url = "{server}/api"
+"""
+
+[fakes]
+api = "echo"
+
+[expect]
+exit_code = 0
+api_calls = { count = 1 }
+
+[[expect.runs]]
+run = 0
+stdout = { equals = "{\"items\":[{\"id\":1,\"tags\":[\"a\",\"b\",{\"…\":{\"omitted\":1}}]},{\"id\":2,\"tags\":[]},{\"…\":{\"omitted\":1}}],\"total\":3}" }
+
+[[expect.runs]]
+run = 1
+stdout = { equals = "5\n" }

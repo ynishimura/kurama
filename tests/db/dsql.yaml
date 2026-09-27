@@ -1,0 +1,25 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >-
+  A throwaway Aurora DSQL cluster for kurama's IAM-token path: created by
+  tests/db/dsql-up.sh, removed by tests/db/dsql-down.sh. Single Region, no
+  deletion protection (the whole point is that `delete-stack` takes it with
+  it), no KMS key of its own.
+
+Resources:
+  Cluster:
+    Type: AWS::DSQL::Cluster
+    Properties:
+      DeletionProtectionEnabled: false
+      Tags:
+        - Key: Name
+          Value: !Ref AWS::StackName
+        - Key: kurama
+          Value: throwaway
+
+Outputs:
+  Endpoint:
+    Description: The host a [db.*] section names (<identifier>.dsql.<region>.on.aws)
+    Value: !GetAtt Cluster.Endpoint
+  Identifier:
+    Description: The cluster identifier `aws dsql get-cluster` takes
+    Value: !GetAtt Cluster.Identifier

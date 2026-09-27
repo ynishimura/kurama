@@ -1,0 +1,27 @@
+# Nobody listens on the token endpoint: a tool failure, not a rejection.
+id = "oauth_unreachable_server_exits_1"
+feature = "oauth"
+
+[combination]
+command = "token"
+source = "oauth"
+grant = "client_credentials"
+token_response = "unreachable"
+
+[input]
+args = ["token", "closed"]
+config = """
+[auth.closed]
+kind = "oauth"
+grant_type = "client_credentials"
+token_url = "http://127.0.0.1:1/oauth/token"
+client_id = "id"
+"""
+
+[fakes]
+token_store = true
+
+[expect]
+error = { code = "OAUTH_FAILED", exit = 1 }
+stderr_contains = ["token request failed", "Connection refused"]
+token_grants = []

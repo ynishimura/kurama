@@ -1,0 +1,77 @@
+# --dry-run --json answers with one plan document (schema_version 1) on stdout for the same
+# request on a bearer, a SigV4 and an unauthenticated API: the resolved
+# request with the credential masked, the auth mode (SigV4 with its service
+# and region), the effects the run would have, and nothing sent.
+id = "api_dry_run_json_prints_the_plan_for_bearer_sigv4_and_no_auth"
+feature = "api-client"
+
+[combination]
+command = "api"
+mode = "dry-run"
+output = "json"
+auth = "bearer-sigv4-none"
+
+[input]
+args = ["api", "github", "POST /items", "-d", "{\"x\":1}", "--dry-run", "--json"]
+then_run = [
+  ["api", "apigw", "POST /items", "-d", "{\"x\":1}", "--dry-run", "--json"],
+  ["api", "public", "POST /items", "-d", "{\"x\":1}", "--dry-run", "--json"],
+  ["api", "public", "/items", "--dry-run", "--jq", ".request.url"],
+]
+config = """
+[auth.github]
+kind = "oauth"
+grant_type = "authorization_code"
+auth_url = "{server}/oauth/authorize"
+token_url = "{server}/oauth/token"
+client_id = "gh-client"
+env_var = "GITHUB_TOKEN"
+
+[api.github]
+base_url = "{server}/api"
+
+[api.apigw]
+base_url = "{server}/api"
+aws_profile = "dev"
+service = "execute-api"
+region = "ap-northeast-1"
+
+[api.public]
+base_url = "{server}/api"
+"""
+
+[expect]
+exit_code = 0
+api_calls = { count = 0 }
+token_grants = []
+oauth_paths = []
+sts_actions = []
+op_calls = 0
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stdout_lines = 1
+stderr_empty = true
+stdout_json = { "/schema_version" = 1, "/dry_run" = true, "/api" = "github", "/target" = "POST /items", "/request/method" = "POST", "/request/url" = { contains = "/api/items" }, "/request/body" = { "bytes" = 7, "json" = true }, "/auth/mode" = "bearer", "/auth/source" = "github", "/auth/grant_type" = "authorization_code", "/description" = "<null>", "/effects/0/effect" = "token_store", "/effects/0/performed" = false, "/effects/1/effect" = "authorization_server", "/effects/1/when" = "if_needed", "/effects/1/may_require_human" = true, "/effects/2/effect" = "browser", "/effects/3/effect" = "api_request", "/effects/3/network" = true, "/effects/3/performed" = false, "/effects" = { length = 4 } }
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+stdout_lines = 1
+stderr_empty = true
+stdout_json = { "/api" = "apigw", "/request/url" = { contains = "/api/items" }, "/auth/mode" = "sigv4", "/auth/aws_profile" = "dev", "/auth/service" = "execute-api", "/auth/region" = "ap-northeast-1", "/effects/0/effect" = "sts", "/effects/0/performed" = false, "/effects/0/detail" = { contains = "AssumeRole" }, "/effects/1/effect" = "api_request", "/effects" = { length = 2 } }
+
+[[expect.runs]]
+run = 2
+exit_code = 0
+stdout_lines = 1
+stderr_empty = true
+stdout_json = { "/api" = "public", "/request/url" = { contains = "/api/items" }, "/auth" = { "mode" = "none" }, "/effects/0/effect" = "api_request", "/effects" = { length = 1 } }
+
+[[expect.runs]]
+run = 3
+exit_code = 0
+stdout = { line_count = 1, contains = ["/api/items"] }
+stderr_empty = true

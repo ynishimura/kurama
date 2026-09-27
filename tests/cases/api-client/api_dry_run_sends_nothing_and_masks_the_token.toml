@@ -1,0 +1,42 @@
+# --dry-run prints the request it would send, with the token masked, and
+# sends nothing: no token request, no API request, no file.
+id = "api_dry_run_sends_nothing_and_masks_the_token"
+feature = "api-client"
+
+[combination]
+command = "api"
+source = "oauth"
+grant = "authorization_code"
+mode = "dry-run"
+
+[input]
+args = ["api", "github", "/user", "-X", "POST", "-d", "{\"x\":1}", "-H", "X-Trace: 1", "--dry-run"]
+config = """
+[auth.github]
+kind = "oauth"
+grant_type = "authorization_code"
+auth_url = "{server}/oauth/authorize"
+token_url = "{server}/oauth/token"
+client_id = "gh-client"
+scopes = ["repo"]
+env_var = "GITHUB_TOKEN"
+
+[api.github]
+base_url = "{server}/api"
+"""
+
+[expect]
+exit_code = 0
+stdout = "empty"
+stderr_contains = [
+  "# dry run: nothing is sent",
+  "> POST http://",
+  "/api/user\n",
+  "> Authorization: Bearer ****",
+  "> X-Trace: 1",
+  "> Content-Type: application/json",
+  "> body (7 bytes): {\"x\":1}",
+]
+api_calls = { count = 0 }
+token_grants = []
+no_files_written = true

@@ -1,0 +1,30 @@
+# An API the configuration does not name is API_NOT_FOUND, exit 2, with the
+# hint to run status.
+id = "api_unknown_api_exits_2_with_hint"
+feature = "api-client"
+
+[combination]
+command = "api"
+api = "unknown"
+
+[input]
+args = ["api", "nope", "/x"]
+config = """
+[auth.github]
+kind = "oauth"
+grant_type = "authorization_code"
+auth_url = "{server}/oauth/authorize"
+token_url = "{server}/oauth/token"
+client_id = "gh-client"
+scopes = ["repo"]
+env_var = "GITHUB_TOKEN"
+
+[api.github]
+base_url = "{server}/api"
+"""
+
+[expect]
+error = { code = "API_NOT_FOUND", exit = 2 }
+stderr_contains = ["API not found: nope"]
+hint = "run `kurama status`"
+no_files_written = true

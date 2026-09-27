@@ -1,0 +1,23 @@
+# A result limit cannot report successful completion: one partial document
+# on stdout, one error document on stderr.
+id = "data_json_limit_returns_one_partial_result_and_one_error"
+feature = "local-analytics"
+
+[combination]
+command = "data"
+client = "data"
+data_op = "query"
+data_source = "local"
+format = "csv"
+
+[input]
+args = ["data", "--from", "{repo}/tests/fixtures/data/orders.csv", "--query", "SELECT * FROM data", "--max-rows", "1", "--json"]
+env = { RUST_LOG = "trace" }
+
+[expect]
+exit_code = 1
+stdout_json = { "/row_count" = 1, "/truncated" = true }
+stderr_json = { "/error/code" = "DATA_FAILED", "/error/exit_code" = 1 }
+sts_actions = []
+op_calls = 0
+no_files_written = true

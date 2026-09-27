@@ -1,0 +1,50 @@
+[shell-integration]
+summary = "`kurama init zsh`: export wrapper and dynamic offline name/operation/parameter/jq completion"
+entry = "src/shell/cli/commands/init.rs"
+files = [
+  "src/domain/functions/completion_candidates.rs",
+  "src/adapters/completion.rs",
+  "src/adapters/completion_protocol.rs",
+  "src/shell/cli/completion.rs",
+  "src/shell/cli/commands/init.rs",
+  "tests/shell_integration_test.rs",
+  "tests/fixtures/shell-integration/",
+]
+tests = ["init_zsh", "completion"]
+scenarios = [
+  "completion_preset_completes_ids_without_reading_config",
+  "completion_missing_explicit_config_is_silent",
+  "completion_missing_aws_file_keeps_auth_sources",
+  "completion_zsh_jq_keeps_an_unfinished_expression_open",
+  "completion_jq_uses_response_schemas_without_io",
+  "completion_jq_matches_a_bare_path_target",
+  "completion_jq_without_a_target_is_silent",
+  "completion_jq_matches_a_path_and_explicit_method_post",
+  "completion_jq_declines_missing_or_unknown_schemas",
+  "completion_jq_uses_the_json_response_envelope",
+  "completion_zsh_jq_continues_paths_and_preserves_quoted_pipelines",
+  "completion_parameters_use_the_target",
+  "completion_parameters_omit_given_names",
+  "completion_parameter_values_filter_the_current_value_prefix",
+  "completion_zsh_inserts_a_parameter_name_without_a_space",
+  "completion_profiles_are_scoped_and_sorted",
+  "completion_api_names_include_descriptions",
+  "completion_invalid_config_and_missing_aws_file_are_silent",
+  "completion_absent_default_config_still_lists_aws_profiles",
+  "completion_operations_use_only_files_and_cached_urls",
+  "completion_config_sections_come_from_the_saved_file",
+  "completion_describe_uses_operation_candidates",
+  "completion_zsh_api_and_operation_names_bypass_the_wrapper",
+  "completion_zsh_preserves_data_file_and_directory_completion",
+  "completion_zsh_completes_a_subcommand",
+  "completion_zsh_lists_flags_with_their_descriptions",
+  "completion_zsh_completes_the_shell_name",
+  "completion_lists_a_token_source_by_its_header",
+  "completion_parameter_candidates_cannot_break_candidate_protocol",
+  "init_zsh_wrapper_sources_exports_and_preserves_exit",
+]
+depends_on = ["cli-entry", "config", "profile-loading", "api-explorer", "local-analytics", "oauth"]
+notes = "tests/shell_integration_test.rs evaluates the printed script in a real zsh (macOS only); the completion_zsh scenarios press Tab in an isolated zsh -f -i PTY (macOS only), inspect the edited command and descriptions, and record target/agent/tui screens with shared side-effect checks; init_zsh_wrapper_sources_exports_and_preserves_exit calls the evaluated wrapper in the same kind of PTY against the fake STS"
+
+[shell-integration.real]
+not_applicable = "the scenarios run the real zsh on a pseudo terminal"

@@ -1,0 +1,63 @@
+# A run whose environment sets KURAMA_AGENT is held to the default [agent]
+# policy: a POST stops as AGENT_POLICY_DENIED (exit 3) before the credential
+# is read -- 1Password is not asked and the API gets nothing -- while a GET
+# goes through as before. `--confirm` says a person agreed, and the same POST
+# is then sent. A dry run sends nothing, so it is never refused.
+id = "agent_policy_refuses_a_write_before_any_call"
+feature = "agent-policy"
+
+[combination]
+command = "api"
+source = "token"
+secret = "op"
+agent = "default-policy"
+
+[input]
+args = ["api", "example", "/items", "-d", "{\"name\":\"x\"}"]
+then_run = [
+  ["api", "example", "/items"],
+  ["api", "example", "/items", "-d", "{\"name\":\"x\"}", "--confirm"],
+  ["api", "example", "DELETE /items/1", "--dry-run"],
+]
+env = { KURAMA_AGENT = "1" }
+config = """
+[auth.example]
+kind = "token"
+token = "op://Agent/Example/credential"
+
+[api.example]
+base_url = "{server}/api"
+"""
+
+[fakes]
+op = "enabled"
+
+[expect]
+token_grants = []
+# A KURAMA_AGENT run is recorded in the audit log, and nothing else is written.
+files_written = ["home/.local/state/kurama/audit.jsonl"]
+
+[[expect.runs]]
+run = 0
+error = { code = "AGENT_POLICY_DENIED", exit = 3, message = "the [agent] policy refuses POST /api/items: POST is not in allow_methods" }
+hint = "ask a person whether this call may be made, then rerun it with --confirm; to allow it for every agent run, widen [agent] or [api.<name>.agent] in config.toml"
+op_calls = 0
+api_calls = { count = 0 }
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+op_calls = 1
+api_calls = { count = 1, authorization = "Bearer {fake_client_secret}", calls = [{ method = "GET", path = "/api/items" }] }
+
+[[expect.runs]]
+run = 2
+exit_code = 0
+api_calls = { count = 1, authorization = "Bearer {fake_client_secret}", calls = [{ method = "POST", path = "/api/items" }] }
+
+[[expect.runs]]
+run = 3
+exit_code = 0
+op_calls = 0
+api_calls = { count = 0 }
+stderr_contains = ["# dry run: nothing is sent"]

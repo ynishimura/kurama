@@ -1,0 +1,31 @@
+# After `env` cached an MFA session, `status --json` reports the active
+# profile as logged in with the session's expiration, and the others as not,
+# without calling STS or 1Password.
+id = "status_json_reports_the_cached_session_and_the_active_profile"
+feature = "status"
+
+[combination]
+command = "status"
+output = "json"
+session_cache = "reused"
+
+[input]
+args = ["env", "ops-mfa"]
+then_run = [["status", "--json"]]
+env = { KURAMA_AWS = "ops-mfa" }
+
+[fakes]
+op = "enabled"
+session_cache = true
+
+[expect]
+exit_code = 0
+sts_actions = []
+op_calls = 0
+stdout = "plain-text"
+# One JSON array with every profile: default, dev and ops-mfa.
+stdout_json = { "/0/name" = "default", "/1/name" = "dev", "/1/kind" = "aws", "/1/active" = false, "/1/mfa_serial" = "<null>", "/1/logged_in" = false, "/1/expires_at" = "<null>", "/1/role_arn" = "arn:aws:iam::123456789012:role/Dev", "/2/name" = "ops-mfa", "/2/kind" = "aws", "/2/active" = true, "/2/mfa_serial" = "arn:aws:iam::123456789012:mfa/agent", "/2/logged_in" = true, "/2/expires_at" = "2030-01-01T12:00:00Z", "/2/needs_human" = false, "/3" = "<null>" }
+
+[[expect.runs]]
+run = 0
+sts_actions = ["GetSessionToken", "AssumeRole"]

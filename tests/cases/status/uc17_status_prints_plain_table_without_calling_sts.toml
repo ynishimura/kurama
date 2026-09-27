@@ -1,0 +1,17 @@
+# `status` describes the profiles as a plain table and calls nothing.
+id = "uc17_status_prints_plain_table_without_calling_sts"
+feature = "status"
+
+[combination]
+command = "status"
+output = "table"
+
+[input]
+args = ["status"]
+
+[expect]
+exit_code = 0
+sts_actions = []
+op_calls = 0
+stdout = { kind = "plain-text", contains = ["KIND", "arn:aws:iam::123456789012:role/Dev", "ops-mfa"] }
+no_files_written = true

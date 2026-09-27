@@ -1,0 +1,50 @@
+# Without an [audit] section a KURAMA_AGENT run is recorded: an API call it
+# made, one the [agent] policy refused (with the method and path it was
+# refused for, its exit code 3 and its error code), a database query (the SHA-256 of its SQL,
+# never the SQL) and an exec (its program, never its arguments; no exit code,
+# because kurama became the command). `audit --json` lists them oldest first,
+# and `audit --since 1h` prints the same calls as a table.
+id = "audit_lists_the_calls_as_json"
+feature = "audit"
+
+[combination]
+command = "audit"
+output = "json"
+audit = "agent-default"
+
+[input]
+args = ["api", "public", "/user"]
+then_run = [
+  ["api", "public", "/items", "-d", "{\"name\":\"x\"}"],
+  ["db", "app", "--query", "SELECT count(*) FROM orders", "--json"],
+  ["exec", "dev", "--", "/bin/sh", "-c", "exit 0", "exec-argument-secret"],
+  ["audit", "--json"],
+  ["audit", "--since", "1h"],
+]
+env = { KURAMA_AGENT = "1" }
+config = """
+[api.public]
+base_url = "{server}/api"
+
+[db.app]
+engine = "sqlite"
+path = "{repo}/tests/fixtures/db/app.sqlite3"
+"""
+
+[expect]
+exit_code = 0
+files_written = ["home/.local/state/kurama/audit.jsonl"]
+files_unchanged = ["{repo}/tests/fixtures/db/app.sqlite3"]
+
+[[expect.runs]]
+run = 1
+error = { code = "AGENT_POLICY_DENIED", exit = 3 }
+
+[[expect.runs]]
+run = 4
+stdout_json = { "/entries" = { length = 4 }, "/entries/0/command" = "api", "/entries/0/agent" = true, "/entries/0/method" = "GET", "/entries/0/path" = "/api/user", "/entries/0/status" = 200, "/entries/0/exit_code" = 0, "/entries/0/error_code" = "<null>", "/entries/1/method" = "POST", "/entries/1/path" = "/api/items", "/entries/1/status" = "<null>", "/entries/1/exit_code" = 3, "/entries/1/error_code" = "AGENT_POLICY_DENIED", "/entries/2/command" = "db", "/entries/2/target" = "app", "/entries/2/sql_sha256" = "sha256:a82418a16c77ffbd4e34a013e06efa56f567f38d6ca800f21af95b60cb34c41e", "/entries/2/exit_code" = 0, "/entries/3/command" = "exec", "/entries/3/target" = "dev", "/entries/3/program" = "/bin/sh", "/entries/3/exit_code" = "<null>" }
+stdout_excludes = ["SELECT", "exit 0", "exec-argument-secret", "name"]
+
+[[expect.runs]]
+run = 5
+stdout = { lines_start_with = ["TIME", "20", "20", "20", "20"], line_containing = [["agent", "api", "public", "GET /api/user", "200", "0"], ["agent", "api", "public", "POST /api/items", "3"], ["agent", "db", "app", "sha256:a82418a1"], ["agent", "exec", "dev", "/bin/sh"]] }

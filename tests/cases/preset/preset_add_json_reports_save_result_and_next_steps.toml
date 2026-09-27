@@ -1,0 +1,37 @@
+# `preset add --json` is the save result `config add` prints plus the steps
+# still to take: the sections were appended, so the steps start after the
+# append. `config list` then reads both sections from the saved file. Only
+# the config file is written, and nothing is resolved or contacted.
+id = "preset_add_json_reports_save_result_and_next_steps"
+feature = "preset"
+
+[combination]
+command = "preset-add"
+output = "json"
+
+[input]
+args = ["preset", "add", "openai", "--set", "secret=op://Agent/kurama-openai/credential", "--json"]
+then_run = [["config", "list", "--json"]]
+replace_config = """
+[core]
+log_level = "info"
+"""
+
+[fakes]
+op = "enabled"
+
+[expect]
+exit_code = 0
+stderr_empty = true
+stdout_json = { "/sections" = [{ name = "core", keys = ["log_level"] }, { name = "auth.openai", keys = ["kind", "token", "env_var"] }, { name = "api.openai", keys = ["description", "base_url", "auth", "openapi"] }] }
+sts_actions = []
+op_calls = 0
+secret_reads = []
+api_calls = { count = 0 }
+files_written = ["kurama-config.toml"]
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stderr_empty = true
+stdout_json = { "" = { length = 6 }, "/path" = { contains = "/kurama-config.toml" }, "/changed" = true, "/applied" = true, "/changes" = [{ section = "auth.openai", action = "add" }, { section = "api.openai", action = "add" }], "/warnings" = [], "/next_steps" = ["Call the API:\nkurama api openai /models"] }

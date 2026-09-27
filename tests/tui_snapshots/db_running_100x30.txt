@@ -1,0 +1,30 @@
+ 鞍馬 kurama db  cmp-dev  mysql 8.4.3  portnoy  via ssm i-0abc1234def567890              READ ONLY
+┏ Tables (4+) ━━━━━━━━━━━━━━━━━┓┏ Columns  Preview  [SQL]  Result ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ ▸ aws_accounts               ┃┃ SELECT status, count(*) FROM orders GROUP BY status              ┃
+┃   aws_account_addresses      ┃┃                                                                  ┃
+┃   projects                   ┃┃ Enter or F5 runs it in a read-only transaction; one statement a  ┃
+┃   open_projects (view)       ┃┃ run.                                                             ┃
+┃                              ┃┃ ^E (or e from the list) opens it in $EDITOR for several lines.   ┃
+┃                              ┃┃                                                                  ┃
+┃                              ┃┃                                                                  ┃
+┃                              ┃┃                                                                  ┃
+┃                              ┃┃                                                                  ┃
+┃                              ┃┃                                                                  ┃
+┃                              ┃┃                                                                  ┃
+┃                              ┃┃                                                                  ┃
+┃                              ┃┃                                                                  ┃
+┃                              ┃┃                                                                  ┃
+┃                              ┃┃                                                                  ┃
+┃                              ┃┃                                                                  ┃
+┃                              ┃┃                                                                  ┃
+┃                              ┃┃                                                                  ┃
+┃                              ┃┃                                                                  ┃
+┃                              ┃┃                                                                  ┃
+┃                              ┃┃                                                                  ┃
+┃                              ┃┃                                                                  ┃
+┃                              ┃┃                                                                  ┃
+┃                              ┃┃                                                                  ┃
+┃                              ┃┃                                                                  ┃
+┃                              ┃┃ running the statement… 3 s  Esc stops it                         ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+ Esc stop  q quit

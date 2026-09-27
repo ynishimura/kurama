@@ -1,0 +1,30 @@
+ 鞍馬 kurama s3  assets  dev  ap-northeast-1  s3://example-assets/a-very-long-prefix-n…  READ ONLY
+┏ List (2) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓┏ Details ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ ▸ 日本語のプレフィックス/                          ┃┃ Prefix      a-very-long-prefix-name-that-g ┃
+┃   an object key with spaces, 全角文字 …  123456789 ┃┃             oes-on/and-on-and-on/日本語の  ┃
+┃                                                    ┃┃             プレフィックス/                ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃ Next        Enter opens it                 ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃ 2 scanned · complete                               ┃┃                                            ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+ ↑↓ move  Enter open  ← up  / filter  s key search  g content search  d as data  q quit  ? help

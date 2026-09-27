@@ -1,0 +1,27 @@
+# The configuration every scenario runs with is valid: the text report names
+# the file and ends with no error, and the JSON report says the same, with
+# nothing on stderr either way.
+id = "config_check_reports_a_valid_configuration_in_text_and_json"
+feature = "config"
+
+[combination]
+command = "config-check"
+config = "valid"
+
+[input]
+args = ["config", "check"]
+then_run = [["config", "check", "--json"]]
+
+[expect]
+exit_code = 0
+stderr_empty = true
+stdout_json = { "/valid" = true, "/diagnostics" = { length = 0 }, "/config/source" = "KURAMA_CONFIG_PATH", "/config/exists" = true, "/verification/network" = "not_contacted", "/verification/credentials" = "not_resolved" }
+sts_actions = []
+op_calls = 0
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stderr_empty = true
+stdout = { contains = ["/kurama-config.toml (KURAMA_CONFIG_PATH)", "0 errors, 0 warnings"] }

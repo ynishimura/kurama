@@ -1,0 +1,55 @@
+# A statement the database refuses is `DB_REJECTED` with the server's own
+# code and message under `error.server`: SQLite's result code and text on
+# the fake layer, the SQLSTATE of the MySQL 8.4 that `cargo xtask db-up`
+# starts on the local one. No fake can say what a server calls its errors.
+id = "db_local_mysql_reports_the_servers_own_error_code"
+feature = "database"
+
+[combination]
+command = "db"
+engine = "sqlite"
+
+[input]
+args = ["db", "app", "--query", "SELECT id FROM nowhere", "--json"]
+config = """
+[db.app]
+engine = "sqlite"
+path = "{repo}/tests/fixtures/db/app.sqlite3"
+"""
+
+[fakes]
+op = "enabled"
+
+[expect]
+json_error = { code = "DB_REJECTED", exit = 4 }
+stderr_json = { "/error/server/code" = "1", "/error/server/message" = { contains = "no such table: nowhere" } }
+sts_actions = []
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true
+
+[local]
+args = ["db", "mysql", "--query", "SELECT id FROM nowhere", "--json"]
+config = """
+[db.mysql]
+engine = "mysql"
+host = "127.0.0.1"
+port = {mysql_port}
+database = "app"
+username = "kurama"
+password = "op://Agent/db/password"
+tls = "verify-ca"
+ca_file = "{db_tls_dir}/mysql-ca.pem"
+"""
+
+[local.combination]
+engine = "mysql"
+tls = "verify-ca"
+
+[local.expect]
+json_error = { code = "DB_REJECTED", exit = 4 }
+stderr_json = { "/error/server/code" = "42S02", "/error/server/message" = { contains = "doesn't exist" } }
+sts_actions = []
+op_calls = 1
+api_calls = { count = 0 }
+no_files_written = true

@@ -1,0 +1,33 @@
+[assume-role]
+summary = "Resolve a profile to temporary credentials through STS AssumeRole, with MFA and readonly policy"
+entry = "src/workflows/assume_role/transitions.rs"
+files = [
+  "src/workflows/",
+  "src/domain/functions/assume_role.rs",
+  "src/domain/functions/session.rs",
+  "src/domain/functions/error_mapping.rs",
+  "src/domain/functions/totp_window.rs",
+  "src/domain/functions/validation.rs",
+  "src/domain/types/session_duration.rs",
+  "src/domain/types/credentials.rs",
+  "src/domain/constants.rs",
+  "src/ports/sts.rs",
+  "src/adapters/aws/sts/",
+  "src/adapters/aws/config_builder.rs",
+  "src/adapters/aws/mod.rs",
+  "src/shell/executor.rs",
+  "src/shell/runtime.rs",
+  "src/shell/aws_profile_credentials.rs",
+  "src/shell/cli/commands/profile.rs",
+  "src/shell/cli/effects.rs",
+  "src/shell/cli/executor.rs",
+]
+tests = ["assume_role", "executor::", "aws_profile_credentials"]
+scenarios = [
+  "secrets_a_tunnel_an_iam_token_and_a_reference_assume_the_role_once",
+]
+depends_on = ["cli-entry", "config", "profile-loading", "session-cache", "onepassword-mfa", "export-output", "errors", "console-federation", "agent-policy", "audit"]
+notes = "Invalid-TOTP retry (wait for the next 30-second window) is covered in-process by src/shell/executor_session_tests.rs; a CLI scenario would have to sleep up to 30 seconds"
+
+[assume-role.real]
+cases = "STS AssumeRole for the kurama-real and kurama-sandbox profiles with the TOTP 1Password answers"

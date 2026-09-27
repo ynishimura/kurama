@@ -1,0 +1,52 @@
+# A Google Discovery Document under `discovery` is listed like an OpenAPI
+# description: every method at any depth of `resources` is one operation
+# named by its Discovery id, with its HTTP method and its path relative to
+# base_url; the document-level parameters (`fields`, `alt`, `key`) are not
+# anyone's. Reading the file sends nothing.
+id = "api_discovery_lists_operations_from_a_discovery_document"
+feature = "api-explorer"
+
+[combination]
+command = "api"
+spec = "discovery"
+openapi = "file"
+output = "ops"
+
+[input]
+args = ["api", "sheets", "--ops"]
+then_run = [
+  ["api", "sheets", "--ops", "values", "--json"],
+  ["api", "sheets", "--describe", "sheets.spreadsheets.get", "--jq", ".parameters[].name"],
+]
+config = """
+[api.sheets]
+base_url = "{server}/api"
+discovery = "{fixtures}/discovery-sheets-v4.json"
+"""
+
+[expect]
+exit_code = 0
+stdout = "plain-text"
+api_calls = { count = 0 }
+spec_calls = { count = 0 }
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stdout = { contains = [
+  "sheets.spreadsheets.get          GET     /v4/spreadsheets/{spreadsheetId}                 Returns the spreadsheet at the given ID.\n",
+  "sheets.spreadsheets.batchUpdate  POST    /v4/spreadsheets/{spreadsheetId}:batchUpdate  ",
+  "sheets.spreadsheets.values.get   GET     /v4/spreadsheets/{spreadsheetId}/values/{range}  Returns a range of values from a spreadsheet.\n",
+] }
+stdout_lines = 4
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+stdout_json = { "" = { length = 1 }, "/0/id" = "sheets.spreadsheets.values.get", "/0/method" = "GET", "/0/path" = "/v4/spreadsheets/{spreadsheetId}/values/{range}" }
+
+[[expect.runs]]
+run = 2
+exit_code = 0
+stdout = { equals = "spreadsheetId\nranges\nincludeGridData\nexcludeTablesInBandedRanges\ncommentsViewMode\n" }

@@ -1,0 +1,47 @@
+# A description whose title holds a quote, markup, newlines, `---` and an
+# escape sequence, and whose texts hold paragraphs that open a fence, an
+# HTML comment and a heading, still gives one four-line frontmatter: the
+# description is one double-quoted line without `<` / `>`, the paragraphs
+# are one labelled line so none starts a line of Markdown, no control
+# character is printed, and the long text is cut with `...`.
+id = "api_skill_keeps_control_characters_out_of_the_frontmatter"
+feature = "api-explorer"
+
+[combination]
+command = "api"
+openapi = "file"
+description = "control-characters"
+output = "skill"
+
+[input]
+args = ["api", "hostile", "--skill"]
+then_run = [
+  ["api", "ctl", "--skill"],
+]
+config = """
+[api.hostile]
+base_url = "{server}/api"
+openapi = "{fixtures}/skill-frontmatter.json"
+
+[api.ctl]
+base_url = "{server}/api"
+openapi = "{fixtures}/control-characters.json"
+"""
+
+[expect]
+exit_code = 0
+stdout = { kind = "plain-text", starts_with = "---\nname: kurama-api-ctl\ndescription: \"Use when a task calls Pets (version", contains = ["### `pets/list` GET `/pets`: List pets [31mRED[0m ]0;title-injected end"] }
+stdout_excludes = ["\u001b", "\u0007"]
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stderr_empty = true
+api_calls = { count = 0 }
+stdout = { kind = "plain-text", starts_with = "---\nname: kurama-api-hostile\ndescription: \"Use when a task calls Hostile\\\" scriptAPI/script---name: hijack[31m (version 12, 1 operations) through the kurama [api.hostile] profile. Build every call with `kurama api hostile` and read an operation's contract with `kurama api hostile --schema OP` first.\"\n---\n\n# `hostile` Hostile", contains = [
+  "\nAbout the API: ~~~ <!-- hidden # heading long long",
+  " long l...\n",
+  "### ``things`list`` GET `/things`: Line one# not a heading---\n",
+  "\nAbout: ~~~ fence <!-- hidden # heading ---\n",
+] }
+stdout_excludes = ["\u001b", "\u0007", "\n~~~", "\n<!--", "\n# heading", "\n---\nname: hijack", "long end", "<script>API</script>---name: hijack[31m (version"]

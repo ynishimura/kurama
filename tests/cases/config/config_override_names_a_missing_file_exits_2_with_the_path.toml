@@ -1,0 +1,20 @@
+# KURAMA_CONFIG_PATH names a file that does not exist: the error and the hint
+# carry that path, not the default location.
+id = "config_override_names_a_missing_file_exits_2_with_the_path"
+feature = "config"
+
+[combination]
+command = "status"
+config = "missing"
+
+[input]
+args = ["status"]
+env = { KURAMA_CONFIG_PATH = "/nonexistent/kurama/config.toml" }
+
+[expect]
+error = { code = "CONFIG_INVALID", exit = 2 }
+stderr_contains = ["does not exist: /nonexistent/kurama/config.toml"]
+hint = "fix /nonexistent/kurama/config.toml (KURAMA_CONFIG_PATH overrides the location)"
+sts_actions = []
+op_calls = 0
+no_files_written = true

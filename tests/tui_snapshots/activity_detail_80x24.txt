@@ -1,0 +1,24 @@
+ 鞍馬 kurama audit  watching ~/.local/state/kurama/audit.jsonl
+┏ Call ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Time      2027-01-15T08:01:01.000Z                                           ┃
+┃ By        agent                                                              ┃
+┃ Command   api                                                                ┃
+┃ Target    pets                                                               ┃
+┃ Request   POST /v1/pets                                                      ┃
+┃ Status    refused                                                            ┃
+┃ Exit code 3                                                                  ┃
+┃ Error     AGENT_POLICY_DENIED                                                ┃
+┃ Took      3ms                                                                ┃
+┃ Run again kurama api pets -X POST /pets                                      ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+ Esc list  y copy command  ↑↓ move  q quit

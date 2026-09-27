@@ -1,0 +1,42 @@
+# S3 is read in the bucket's region, corrected or named, while AssumeRole
+# stays in the AWS profile chain's region.
+id = "data_s3_assume_role_stays_in_the_profile_region"
+feature = "local-analytics"
+
+[combination]
+command = "data"
+source = "aws-profile"
+client = "data"
+data_op = "query"
+data_source = "s3"
+format = "parquet"
+role = "assume-role"
+region = "bucket"
+
+[input]
+args = ["data", "--from", "s3://west-bucket/orders.parquet", "--aws-profile", "dev", "--query", "SELECT count(*) AS rows FROM data", "--json"]
+then_run = [["data", "--from", "s3://west-bucket/orders.parquet", "--aws-profile", "dev", "--region", "us-west-2", "--query", "SELECT count(*) AS rows FROM data", "--json"]]
+
+[expect]
+exit_code = 0
+op_calls = 0
+no_files_written = true
+sts_actions = ["AssumeRole"]
+sts_signing_region = "us-east-1"
+stdout_json = { "/meta/region" = "us-west-2" }
+api_calls = { count = 5, sigv4 = { service = "s3", region = "us-west-2" } }
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+sts_actions = ["AssumeRole"]
+sts_signing_region = "us-east-1"
+stdout_json = { "/meta/region" = "us-west-2" }
+api_calls = { count = 6, calls = [
+  { signing_region = "ap-northeast-1" },
+  { signing_region = "us-west-2" },
+  { signing_region = "us-west-2" },
+  { signing_region = "us-west-2" },
+  { signing_region = "us-west-2" },
+  { signing_region = "us-west-2" },
+] }

@@ -1,0 +1,24 @@
+ 鞍馬 kurama  AWS credential switcher                       readonly   console
+  1 AWS   2 Auth   3 API   4 DB   5 Data   6 S3
+┏ Profiles (4) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃     KIND PROFILE     SESSION                                                 ┃
+┃ ▸   aws  default     -                                                       ┃
+┃     aws ┏ Go to ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓         ┃
+┃   * aws ┃                                                          ┃         ┃
+┃     aws ┃  > get▏                                                  ┃         ┃
+┃         ┃                                                          ┃         ┃
+┃         ┃    op      pets/get  pets  GET /pets/{petId}             ┃         ┃
+┃         ┃  ▸ op      repos/get  github  GET /repos/{owner}/{repo}  ┃         ┃
+┃         ┃    auth    github  Enter runs kurama login github        ┃         ┃
+┃         ┃    api     github  Enter opens the explorer              ┃         ┃
+┃         ┃    op      issues/list-for-repo  github  GET /repos/{o…  ┃         ┃
+┃         ┃                                                          ┃         ┃
+┃         ┃  5 of 14 · Enter goes there                              ┃         ┃
+┃         ┃                                                          ┃         ┃
+┃         ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛         ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+ type search  Enter go  Esc close  ↑↓ select

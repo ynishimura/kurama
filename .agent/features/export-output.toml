@@ -1,0 +1,23 @@
+[export-output]
+summary = "Hand credentials to the caller: shell export script (AWS_* or an [auth.*] env_var, whichever kind the source is), unset script, credential_process / token JSON, zsh wrapper hand-off"
+entry = "src/domain/functions/export.rs"
+files = [
+  "src/domain/functions/export.rs",
+  "src/domain/types/output_format.rs",
+  "src/adapters/env_script.rs",
+  "src/shell/cli/commands/unset.rs",
+  "tests/env_script_test.rs",
+]
+tests = ["export"]
+scenarios = [
+  "uc01_assume_role_exports_credentials_to_shell",
+  "uc06_output_json_prints_credential_process_document",
+  "uc12_readonly_attaches_policy_and_marks_the_session",
+  "env_and_exec_on_an_auth_source_use_the_stored_token",
+  "oauth_token_kind_sends_the_configured_header",
+  "oauth_token_fingerprint_prints_no_value",
+]
+depends_on = ["assume-role", "cli-entry", "oauth", "config", "profile-loading"]
+
+[export-output.real]
+not_applicable = "writes the export script; the scenarios source it in a real shell"

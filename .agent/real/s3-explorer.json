@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "feature": "s3-explorer",
+  "status": "verified",
+  "reason": null,
+  "commit": "196cd054fe7e43bc220690c42c7f92d972027ef3",
+  "feature_hash": "49a9bdc641fa8dbb",
+  "diff_hash": "056ec368499187c8",
+  "environment": "real-services",
+  "access": "read-only",
+  "command": [
+    "cargo",
+    "xtask",
+    "verify",
+    "--layer",
+    "real",
+    "s3-explorer"
+  ],
+  "generated_at": "2026-09-27T06:56:07.445151+00:00",
+  "observed": [
+    {
+      "test": "s3_lists_a_prefix_as_common_prefixes_and_objects",
+      "result": "passed",
+      "mock": [
+        "s3_lists_a_prefix_as_common_prefixes_and_objects"
+      ]
+    },
+    {
+      "test": "s3_preview_reads_one_range_and_reports_the_next_offset",
+      "result": "passed",
+      "mock": [
+        "s3_preview_reads_one_range_and_reports_the_next_offset"
+      ]
+    }
+  ],
+  "fixtures": {}
+}

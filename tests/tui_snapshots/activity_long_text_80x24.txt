@@ -1,0 +1,24 @@
+ 鞍馬 kurama audit  watching ~/.local/state/kurama/audit.jsonl
+┏ Calls (2) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃   UTC      CMD  TARGET           REQUEST                      STATUS  TOOK   ┃
+┃   08:00:01 api  pets             GET /v1/pets                 200     142ms  ┃
+┃ ▸ 08:00:00 api  an-api-whose-na… GET /v1/organizations/12345… 200     142ms  ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+ ↑↓ move  y copy command  Enter details  q quit

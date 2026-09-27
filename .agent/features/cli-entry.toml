@@ -1,0 +1,35 @@
+[cli-entry]
+summary = "Verb commands (env, exec, console, login, logout, token, api, status, unset, agent, init, completions), bootstrap (config and logging) and dispatch; AWS environment cleanup occurs at the SDK boundary; no command opens the TUI on a terminal"
+entry = "src/shell/cli/mod.rs"
+files = [
+  "src/main.rs",
+  "src/lib.rs",
+  "src/shell/mod.rs",
+  "src/shell/cli/mod.rs",
+  "src/shell/cli/args.rs",
+  "src/shell/cli/arguments.rs",
+  "src/shell/cli/bootstrap.rs",
+  "src/shell/cli/client.rs",
+  "src/shell/cli/command.rs",
+  "src/shell/cli/dispatch.rs",
+  "src/shell/cli/parser.rs",
+  "src/shell/cli/commands/mod.rs",
+  "src/shell/cli/commands/inventory.rs",
+  "src/console.rs",
+  "src/domain/mod.rs",
+  "src/domain/types/mod.rs",
+  "src/domain/functions/mod.rs",
+  "src/ports/mod.rs",
+  "tests/scenarios/cli_entry.rs",
+]
+tests = ["cli::"]
+scenarios = [
+  "unset_prints_unset_lines_without_calling_sts",
+  "cli_without_arguments_opens_tui_in_terminal",
+  "cli_non_interactive_on_a_pty_exits_2_instead_of_opening_the_tui",
+  "cli_non_interactive_never_rewrites_a_progress_line",
+]
+depends_on = ["config", "errors", "export-output", "verification-harness"]
+
+[cli-entry.real]
+not_applicable = "parses arguments and dispatches; nothing external answers"

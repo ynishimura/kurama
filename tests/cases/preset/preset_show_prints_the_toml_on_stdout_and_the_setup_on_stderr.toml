@@ -1,0 +1,26 @@
+# stdout is the TOML to append and nothing else -- the provenance comment,
+# then the sections with the reference as given -- and the setup steps go to
+# stderr. Nothing is resolved, contacted or written.
+id = "preset_show_prints_the_toml_on_stdout_and_the_setup_on_stderr"
+feature = "preset"
+
+[combination]
+command = "preset-show"
+output = "text"
+
+[input]
+args = ["preset", "show", "github", "--set", "secret=op://Agent/kurama-github/credential"]
+
+[fakes]
+op = "enabled"
+
+[expect]
+exit_code = 0
+stdout = { starts_with = "# kurama preset: github (kurama ", contains = ["# setup: https://github.com/settings/personal-access-tokens/new\n[auth.github]\nkind = \"token\"\ntoken = \"op://Agent/kurama-github/credential\"\nenv_var = \"GITHUB_TOKEN\"\n\n[api.github]\ndescription = \"GitHub REST API\"\nbase_url = \"https://api.github.com\"\nauth = \"github\"\n", "headers = { \"Accept\" = \"application/vnd.github+json\", \"X-GitHub-Api-Version\" = \"2026-03-10\" }"] }
+stdout_excludes = ["Setup", "op item create"]
+stderr_contains = ["# Setup for github", "#   1. Create a fine-grained personal access token", "op item create --category='API Credential' --vault '<vault>' --title kurama-github", "kurama preset add github --set secret=op://Agent/kurama-github/credential", "kurama api github /user"]
+sts_actions = []
+op_calls = 0
+secret_reads = []
+api_calls = { count = 0 }
+no_files_written = true

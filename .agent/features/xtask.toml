@@ -1,0 +1,13 @@
+[xtask]
+summary = "The agent interface: cargo xtask commands that map, gate, judge and claim work"
+entry = "xtask/src/main.rs"
+files = [
+  "xtask/",
+  "tests/fakes/gh",
+  ".cargo/mutants.toml",
+]
+scenarios = []
+notes = "No runtime scenario runs xtask; xtask/tests/ runs the binary against tests/fakes/gh and a scratch repository. Nothing depends on xtask, so a change here selects its own tests only."
+
+[xtask.real]
+pending = "reads and writes the GitHub board through gh; tests/fakes/gh stands in"

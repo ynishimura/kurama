@@ -1,0 +1,31 @@
+# A placeholder kurama cannot fill would go to the API as written, in the
+# header the credential was supposed to be in. The line to fix is quoted
+# back whole, so the second placeholder is visible in the message.
+id = "config_token_kind_refuses_an_unknown_placeholder"
+feature = "config"
+
+[combination]
+command = "status"
+source = "token"
+config = "rejected"
+
+[input]
+args = ["status"]
+replace_config = """
+[auth.example]
+kind = "token"
+token = "op://Agent/Example/credential"
+format = "{token}{api_key}"
+"""
+
+[expect]
+error = { code = "CONFIG_INVALID", exit = 2 }
+stderr_contains = [
+  "[auth.example]",
+  "format takes no placeholder besides {token}",
+  "{api_key}",
+]
+hint = "fix /"
+sts_actions = []
+op_calls = 0
+no_files_written = true

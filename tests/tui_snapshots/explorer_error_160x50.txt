@@ -1,0 +1,50 @@
+ 鞍馬 kurama api  pets  no description                                                                                                          bearer   sigv4
+┏ Operations ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓┏ Operation ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ The API description could not be loaded; q quits.                                            ┃┃           No operation selected.                             ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                 ┏ Error ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓                                                 ┃
+┃                                                 ┃                                                          ┃                                                 ┃
+┃                                                 ┃  API_SPEC_UNAVAILABLE: cannot load the API description   ┃                                                 ┃
+┃                                                 ┃  https://specs.example.com/openapi.json: request         ┃                                                 ┃
+┃                                                 ┃  failed: could not connect: connection refused           ┃                                                 ┃
+┃                                                 ┃  hint: check the openapi URL under [api.pets]; `kurama   ┃                                                 ┃
+┃                                                 ┃  api pets --refresh-spec` fetches it again               ┃                                                 ┃
+┃                                                 ┃                                                          ┃                                                 ┃
+┃                                                 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛                                                 ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+ Enter back

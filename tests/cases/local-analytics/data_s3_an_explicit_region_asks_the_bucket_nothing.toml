@@ -1,0 +1,32 @@
+# A region the request names signs every request, the first one included;
+# a wrong named region is not corrected: one rejected request, no retry
+# elsewhere. The error names both regions and the hint the bucket's.
+id = "data_s3_an_explicit_region_asks_the_bucket_nothing"
+feature = "local-analytics"
+
+[combination]
+command = "data"
+source = "aws-profile"
+client = "data"
+data_op = "query"
+data_source = "s3"
+format = "parquet"
+role = "assume-role"
+region = "cli"
+
+[input]
+args = ["data", "--from", "s3://west-bucket/orders.parquet", "--aws-profile", "dev", "--region", "us-west-2", "--query", "SELECT count(*) AS rows FROM data", "--json"]
+then_run = [["data", "--from", "s3://west-bucket/orders.parquet", "--aws-profile", "dev", "--region", "ap-northeast-1", "--preview", "data", "--json"]]
+
+[expect]
+op_calls = 0
+no_files_written = true
+json_error = { code = "DATA_REJECTED", exit = 4 }
+stderr_json = { "/error/message" = { contains = "in us-west-2, not in ap-northeast-1" }, "/error/hint" = { contains = "--region us-west-2" } }
+api_calls = { count = 1, sigv4 = { service = "s3", region = "ap-northeast-1" }, calls = [{ method = "HEAD", path = "/west-bucket/orders.parquet" }] }
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stdout_json = { "/rows" = [["3"]], "/meta/region" = "us-west-2", "/meta/region_source" = "named" }
+api_calls = { count = 5, sigv4 = { service = "s3", region = "us-west-2" } }

@@ -1,0 +1,29 @@
+# S3 that does not answer is a failure of the run, exit 1, never an empty
+# listing.
+id = "s3_an_unreachable_endpoint_exits_1"
+feature = "s3-explorer"
+
+[combination]
+command = "s3"
+source = "aws-profile"
+role = "assume-role"
+s3_op = "list"
+s3_response = "unreachable"
+
+[input]
+args = ["s3", "assets", "--list"]
+env = { KURAMA_TEST_S3_ENDPOINT = "http://127.0.0.1:9" }
+config = """
+[s3.assets]
+aws_profile = "dev"
+bucket = "browse-bucket"
+request_timeout_secs = 5
+"""
+
+[expect]
+error = { code = "S3_FAILED", exit = 1 }
+hint = "check the network; raise request_timeout_secs in the [s3.*] when S3 answers slowly"
+sts_actions = ["AssumeRole"]
+stdout_lines = 0
+op_calls = 0
+no_files_written = true

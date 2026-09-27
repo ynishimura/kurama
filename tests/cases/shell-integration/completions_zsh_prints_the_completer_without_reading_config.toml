@@ -1,0 +1,22 @@
+# `completions zsh` prints the completer alone, without the shell function,
+# and reads no configuration: the file is not even TOML.
+id = "completions_zsh_prints_the_completer_without_reading_config"
+feature = "shell-integration"
+
+[combination]
+command = "completions"
+"completions.shell" = "zsh"
+config = "unread"
+
+[input]
+args = ["completions", "zsh"]
+replace_config = "this = is not [ toml\n"
+
+[expect]
+exit_code = 0
+stdout = { kind = "plain-text", starts_with = "#compdef kurama", contains = ["compdef _kurama kurama"] }
+stdout_excludes = ["\nkurama() {", "KURAMA_ENV_SCRIPT"]
+sts_actions = []
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true

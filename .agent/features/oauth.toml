@@ -1,0 +1,48 @@
+[oauth]
+summary = "[auth.*] credential sources that are not AWS profiles: kind = \"oauth\" (the token workflow -- authorization code + PKCE, device code, client credentials, refresh, discovery -- the keychain token store with a per-source lock, client secrets from any store kurama reads) and kind = \"token\" (a credential issued elsewhere, read from its secret store and sent in the header the source names, stored nowhere), with login / logout / token / status / env / exec on a source"
+entry = "src/workflows/oauth_token/transitions.rs"
+files = [
+  "src/workflows/oauth_token/",
+  "src/domain/types/oauth_token.rs",
+  "src/domain/types/oauth_client.rs",
+  "src/domain/types/token_source.rs",
+  "src/domain/types/auth_source.rs",
+  "src/domain/functions/oauth.rs",
+  "src/domain/functions/auth_status.rs",
+  "src/ports/token_store.rs",
+  "src/adapters/config/api.rs",
+  "src/adapters/token_store/",
+  "src/adapters/oauth/",
+  "src/adapters/browser.rs",
+  "src/adapters/profile_lock.rs",
+  "src/shell/oauth_executor.rs",
+  "src/shell/api_error.rs",
+  "src/shell/api_runtime.rs",
+  "src/shell/api_runtime_tests.rs",
+  "src/shell/cli/commands/source.rs",
+  "src/shell/cli/commands/token.rs",
+  "src/shell/cli/commands/login.rs",
+]
+tests = ["oauth", "token_store", "auth_status"]
+scenarios = [
+  "oauth_login_authorization_code_opens_the_browser_and_stores_the_token",
+  "oauth_login_no_browser_prints_the_url_and_opens_nothing",
+  "console_federation_browser_open_failure_is_reported",
+  "oauth_login_device_code_polls_until_the_code_is_entered",
+  "oauth_device_polling_obeys_interval_and_expiry",
+  "oauth_refresh_replaces_an_expired_token_once_across_parallel_calls",
+  "secrets_a_parameter_store_client_secret_reaches_the_token_request",
+  "api_token_kind_401_is_not_retried",
+  "api_token_basic_sends_the_username_and_the_credential",
+  "api_token_query_puts_the_credential_in_its_parameter",
+  "api_token_kind_dry_run_and_verbose_mask_the_header",
+  "status_reports_a_token_kind_source_without_resolving_it",
+  "config_token_kind_refuses_a_literal_token",
+  "config_token_kind_refuses_an_unknown_placeholder",
+  "completion_lists_a_token_source_by_its_header",
+]
+depends_on = ["cli-entry", "config", "errors", "secrets", "session-cache", "onepassword-mfa", "export-output", "profile-loading", "api-client", "api-explorer", "assume-role", "status", "tui"]
+notes = "kind = \"token\" is verified against the fake Parameter Store (the value is built from the parameter name, so a scenario can say which reference it came from) and the fake API, and by hand against the real ElevenLabs API on 2026-09-22 with the key in 1Password. The fake authorization server and API are the scenario wiremock (tests/support/mod.rs: /oauth/token, /oauth/device, discovery, /api/...); tests/fakes/open answers an authorization request with the redirect, so the authorization code login runs end to end on a pseudo terminal (tests/support/tui.rs launch_command). Scenarios use the file token store (--features test-fakes); the real keychain store shares src/adapters/keychain.rs with the session cache. Not verified against a real provider yet: GitHub, Google and an OIDC issuer remain a manual check"
+
+[oauth.real]
+cases = "a token from the real client_credentials grant of [auth.kurama-real-oauth], printed as its fingerprint"

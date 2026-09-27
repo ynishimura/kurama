@@ -1,0 +1,79 @@
+# The deadline of a server statement, from the command to the failure it
+# reports: the deadline passes, a second connection sends
+# `pg_cancel_backend` or `KILL QUERY`, and the failure names the deadline
+# and the stop the database confirmed. The server's own limit comes a second
+# later, so it is the cancel that ends each of these. MySQL's `SLEEP()`
+# answers a `KILL QUERY` with a row, as if it had finished; that row is not a
+# result, and the call does not wait out the 100 seconds either. The fake
+# layer is the same deadline on the SQLite fixture, where the progress
+# handler is what stops the statement.
+id = "db_server_query_deadline_exercises_cancellation"
+feature = "database"
+
+[combination]
+command = "db"
+client = "db"
+engine = "sqlite"
+db_op = "query"
+
+[input]
+args = ["db", "app", "--timeout", "1", "--query", "WITH RECURSIVE forever(n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM forever) SELECT count(*) AS n FROM forever"]
+config = """
+[db.app]
+engine = "sqlite"
+path = "{repo}/tests/fixtures/db/app.sqlite3"
+"""
+
+[expect]
+error = { code = "DB_FAILED", exit = 1, message = "the statement timed out after 1 seconds and the database confirmed it stopped; narrow it or raise --timeout" }
+stdout = { equals = "" }
+sts_actions = []
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true
+files_unchanged = ["{repo}/tests/fixtures/db/app.sqlite3"]
+
+[local]
+args = ["db", "pg17", "--timeout", "1", "--json", "--query", "SELECT pg_sleep(100)"]
+then_run = [
+  ["db", "mysql", "--timeout", "1", "--json", "--query", "SELECT SLEEP(100)"],
+]
+config = """
+[db.pg17]
+engine = "postgresql"
+host = "127.0.0.1"
+port = {pg17_port}
+database = "app"
+username = "kurama"
+password = "op://Agent/db/password"
+tls = "verify-ca"
+ca_file = "{db_tls_dir}/ca.pem"
+
+[db.mysql]
+engine = "mysql"
+host = "127.0.0.1"
+port = {mysql_port}
+database = "app"
+username = "kurama"
+password = "op://Agent/db/password"
+tls = "verify-ca"
+ca_file = "{db_tls_dir}/mysql-ca.pem"
+"""
+
+[local.combination]
+engine = "mysql"
+tls = "verify-ca"
+
+[local.expect]
+json_error = { code = "DB_FAILED", exit = 1 }
+stderr_json = { "/error/message" = { contains = "timed out after 1 seconds and the database confirmed it stopped" } }
+stdout = { equals = "" }
+sts_actions = []
+api_calls = { count = 0 }
+no_files_written = true
+
+[[local.expect.runs]]
+run = 0
+json_error = { code = "DB_FAILED", exit = 1 }
+stderr_json = { "/error/message" = { contains = "timed out after 1 seconds and the database confirmed it stopped" } }
+stdout = { equals = "" }

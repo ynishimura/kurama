@@ -1,0 +1,36 @@
+# `status --only s3` lists the `[s3.*]` connections as configured and
+# nothing else: no AWS profile row, no AssumeRole, no S3 request, no 1Password.
+id = "status_only_s3_lists_the_connections_without_reaching_them"
+feature = "status"
+
+[combination]
+command = "status"
+"status.only" = "s3"
+output = "json"
+
+[input]
+args = ["status", "--only", "s3", "--json"]
+then_run = [["status", "--only", "s3"]]
+config = """
+[s3.assets]
+aws_profile = "dev"
+bucket = "browse-objects"
+prefix = "data/"
+
+[s3.anywhere]
+aws_profile = "ops-mfa"
+region = "us-west-2"
+"""
+
+[expect]
+exit_code = 0
+sts_actions = []
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true
+stdout = { line_words = [["s3", "assets", "not_checked", "s3://browse-objects/data/", "aws_profile=dev"], ["s3", "anywhere", "not_checked", "aws_profile=ops-mfa"]] }
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stdout_json = { "/0/kind" = "s3", "/0/name" = "anywhere", "/0/aws_profile" = "ops-mfa", "/0/region" = "us-west-2", "/0/bucket" = "<null>", "/0/connection_status" = "not_checked", "/0/auth_status" = "<null>", "/1/name" = "assets", "/1/bucket" = "browse-objects", "/1/prefix" = "data/", "/2" = "<null>" }

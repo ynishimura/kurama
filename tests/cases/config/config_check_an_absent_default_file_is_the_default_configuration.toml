@@ -1,0 +1,22 @@
+# With KURAMA_CONFIG_PATH exported but empty, kurama reads the default
+# location; a file absent there is the configuration of someone who has not
+# written one, which is valid, and the report says where it looked.
+id = "config_check_an_absent_default_file_is_the_default_configuration"
+feature = "config"
+
+[combination]
+command = "config-check"
+output = "json"
+config = "absent"
+
+[input]
+args = ["config", "check", "--json"]
+env = { KURAMA_CONFIG_PATH = "" }
+
+[expect]
+exit_code = 0
+stderr_empty = true
+stdout_json = { "/valid" = true, "/config/source" = "default", "/config/exists" = false, "/config/path" = { contains = "/.config/kurama/config.toml" }, "/diagnostics" = { length = 0 } }
+sts_actions = []
+op_calls = 0
+no_files_written = true

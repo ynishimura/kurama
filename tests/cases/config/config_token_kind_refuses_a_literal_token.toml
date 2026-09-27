@@ -1,0 +1,33 @@
+# A literal API key would live in the configuration file and in every backup
+# of it, which is why `token` takes a reference and nothing else. The message
+# says what to write instead and does not print the value back.
+id = "config_token_kind_refuses_a_literal_token"
+feature = "config"
+
+[combination]
+command = "status"
+source = "token"
+config = "rejected"
+
+[input]
+args = ["status"]
+replace_config = """
+[auth.example]
+kind = "token"
+token = "plain-api-key"
+"""
+
+[expect]
+error = { code = "CONFIG_INVALID", exit = 2 }
+stderr_contains = [
+  "[auth.example]",
+  "token must be a secret reference",
+  "op://",
+  "aws-secrets://",
+  "aws-ssm://",
+]
+stderr_excludes = ["plain-api-key"]
+hint = "fix /"
+sts_actions = []
+op_calls = 0
+no_files_written = true

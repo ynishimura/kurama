@@ -1,0 +1,52 @@
+# A SigV4 request signed with an assumed role: the fake STS answers the
+# AssumeRole and the fake API sees a signature for `sts` in the profile's
+# region; the real STS answers GetCallerIdentity with the ARN of the role the
+# `kurama-real` profile assumes, which is asserted by its shape (an assumed role)
+# and never by an account id or a key id.
+id = "api_real_sts_names_the_assumed_role_of_the_real_profile"
+feature = "api-client"
+
+[combination]
+command = "api"
+auth = "aws-profile"
+role = "assume-role"
+service = "host"
+region = "profile"
+
+[input]
+args = ["api", "sts", "/?Action=GetCallerIdentity&Version=2011-06-15"]
+config = """
+[api.sts]
+base_url = "{server}/api"
+aws_profile = "dev"
+service = "sts"
+headers = { Accept = "application/json" }
+"""
+
+[fakes]
+api = "ok"
+
+[expect]
+exit_code = 0
+sts_actions = ["AssumeRole"]
+token_grants = []
+op_calls = 0
+api_calls = { count = 1, sigv4 = { service = "sts", region = "ap-northeast-1" } }
+no_files_written = true
+
+[real]
+requires = ["profile:kurama-real", "keychain:OP_SERVICE_ACCOUNT_TOKEN"]
+config = """
+[api.sts]
+base_url = "https://sts.ap-northeast-1.amazonaws.com"
+aws_profile = "kurama-real"
+headers = { Accept = "application/json" }
+"""
+
+[real.combination]
+target = "sts"
+mfa = "onepassword"
+
+[real.expect]
+exit_code = 0
+stdout_json = { "/GetCallerIdentityResponse/GetCallerIdentityResult/Arn" = { contains = ":assumed-role/" } }

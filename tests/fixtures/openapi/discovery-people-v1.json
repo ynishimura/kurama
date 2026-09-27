@@ -1,0 +1,134 @@
+{
+  "kind": "discovery#restDescription",
+  "discoveryVersion": "v1",
+  "id": "people:v1",
+  "name": "people",
+  "version": "v1",
+  "title": "People API",
+  "description": "Provides access to information about profiles and contacts.",
+  "rootUrl": "https://people.googleapis.com/",
+  "servicePath": "",
+  "baseUrl": "https://people.googleapis.com/",
+  "protocol": "rest",
+  "parameters": {
+    "fields": {
+      "type": "string",
+      "location": "query",
+      "description": "Selector specifying which fields to include in a partial response."
+    }
+  },
+  "resources": {
+    "people": {
+      "methods": {
+        "get": {
+          "path": "v1/{+resourceName}",
+          "httpMethod": "GET",
+          "description": "Provides information about a person by specifying a resource name. Use `people/me` to indicate the authenticated user. The request returns a 400 error if 'personFields' is not specified.",
+          "flatPath": "v1/people/{peopleId}",
+          "parameterOrder": [
+            "resourceName"
+          ],
+          "parameters": {
+            "personFields": {
+              "format": "google-fieldmask",
+              "description": "Required. A field mask to restrict which fields on the person are returned. Multiple fields can be specified by separating them with commas. Valid values are: * addresses * ageRanges * biographies * birthdays * calendarUrls * clientData * coverPhotos * emailAddresses * events * externalIds * genders * imClients * interests * locales * locations * memberships * metadata * miscKeywords * names * nicknames * occupations * organizations * phoneNumbers * photos * relations * sipAddresses * skills * urls * userDefined",
+              "type": "string",
+              "location": "query"
+            },
+            "resourceName": {
+              "required": true,
+              "location": "path",
+              "pattern": "^people/[^/]+$",
+              "description": "Required. The resource name of the person to provide information about. - To get information about the authenticated user, specify `people/me`. - To get information about a google account, specify `people/{account_id}`. - To get information about a contact, specify the resource name that identifies the contact as returned by `people.connections.list`.",
+              "type": "string"
+            },
+            "requestMask.includeField": {
+              "description": "Required. Comma-separated list of person fields to be included in the response. Each path should start with `person.`: for example, `person.names` or `person.photos`.",
+              "type": "string",
+              "location": "query",
+              "format": "google-fieldmask"
+            },
+            "sources": {
+              "description": "Optional. A mask of what source types to return. Defaults to READ_SOURCE_TYPE_PROFILE and READ_SOURCE_TYPE_CONTACT if not set.",
+              "repeated": true,
+              "type": "string",
+              "enum": [
+                "READ_SOURCE_TYPE_UNSPECIFIED",
+                "READ_SOURCE_TYPE_PROFILE",
+                "READ_SOURCE_TYPE_CONTACT",
+                "READ_SOURCE_TYPE_DOMAIN_CONTACT",
+                "READ_SOURCE_TYPE_OTHER_CONTACT"
+              ],
+              "location": "query",
+              "enumDescriptions": [
+                "Unspecified.",
+                "Returns SourceType.ACCOUNT, SourceType.DOMAIN_PROFILE, and SourceType.PROFILE.",
+                "Returns SourceType.CONTACT.",
+                "Returns SourceType.DOMAIN_CONTACT.",
+                "Returns SourceType.OTHER_CONTACT."
+              ]
+            }
+          },
+          "id": "people.people.get",
+          "response": {
+            "$ref": "Person"
+          },
+          "scopes": [
+            "https://www.googleapis.com/auth/contacts",
+            "https://www.googleapis.com/auth/contacts.other.readonly",
+            "https://www.googleapis.com/auth/contacts.readonly",
+            "https://www.googleapis.com/auth/directory.readonly",
+            "https://www.googleapis.com/auth/user.addresses.read",
+            "https://www.googleapis.com/auth/user.birthday.read",
+            "https://www.googleapis.com/auth/user.emails.read",
+            "https://www.googleapis.com/auth/user.gender.read",
+            "https://www.googleapis.com/auth/user.organization.read",
+            "https://www.googleapis.com/auth/user.phonenumbers.read",
+            "https://www.googleapis.com/auth/userinfo.email",
+            "https://www.googleapis.com/auth/userinfo.profile"
+          ]
+        }
+      }
+    }
+  },
+  "schemas": {
+    "Person": {
+      "type": "object",
+      "id": "Person",
+      "properties": {
+        "etag": {
+          "description": "The [HTTP entity tag](https://en.wikipedia.org/wiki/HTTP_ETag) of the resource. Used for web cache validation.",
+          "type": "string"
+        },
+        "resourceName": {
+          "description": "The resource name for the person, assigned by the server. An ASCII string in the form of `people/{person_id}`.",
+          "type": "string"
+        },
+        "names": {
+          "type": "array",
+          "items": {
+            "$ref": "Name"
+          },
+          "description": "The person's names. This field is a singleton for contact sources."
+        }
+      },
+      "description": "Information about a person merged from various data sources such as the authenticated user's contacts and profile data. Most fields can have multiple items. The items in a field have no guaranteed order, but each non-empty field is guaranteed to have exactly one field with `metadata.primary` set to true."
+    },
+    "Name": {
+      "id": "Name",
+      "type": "object",
+      "properties": {
+        "displayName": {
+          "description": "Output only. The display name formatted according to the locale specified by the viewer's account or the `Accept-Language` HTTP header.",
+          "type": "string",
+          "readOnly": true
+        },
+        "givenName": {
+          "description": "The given name.",
+          "type": "string"
+        }
+      },
+      "description": "A person's name. If the name is a mononym, the family name is empty."
+    }
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "feature": "api-client",
+  "status": "verified",
+  "reason": null,
+  "commit": "f25350f48a14513d94b3e46e7710d6fb399b16c6",
+  "feature_hash": "5255a40f5671dcf4",
+  "diff_hash": "cbf29ce484222325",
+  "environment": "real-services",
+  "access": "read-only",
+  "command": [
+    "cargo",
+    "xtask",
+    "verify",
+    "--layer",
+    "real",
+    "api-client"
+  ],
+  "generated_at": "2026-09-27T08:30:36.187913+00:00",
+  "observed": [
+    {
+      "test": "api_real_github_header_reaches_the_server",
+      "result": "passed",
+      "mock": [
+        "api_real_github_header_reaches_the_server"
+      ]
+    },
+    {
+      "test": "api_real_github_pages_follow_the_link_header",
+      "result": "passed",
+      "mock": [
+        "api_real_github_pages_follow_the_link_header"
+      ]
+    },
+    {
+      "test": "api_real_github_public_request_succeeds",
+      "result": "passed",
+      "mock": [
+        "api_real_github_public_request_succeeds"
+      ]
+    },
+    {
+      "test": "api_real_sts_names_the_assumed_role_of_the_real_profile",
+      "result": "passed",
+      "mock": [
+        "api_real_sts_names_the_assumed_role_of_the_real_profile"
+      ]
+    },
+    {
+      "test": "api_real_sts_names_the_assumed_role_of_the_sandbox_profile",
+      "result": "passed",
+      "mock": [
+        "api_real_sts_names_the_assumed_role_of_the_sandbox_profile"
+      ]
+    }
+  ],
+  "fixtures": {}
+}

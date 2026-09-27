@@ -1,0 +1,38 @@
+# env --json: an unknown profile, an MFA code nobody can supply and a missing
+# PROFILE argument are one JSON error document each, with no progress line
+# before it.
+id = "env_json_failure_is_one_error_document_on_stderr"
+feature = "assume-role"
+
+[combination]
+command = "env"
+output = "json"
+source = "aws-profile"
+mfa = "manual"
+tty = "none"
+
+[input]
+args = ["env", "missing", "--json"]
+then_run = [["env", "ops-mfa", "--json"], ["env", "--json"]]
+
+[expect]
+json_error = { code = "ARGUMENT_INVALID", exit = 2 }
+stderr_lines = 1
+stderr_json = { "/error/category" = "usage", "/error/retry" = "never", "/error/message" = "a required env argument is missing; consult kurama env --help", "/error/hint" = "run `kurama env --help` to see the arguments it takes", "/error/next_actions/0/message" = "run `kurama env --help` to see the arguments it takes" }
+sts_actions = []
+op_calls = 0
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+json_error = { code = "PROFILE_NOT_FOUND", exit = 2 }
+stderr_lines = 1
+stderr_json = { "/error/message" = { contains = "Profile not found: missing" }, "/error/hint" = { contains = "kurama status" } }
+
+[[expect.runs]]
+run = 1
+json_error = { code = "MFA_TOKEN_UNAVAILABLE", exit = 3 }
+stderr_lines = 1
+stderr_json = { "/error/category" = "human", "/error/retry" = "after_human", "/error/hint" = { contains = "enable [onepassword]" } }
+sts_actions = []
+op_calls = 0

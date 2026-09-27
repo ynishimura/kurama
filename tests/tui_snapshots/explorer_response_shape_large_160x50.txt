@@ -1,0 +1,50 @@
+ 鞍馬 kurama api  pets  Response shapes 1                                                                                                       bearer   sigv4
+┏ Operations (1) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓┏ Operation ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃   METHOD ID                                                                                  ┃┃ Operation wide/list                                          ┃
+┃ ▸ GET    wide/list                                                                           ┃┃ Request   GET /wide                                          ┃
+┃                                                                                              ┃┃ Summary   Every field of a wide record                       ┃
+┃                                                                                              ┃┃ Tags      -                                                  ┃
+┃                                                                                              ┃┃ Scopes    -                                                  ┃
+┃                                                                                              ┃┃ Params    -                                                  ┃
+┃                                                                                              ┃┃ Body      -                                                  ┃
+┃                                                                                              ┃┃ Response  200 application/json                               ┃
+┃                                                                                              ┃┃           A wide record                                      ┃
+┃                                                                                              ┃┃ Docs      -                                                  ┃
+┃                                                                                              ┃┃ Status    deprecated                                         ┃
+┃                                                                                              ┃┃ Shape     {                                                  ┃
+┃                                                                                              ┃┃             "field_00": "string",                            ┃
+┃                                                                                              ┃┃             "field_01": "string",                            ┃
+┃                                                                                              ┃┃             "field_02": "string",                            ┃
+┃                                                                                              ┃┃             "field_03": "string",                            ┃
+┃                                                                                              ┃┃             "field_04": "string",                            ┃
+┃                                                                                              ┃┃             "field_05": "string",                            ┃
+┃                                                                                              ┃┃             "field_06": "string",                            ┃
+┃                                                                                              ┃┃             "field_07": "string",                            ┃
+┃                                                                                              ┃┃             "field_08": "string",                            ┃
+┃                                                                                              ┃┃             "field_09": "string",                            ┃
+┃                                                                                              ┃┃             "field_10": "string",                            ┃
+┃                                                                                              ┃┃           … 50 more lines; --describe shows the whole shape  ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃ Next      Enter opens the form                               ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+ ↑↓ move  Enter open  / search  q quit  h history  ? help  c copy  o docs

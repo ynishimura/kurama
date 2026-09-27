@@ -1,0 +1,19 @@
+# The activity monitor needs a terminal; an agent or a pipe asking for it
+# gets the usage error and a hint instead of a blank screen, and the log is
+# neither read into a screen nor written.
+id = "audit_watch_without_a_terminal_exits_2_with_hint"
+feature = "audit"
+
+[combination]
+command = "audit"
+tty = "none"
+
+[input]
+args = ["audit", "--watch"]
+
+[expect]
+error = { code = "TERMINAL_REQUIRED", exit = 2 }
+hint = "run `kurama status` to list profiles and `kurama env <profile>` to export one; `kurama audit` lists the recorded calls"
+sts_actions = []
+op_calls = 0
+no_files_written = true

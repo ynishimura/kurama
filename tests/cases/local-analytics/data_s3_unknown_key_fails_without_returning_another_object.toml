@@ -1,0 +1,23 @@
+# An unknown S3 key is rejected by exactly one HEAD on that key.
+id = "data_s3_unknown_key_fails_without_returning_another_object"
+feature = "local-analytics"
+
+[combination]
+command = "data"
+source = "aws-profile"
+client = "data"
+data_op = "preview"
+data_source = "s3"
+format = "csv"
+role = "assume-role"
+s3_response = "unknown-key"
+
+[input]
+args = ["data", "--from", "s3://data-bucket/unknown.csv", "--aws-profile", "dev", "--preview", "--json"]
+
+[expect]
+json_error = { code = "DATA_REJECTED", exit = 4 }
+sts_actions = ["AssumeRole"]
+op_calls = 0
+api_calls = { count = 1, sigv4 = { service = "s3", region = "ap-northeast-1" }, calls = [{ method = "HEAD", path = "/data-bucket/unknown.csv" }] }
+no_files_written = true

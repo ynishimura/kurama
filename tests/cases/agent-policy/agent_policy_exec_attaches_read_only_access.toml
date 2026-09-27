@@ -1,0 +1,31 @@
+# An agent's `exec` on an AWS profile assumes the role with ReadOnlyAccess
+# attached ([agent] exec_readonly defaults to true), and says so on stderr;
+# `exec --confirm` says a person agreed and keeps the role's own permissions.
+id = "agent_policy_exec_attaches_read_only_access"
+feature = "agent-policy"
+
+[combination]
+command = "exec"
+source = "aws-profile"
+role = "assume-role"
+agent = "exec-readonly"
+
+[input]
+args = ["exec", "dev", "--", "/bin/sh", "-c", "exit 0"]
+then_run = [["exec", "dev", "--confirm", "--", "/bin/sh", "-c", "exit 0"]]
+env = { KURAMA_AGENT = "1" }
+
+[expect]
+exit_code = 0
+# A KURAMA_AGENT run is recorded in the audit log, and nothing else is written.
+files_written = ["home/.local/state/kurama/audit.jsonl"]
+
+[[expect.runs]]
+run = 0
+sts_calls = [{ action = "AssumeRole", policy_arns = ["arn:aws:iam::aws:policy/ReadOnlyAccess"] }]
+stderr_contains = ["# Running in readonly mode"]
+
+[[expect.runs]]
+run = 1
+sts_calls = [{ action = "AssumeRole", policy_arns = [] }]
+stderr_excludes = ["# Running in readonly mode"]

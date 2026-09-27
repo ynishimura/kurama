@@ -1,0 +1,31 @@
+openapi: 3.1.0
+info:
+  title: YAML responses
+  version: 1
+paths:
+  /pets:
+    get:
+      operationId: pets/list
+      responses:
+        '200':
+          description: A list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Pet'
+components:
+  schemas:
+    Pet:
+      oneOf:
+        - type: [object, 'null']
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+        - type: object
+          properties:
+            other:
+              type: boolean

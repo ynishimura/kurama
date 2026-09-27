@@ -1,0 +1,54 @@
+# A search examines keys to its bound and keeps those that contain the text,
+# case and all. One that stops says so and hands out the cursor; the cursor
+# finishes it. A search that found nothing because it stopped is told apart
+# from one that found nothing in the whole prefix.
+id = "s3_key_search_reports_what_it_scanned_and_where_it_stopped"
+feature = "s3-explorer"
+
+[combination]
+command = "s3"
+source = "aws-profile"
+role = "assume-role"
+s3_op = "search"
+
+[input]
+args = ["s3", "assets", "s3://browse-bucket/", "--search", "invoice", "--max-objects", "5", "--json"]
+then_run = [
+  ["s3", "assets", "s3://browse-bucket/", "--search", "invoice", "--max-objects", "5", "--cursor", "eyJidWNrZXQiOiJicm93c2UtYnVja2V0IiwicHJlZml4IjoiIiwib3BlcmF0aW9uIjoic2VhcmNoIiwicmVjdXJzaXZlIjpmYWxzZSwic2VhcmNoIjoiaW52b2ljZSIsInBhZ2Vfc2l6ZSI6MywicG9zaXRpb24iOnsidG9rZW4iOiJvZmZzZXQtMyIsInNraXAiOjJ9fQ", "--json"],
+  ["s3", "assets", "s3://browse-bucket/", "--search", "absent", "--max-objects", "2", "--json"],
+  ["s3", "assets", "s3://browse-bucket/", "--search", "absent", "--json"],
+]
+config = """
+[s3.assets]
+aws_profile = "dev"
+page_size = 3
+"""
+
+[expect]
+exit_code = 0
+op_calls = 0
+no_files_written = true
+stdout_json = { "/objects" = [], "/max_objects" = 1000, "/scanned_objects" = 10, "/complete" = true, "/stop_reason" = "<null>", "/cursor" = "<null>" }
+api_calls = { count = 4, sigv4 = { service = "s3", region = "ap-northeast-1" } }
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+sts_actions = ["AssumeRole"]
+stdout_json = { "/operation" = "search", "/search" = "invoice", "/objects/0/key" = "other/invoice-999.pdf", "/objects/1" = "<null>", "/prefixes" = [], "/scanned_objects" = 5, "/complete" = false, "/stop_reason" = "max_objects", "/cursor" = "eyJidWNrZXQiOiJicm93c2UtYnVja2V0IiwicHJlZml4IjoiIiwib3BlcmF0aW9uIjoic2VhcmNoIiwicmVjdXJzaXZlIjpmYWxzZSwic2VhcmNoIjoiaW52b2ljZSIsInBhZ2Vfc2l6ZSI6MywicG9zaXRpb24iOnsidG9rZW4iOiJvZmZzZXQtMyIsInNraXAiOjJ9fQ" }
+api_calls = { count = 2, sigv4 = { service = "s3", region = "ap-northeast-1" }, calls = [
+  { path = "/browse-bucket/?list-type=2&max-keys=3&prefix=" },
+  { path = "/browse-bucket/?list-type=2&max-keys=3&prefix=&continuation-token=offset-3" },
+] }
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+stdout_json = { "/objects/0/key" = "reports/invoice-001.pdf", "/objects/1/key" = "reports/invoice-002.pdf", "/objects/2" = "<null>", "/scanned_objects" = 5, "/complete" = true, "/cursor" = "<null>" }
+api_calls = { count = 3, sigv4 = { service = "s3", region = "ap-northeast-1" } }
+
+[[expect.runs]]
+run = 2
+exit_code = 0
+stdout_json = { "/objects" = [], "/scanned_objects" = 2, "/complete" = false, "/stop_reason" = "max_objects" }
+api_calls = { count = 1, sigv4 = { service = "s3", region = "ap-northeast-1" } }

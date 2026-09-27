@@ -1,0 +1,27 @@
+# --ops on a dumb terminal still lists the operations, without terminal
+# escapes.
+id = "api_ops_on_a_dumb_terminal_stays_available"
+feature = "api-explorer"
+
+[combination]
+command = "api"
+openapi = "file"
+output = "ops"
+terminal = "dumb"
+
+[input]
+args = ["api", "pets", "--ops"]
+env = { TERM = "dumb" }
+config = """
+[api.pets]
+base_url = "{server}/api"
+openapi = "{fixtures}/petstore.json"
+"""
+
+[expect]
+exit_code = 0
+stdout = { kind = "plain-text", contains = ["pets/list", "pets/create"] }
+api_calls = { count = 0 }
+sts_actions = []
+op_calls = 0
+no_files_written = true

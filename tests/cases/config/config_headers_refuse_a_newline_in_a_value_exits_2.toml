@@ -1,0 +1,29 @@
+# A newline in a value would start a second header: the value is refused when
+# the file is read, not inside the HTTP client.
+id = "config_headers_refuse_a_newline_in_a_value_exits_2"
+feature = "config"
+
+[combination]
+command = "api"
+headers = "configured"
+config = "rejected"
+
+[input]
+args = ["api", "svc", "/items"]
+replace_config = '''
+[api.svc]
+base_url = "{server}/api"
+
+[api.svc.headers]
+X-Trace = "1\r\nX-Injected: yes"
+'''
+
+[expect]
+error = { code = "CONFIG_INVALID", exit = 2 }
+stderr_contains = [
+  "config.toml line 4: headers: the value of X-Trace must be printable ASCII on one line",
+]
+sts_actions = []
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true

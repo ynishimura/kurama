@@ -1,0 +1,18 @@
+[mcp]
+summary = "`kurama mcp`: an MCP server on stdio whose tools (ready, list_apis, list_operations, describe_operation, call_api, query_data, query_db) run kurama's own JSON commands as an agent's, so the [agent] policy, the audit log and the error document are the command line's"
+entry = "src/shell/cli/commands/mcp.rs"
+files = [
+  "src/shell/cli/commands/mcp.rs",
+  "src/domain/functions/mcp.rs",
+  "src/adapters/own_command.rs",
+  "docs/agents/kurama/mcp.md",
+]
+scenarios = [
+  "mcp_lists_the_tools_and_calls_an_api",
+  "mcp_returns_the_error_document_when_a_person_has_to_act",
+]
+depends_on = ["cli-entry", "api-client", "agent-policy", "audit", "database", "local-analytics", "agent-guide", "status"]
+notes = "Each tool call is the binary run again (current_exe) with KURAMA_AGENT=1, stdin null or the request, stdout and stderr captured, killed after 600 seconds; the server reads the next line only after answering, one call at a time. Every agent value goes after `--` or glued with `=`, so none becomes an option such as --confirm, and MCP offers no --confirm: a call the policy refuses is made by a person on the command line. query_db refuses execute and query_data refuses export before anything runs. No HTTP transport, no exec tool."
+
+[mcp.real]
+cases = "an MCP session over stdio against the public Swagger Petstore v3: a GET answered, a POST refused by the [agent] policy, a SQLite read, and the audit entries"

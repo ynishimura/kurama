@@ -1,0 +1,12 @@
+# gitleaks findings that are test fixtures, not secrets: GitHub's documented
+# example token, AWS's example access key id, a SigV4 test vector and the
+# base64 of an example.com credential. Scan the tracked files only, from the
+# root of an export: `git archive HEAD | tar -x -C DIR && cd DIR && gitleaks dir .`
+src/adapters/sigv4.rs:generic-api-key:201
+src/domain/types/http.rs:generic-api-key:285
+tests/cases/api-client/api_token_basic_sends_the_username_and_the_credential.toml:generic-api-key:39
+xtask/src/verify_real_tests.rs:aws-access-token:264
+xtask/src/verify_real_tests.rs:generic-api-key:289
+xtask/src/verify_real_tests.rs:github-oauth:282
+xtask/src/verify_real_tests.rs:github-pat:281
+xtask/tests/matrix.rs:github-pat:595

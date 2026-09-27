@@ -1,0 +1,24 @@
+ 鞍馬 kurama api  pets  Petstore 1.2.0                          bearer   sigv4
+┏ Operations (5) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃   METHOD ID                                                                  ┃
+┃ ▸ GET    pets/list                                                           ┃
+┃   POST   pets/create                                                         ┃
+┃   GET    pets/get                                                            ┃
+┃   DELETE DELETE /pets/{petId}                                                ┃
+┃   GET   ┏ History ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓         ┃
+┃         ┃                                                          ┃         ┃
+┃         ┃    [all pets] pets/list  limit=100                       ┃         ┃
+┃         ┃  ▸ pets/create  +body                                    ┃         ┃
+┃         ┃    pets/get  petId=p1  X-Trace=t1                        ┃         ┃
+┃         ┃                                                          ┃         ┃
+┃         ┃  2/3  Enter opens the form, s saves as a favorite        ┃         ┃
+┃         ┃                                                          ┃         ┃
+┃         ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛         ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+ ↑↓ select  Enter open  s save  Esc close

@@ -1,0 +1,44 @@
+# A bucket in another region than the profile's is read where it lives:
+# only the first request is signed for the profile's region, S3 corrects it
+# once through `x-amz-bucket-region`, and every later request follows the
+# bucket; the region read is reported. A dry run before it reports the
+# profile's region as where the first request would be signed, not as where
+# the bucket lives.
+id = "data_s3_reads_a_bucket_outside_the_profile_region"
+feature = "local-analytics"
+
+[combination]
+command = "data"
+source = "aws-profile"
+client = "data"
+data_op = "query"
+data_source = "s3"
+format = "parquet"
+role = "assume-role"
+region = "bucket"
+
+[input]
+args = ["data", "--from", "s3://west-bucket/orders.parquet", "--aws-profile", "dev", "--query", "SELECT count(*) AS rows FROM data", "--dry-run", "--json"]
+then_run = [["data", "--from", "s3://west-bucket/orders.parquet", "--aws-profile", "dev", "--query", "SELECT count(*) AS rows FROM data", "--json"]]
+
+[expect]
+exit_code = 0
+sts_actions = ["AssumeRole"]
+op_calls = 0
+stdout_json = { "/rows" = [["3"]], "/meta/region" = "us-west-2", "/meta/region_source" = "bucket" }
+api_calls = { count = 6, calls = [
+  { method = "HEAD", path = "/west-bucket/orders.parquet", signing_region = "ap-northeast-1" },
+  { method = "HEAD", path = "/west-bucket/orders.parquet", signing_region = "us-west-2" },
+  { method = "HEAD", path = "/west-bucket/orders.parquet", signing_region = "us-west-2" },
+  { method = "GET", path = "/west-bucket/orders.parquet", signing_region = "us-west-2", headers_include = ["range"] },
+  { method = "HEAD", path = "/west-bucket/orders.parquet", signing_region = "us-west-2" },
+  { method = "HEAD", path = "/west-bucket/orders.parquet", signing_region = "us-west-2" },
+] }
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+sts_actions = []
+stdout_json = { "/dry_run" = true, "/meta/region" = "ap-northeast-1", "/meta/region_source" = "profile" }
+api_calls = { count = 0 }

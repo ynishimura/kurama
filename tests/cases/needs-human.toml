@@ -1,0 +1,49 @@
+# Coordinates of `kurama inventory` a case cannot verify without a person:
+# an interactive login, a keychain grant, a biometric prompt, a credential
+# nobody has issued yet. `cargo xtask verify-matrix` reports each as
+# NEEDS_HUMAN with what has to be prepared; the real layer (`cargo xtask
+# verify --layer real`) runs nothing here. A coordinate the inventory does not
+# enumerate (a dimension only cases name) may be declared too: the row then
+# says what the matrix cannot count.
+
+[[needs_human]]
+reason = "the first login of an authorization_code grant opens a browser and waits for a person to approve; the fakes play the redirect, no real authorization server can be driven headlessly"
+prepare = "run `kurama login <source>` once on a terminal for an [auth.*] with grant_type = authorization_code; the token then lives in the keychain and a real case can reuse it"
+[needs_human.combination]
+grant = "authorization_code"
+
+[[needs_human]]
+reason = "a device_code grant asks a person to enter the code on another device; the fakes answer the poll, GitHub does not"
+prepare = "run `kurama login github` once on a terminal and enter the code at github.com/login/device; the token then lives in the keychain"
+[needs_human.combination]
+grant = "device_code"
+
+[[needs_human]]
+reason = "reading a token or a session the keychain holds needs a grant the person gives once per signed build; the real layer uses the file-backed store so that nothing reaches the keychain"
+prepare = "install with `cargo xtask install-signed`, run `kurama status` once and approve the keychain prompt; then `kurama token <source>` reads the stored token for real"
+[needs_human.combination]
+credential_store = "keychain"
+
+[[needs_human]]
+reason = "the interactive 1Password path (`op` asking for a biometric approval) needs a person at the machine; every real case uses the service account token instead"
+prepare = "unset OP_SERVICE_ACCOUNT_TOKEN and leave [onepassword] service_account_keychain unset, run `kurama env kurama-sandbox` on a terminal and approve the prompt"
+[needs_human.combination]
+onepassword = "biometric"
+
+[[needs_human]]
+reason = "the throwaway stacks (RDS with IAM authentication, the SSM bastion, the IAM-protected API) are billed while they exist, so their creation is approved per run"
+prepare = "run `cargo xtask verify --layer throwaway all --yes` with the kurama-sandbox profile and read the cleanup section of its report"
+[needs_human.combination]
+layer = "throwaway"
+
+[[needs_human]]
+reason = "no credential exists yet for the services the preset catalogue names (Google, Linear); the real layer of those presets is empty until one is issued"
+prepare = "issue an API key or OAuth client for the service and put it in the 1Password Agent vault as the preset documents"
+[needs_human.combination]
+preset = "google"
+
+[[needs_human]]
+reason = "no credential exists yet for the services the preset catalogue names (Google, Linear); the real layer of those presets is empty until one is issued"
+prepare = "issue an API key or OAuth client for the service and put it in the 1Password Agent vault as the preset documents"
+[needs_human.combination]
+preset = "linear"

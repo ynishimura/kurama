@@ -1,0 +1,45 @@
+# A server that answers the introspection query with errors only (the
+# introspection is disabled) is API_INTROSPECTION_REFUSED, exit 4, with the
+# server's message and a hint to save the schema to a file for
+# graphql_schema. Nothing is cached: the next run asks again.
+id = "api_graphql_introspection_refused_exits_with_hint"
+feature = "api-explorer"
+
+[combination]
+command = "api"
+spec = "graphql"
+openapi = "url"
+source = "oauth"
+token = "stored"
+
+[input]
+stored_tokens = [{ source = "linear", access_token = "stored-access-token", expires_in = 3600 }]
+args = ["api", "linear", "--ops"]
+then_run = [
+  ["api", "linear", "--ops"],
+]
+config = """
+[auth.linear]
+kind = "oauth"
+grant_type = "authorization_code"
+auth_url = "{server}/oauth/authorize"
+token_url = "{server}/oauth/token"
+client_id = "linear-client"
+
+[api.linear]
+base_url = "{server}"
+graphql = "/spec/graphql-refused.json"
+"""
+
+[expect]
+error = { code = "API_INTROSPECTION_REFUSED", exit = 4 }
+stderr_contains = ["refuses introspection: GraphQL introspection is not allowed, but the query contained __schema or __type"]
+hint = "save the schema as an introspection result (JSON with __schema) from where introspection is allowed, and set graphql_schema = \"<file>\" under [api.linear]"
+stdout = "empty"
+spec_calls = { count = 1, status = 200, authorization = "Bearer stored-access-token" }
+api_calls = { count = 0 }
+
+[[expect.runs]]
+run = 0
+error = { code = "API_INTROSPECTION_REFUSED", exit = 4 }
+spec_calls = { count = 1, status = 200, authorization = "Bearer stored-access-token" }

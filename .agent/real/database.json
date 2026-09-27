@@ -1,0 +1,137 @@
+{
+  "schema_version": 1,
+  "feature": "database",
+  "status": "verified",
+  "reason": null,
+  "commit": "bd2aca318ea3f3237119d458072a33bdfb4ef611",
+  "feature_hash": "ca44f332909b7686",
+  "diff_hash": "bd8026669afc14d0",
+  "environment": "local-docker",
+  "access": "throwaway",
+  "command": [
+    "cargo",
+    "test",
+    "--locked",
+    "--features",
+    "test-fakes",
+    "--test",
+    "real_db",
+    "--",
+    "--show-output"
+  ],
+  "generated_at": "2026-09-27T16:52:19.056126+00:00",
+  "observed": [
+    {
+      "test": "db_real_reads_every_value_as_the_server_stored_it",
+      "result": "passed",
+      "mock": [
+        "db_sqlite_structure_preview_and_query_use_the_cli_contract"
+      ]
+    },
+    {
+      "test": "db_real_postgres_keeps_the_values_no_decimal_type_holds",
+      "result": "passed",
+      "mock": []
+    },
+    {
+      "test": "db_real_read_guard_refuses_every_way_of_writing",
+      "result": "passed",
+      "mock": [
+        "db_one_statement_only_and_the_file_stays_read_only"
+      ]
+    },
+    {
+      "test": "db_real_one_connection_reissues_the_read_guard_for_every_request",
+      "result": "passed",
+      "mock": [
+        "tui_db_esc_stops_a_running_statement_and_the_next_one_still_runs"
+      ]
+    },
+    {
+      "test": "db_real_refuses_a_second_statement_and_one_that_returns_nothing",
+      "result": "passed",
+      "mock": [
+        "db_one_statement_only_and_the_file_stays_read_only"
+      ]
+    },
+    {
+      "test": "db_real_names_the_columns_of_a_result_with_no_rows",
+      "result": "passed",
+      "mock": [
+        "db_sqlite_structure_preview_and_query_use_the_cli_contract"
+      ]
+    },
+    {
+      "test": "db_real_binds_parameters_and_postgres_needs_the_cast_the_contract_names",
+      "result": "passed",
+      "mock": []
+    },
+    {
+      "test": "db_real_catalog_lists_what_the_database_has",
+      "result": "passed",
+      "mock": [
+        "db_listing_pages_continue_only_their_own_listing"
+      ]
+    },
+    {
+      "test": "db_real_stops_at_the_bounds_and_says_which_one",
+      "result": "passed",
+      "mock": [
+        "db_query_limits_return_one_partial_result_and_one_error"
+      ]
+    },
+    {
+      "test": "db_real_a_cancel_from_a_second_connection_stops_the_statement",
+      "result": "passed",
+      "mock": [
+        "db_a_statement_that_passes_its_deadline_is_stopped_and_says_why"
+      ]
+    },
+    {
+      "test": "db_real_execute_rolls_back_commits_and_stops_a_change_that_reaches_too_far",
+      "result": "passed",
+      "mock": [
+        "db_execute_reports_its_statements_and_a_cut_returning_is_partial",
+        "db_execute_is_refused_unless_the_database_and_the_call_both_allow_it"
+      ]
+    },
+    {
+      "test": "db_real_refuses_a_wrong_password_and_an_unknown_certificate_authority",
+      "result": "passed",
+      "mock": [
+        "db_server_that_does_not_answer_is_unreachable_after_its_secret_is_read"
+      ]
+    },
+    {
+      "test": "db_real_a_tunnel_carries_the_connection_and_leaves_nothing_behind",
+      "result": "passed",
+      "mock": [
+        "db_tunnel_settings_are_checked_before_anything_is_contacted",
+        "db_iam_behind_a_tunnel_assumes_the_shared_role_once"
+      ]
+    },
+    {
+      "test": "db_real_a_tunnel_through_a_real_bastion_carries_the_connection",
+      "result": "skipped",
+      "mock": [
+        "db_iam_behind_a_tunnel_assumes_the_shared_role_once"
+      ]
+    },
+    {
+      "test": "db_tunnel_failures_are_classified_and_close_the_session_they_opened",
+      "result": "passed",
+      "mock": [
+        "db_tunnel_refuses_a_plugin_that_would_put_the_session_token_in_argv"
+      ]
+    },
+    {
+      "test": "db_real_engines_names_exactly_the_servers_these_tests_run",
+      "result": "passed",
+      "mock": []
+    }
+  ],
+  "fixtures": {
+    "tests/db/mysql.sql": "da4c6a05cb0f3ed1",
+    "tests/db/postgres.sql": "4adcf357427a2901"
+  }
+}

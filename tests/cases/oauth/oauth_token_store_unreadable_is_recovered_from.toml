@@ -1,0 +1,48 @@
+# The cache is a cache: both halves say so and neither stops the run, and
+# nothing was cached, so the second run mints a token again.
+id = "oauth_token_store_unreadable_is_recovered_from"
+feature = "oauth"
+
+[combination]
+command = "token"
+source = "oauth"
+grant = "client_credentials"
+secret = "op"
+token_store = "corrupt"
+
+[input]
+args = ["token", "svc"]
+then_run = [["token", "svc"]]
+config = """
+[auth.svc]
+kind = "oauth"
+grant_type = "client_credentials"
+token_url = "{server}/oauth/token"
+client_id = "svc-client"
+client_secret = "op://Agent/Service/client_secret"
+scopes = ["read"]
+
+[api.svc]
+description = "Service API"
+base_url = "{server}/api"
+"""
+
+[fakes]
+op = "enabled"
+corrupt_token_store = true
+
+[expect]
+exit_code = 0
+token_grants = ["client_credentials"]
+stdout = { contains = ["{granted_access_token}"] }
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+token_grants = ["client_credentials"]
+stderr_contains = ["Failed to load the stored token", "the token could not be cached"]
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+token_grants = ["client_credentials"]

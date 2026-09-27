@@ -1,0 +1,37 @@
+# A signed request the API rejects is not signed and sent again: there is no
+# token to refresh, so the second attempt would be the first one over.
+id = "api_sigv4_rejection_is_not_retried"
+feature = "api-client"
+
+[combination]
+command = "api"
+auth = "aws-profile"
+role = "assume-role"
+service = "configured"
+region = "profile"
+api_response = "unauthorized"
+
+[input]
+args = ["api", "apigw", "/items"]
+config = """
+[api.apigw]
+base_url = "{server}/api"
+aws_profile = "dev"
+service = "execute-api"
+[auth.apigw]
+kind = "oauth"
+grant_type = "client_credentials"
+token_url = "{server}/oauth/token"
+client_id = "unused"
+client_secret = "op://Agent/Service/client_secret"
+"""
+
+[fakes]
+api = "unauthorized"
+
+[expect]
+error = { code = "API_HTTP_ERROR", exit = 4 }
+stderr_contains = ["HTTP 401 Unauthorized: {\"message\":\"Bad credentials\"}"]
+sts_actions = ["AssumeRole"]
+api_calls = { count = 1, sigv4 = { service = "execute-api", region = "ap-northeast-1" } }
+token_grants = []

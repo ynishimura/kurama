@@ -1,0 +1,59 @@
+# `pg_cancel_backend` answers false when it could not signal the backend,
+# and a statement that ran is not a stop: only `true` confirms one. The local
+# layer reads PostgreSQL 17 as the role of `tests/db/postgres.sql` whose
+# `pg_cancel_backend` answers false, so the deadline's cancel is not
+# confirmed, the read is given up instead of waited for, and the failure says
+# nobody confirmed the stop. The fake layer is the SQLite deadline, whose stop
+# the progress handler does confirm.
+id = "db_postgres_cancel_false_is_not_confirmed"
+feature = "database"
+
+[combination]
+command = "db"
+client = "db"
+engine = "sqlite"
+db_op = "query"
+
+[input]
+args = ["db", "app", "--timeout", "1", "--json", "--query", "WITH RECURSIVE forever(n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM forever) SELECT max(n) FROM forever"]
+config = """
+[db.app]
+engine = "sqlite"
+path = "{repo}/tests/fixtures/db/app.sqlite3"
+"""
+
+[expect]
+json_error = { code = "DB_FAILED", exit = 1 }
+stderr_json = { "/error/message" = { contains = "timed out after 1 seconds and the database confirmed it stopped" } }
+stdout = { equals = "" }
+sts_actions = []
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true
+files_unchanged = ["{repo}/tests/fixtures/db/app.sqlite3"]
+
+[local]
+args = ["db", "pg17", "--timeout", "1", "--json", "--query", "SELECT pg_sleep(100)"]
+config = """
+[db.pg17]
+engine = "postgresql"
+host = "127.0.0.1"
+port = {pg17_port}
+database = "cancel_refused"
+username = "kurama_cancel_refused"
+password = "op://Agent/db/password"
+tls = "verify-ca"
+ca_file = "{db_tls_dir}/ca.pem"
+"""
+
+[local.combination]
+engine = "postgresql"
+tls = "verify-ca"
+
+[local.expect]
+json_error = { code = "DB_FAILED", exit = 1 }
+stderr_json = { "/error/message" = { contains = "timed out after 1 seconds and the database was not confirmed to have stopped it" } }
+stdout = { equals = "" }
+sts_actions = []
+api_calls = { count = 0 }
+no_files_written = true

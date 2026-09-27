@@ -1,0 +1,25 @@
+# A session cache duration outside STS's range is refused when the file is
+# read, before any role is assumed.
+id = "config_invalid_session_cache_duration_exits_2"
+feature = "config"
+
+[combination]
+command = "env"
+config = "rejected"
+
+[input]
+args = ["env", "dev"]
+replace_config = """
+[aws.session_cache]
+duration = 1
+"""
+
+[expect]
+error = { code = "CONFIG_INVALID", exit = 2 }
+stderr_contains = [
+  "duration must be between 900 and 129600",
+  "/kurama-config.toml (KURAMA_CONFIG_PATH overrides the location)",
+]
+hint = "fix /"
+sts_actions = []
+no_files_written = true

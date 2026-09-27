@@ -1,0 +1,30 @@
+# A configuration kurama refuses is CONFIG_INVALID as one JSON error document
+# under token --json and env --json, with the hint naming the file.
+id = "config_invalid_under_token_and_env_json_is_an_error_document"
+feature = "config"
+
+[combination]
+command = "token"
+output = "json"
+config = "api-auth-names-no-source"
+
+[input]
+args = ["token", "github", "--json"]
+then_run = [["env", "github", "--json"]]
+config = """
+[api.svc]
+base_url = "https://api.example.com"
+auth = "nope"
+"""
+
+[expect]
+json_error = { code = "CONFIG_INVALID", exit = 2 }
+stderr_lines = 1
+stderr_json = { "/error/category" = "usage", "/error/message" = { contains = "[api.svc] auth = \"nope\" names no [auth.nope] section" }, "/error/hint" = { contains = "kurama agent" } }
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+json_error = { code = "CONFIG_INVALID", exit = 2 }
+stderr_lines = 1
+stderr_json = { "/error/message" = { contains = "[api.svc] auth = \"nope\" names no [auth.nope] section" } }

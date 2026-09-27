@@ -1,0 +1,19 @@
+# A command that cannot be started is exit 2 with the OS error and a hint.
+id = "exec_missing_command_exits_2_with_error_code"
+feature = "exec"
+
+[combination]
+command = "exec"
+source = "aws-profile"
+role = "assume-role"
+exec_command = "missing"
+
+[input]
+args = ["exec", "dev", "--", "kurama-test-no-such-command"]
+
+[expect]
+error = { code = "EXEC_FAILED", exit = 2 }
+sts_actions = ["AssumeRole"]
+stderr_contains = ["error[EXEC_FAILED]: failed to run `kurama-test-no-such-command`: No such file or directory (os error 2)\n"]
+hint = "check the command name"
+no_files_written = true

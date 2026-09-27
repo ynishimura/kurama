@@ -1,0 +1,40 @@
+ 鞍馬 kurama db  cmp-dev  mysql 8.4.3  portnoy  via ssm i-0abc1234def567890                                  READ ONLY
+┏ Tables (4+) ━━━━━━━━━━━━━━━━━┓┏ Columns  Preview  [SQL]  Result ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ ▸ aws_accounts               ┃┃ SELECT status, count(*) FROM orders GROUP BY status▏                                 ┃
+┃   aws_account_addresses      ┃┃                                                                                      ┃
+┃   projects                   ┃┃ Enter or F5 runs it in a read-only transaction; one statement a run.                 ┃
+┃   open_projects (view)       ┃┃ ^E (or e from the list) opens it in $EDITOR for several lines.                       ┃
+┃                              ┃┃                                                                                      ┃
+┃                              ┃┃                                                                                      ┃
+┃                              ┃┃                                                                                      ┃
+┃                              ┃┃                                                                                      ┃
+┃                              ┃┃                                                                                      ┃
+┃                              ┃┃                                                                                      ┃
+┃                              ┃┃                                                                                      ┃
+┃                              ┃┃                                                                                      ┃
+┃                              ┃┃                                                                                      ┃
+┃                              ┃┃                                                                                      ┃
+┃                             ┏ Error ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓                             ┃
+┃                             ┃                                                          ┃                             ┃
+┃                             ┃  DB_REJECTED: the database refused the statement: no     ┃                             ┃
+┃                             ┃  such table: order                                       ┃                             ┃
+┃                             ┃  hint: check the table and column names with --tables    ┃                             ┃
+┃                             ┃  and --describe                                          ┃                             ┃
+┃                             ┃                                                          ┃                             ┃
+┃                             ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛                             ┃
+┃                              ┃┃                                                                                      ┃
+┃                              ┃┃                                                                                      ┃
+┃                              ┃┃                                                                                      ┃
+┃                              ┃┃                                                                                      ┃
+┃                              ┃┃                                                                                      ┃
+┃                              ┃┃                                                                                      ┃
+┃                              ┃┃                                                                                      ┃
+┃                              ┃┃                                                                                      ┃
+┃                              ┃┃                                                                                      ┃
+┃                              ┃┃                                                                                      ┃
+┃                              ┃┃                                                                                      ┃
+┃                              ┃┃                                                                                      ┃
+┃                              ┃┃                                                                                      ┃
+┃                              ┃┃                                                                                      ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+ Esc close

@@ -1,0 +1,40 @@
+[tui]
+summary = "Interactive home screen (ratatui, TEA runtime): header, AWS / Auth / API / DB / Data tabs, their table, detail pane and key hints built from the shared theme, layout breakpoints and components; ends in the same AssumeRole workflow"
+entry = "src/shell/tui/tea/runtime.rs"
+files = [
+  "src/shell/tui/",
+  "src/shell/tui/components/line_input.rs",
+  "src/domain/functions/fuzzy_match.rs",
+  "tests/tui_snapshots/",
+]
+tests = ["tui"]
+scenarios = [
+  "tui_home_lists_profiles_with_session_state_and_quits",
+  "tui_terminal_initialization_failure_restores_terminal",
+  "tui_palette_finds_an_operation_and_opens_its_form",
+  "tui_header_shows_the_session_time_left",
+  "tui_home_switches_between_the_source_tabs",
+  "tui_home_api_tab_opens_the_explorer",
+  "tui_no_color_preserves_selection_and_badge_emphasis",
+  "tui_empty_no_color_keeps_the_palette",
+  "tui_dumb_terminal_exits_2_without_control_sequences",
+  "tui_navigation_updates_the_detail_pane",
+  "tui_resize_keeps_the_selection_and_switches_panes",
+  "tui_search_filters_profiles_and_esc_clears",
+  "tui_enter_assumes_the_role_and_hands_credentials_to_the_wrapper",
+  "tui_console_toggle_generates_and_opens_federated_session",
+  "tui_console_browser_failure_shows_an_error_and_keeps_the_credentials",
+  "tui_mfa_prompt_accepts_a_code_and_assumes_the_role",
+  "tui_incomplete_mfa_code_does_not_submit",
+  "tui_error_modal_returns_to_the_list",
+  "tui_help_modal_and_unicode_names_on_a_small_terminal",
+  "tui_inherited_aws_env_never_paints_the_screen",
+  "cli_without_arguments_opens_tui_in_terminal",
+  "cli_non_interactive_on_a_pty_exits_2_instead_of_opening_the_tui",
+  "tui_activity_shows_audit_entries_as_they_are_appended",
+]
+depends_on = ["assume-role", "status", "session-cache", "cli-entry", "config", "console-federation", "errors", "export-output", "profile-loading", "oauth", "api-explorer", "database", "local-analytics", "audit", "agent-policy"]
+notes = "Render regression: src/shell/tui/tea/view_snapshot_tests.rs draws every fixture state at 80x24, 100x30, 120x40 and 160x50 with ratatui's TestBackend, compares with tests/tui_snapshots/ and checks the UI contract, text and styles (src/shell/tui/testing.rs); tests/architecture/ keeps view, update, layout, theme and components free of I/O. Runtime: the tui_* scenarios drive the real binary on a pseudo terminal (tests/support/tui.rs) with keys, resizes, the readonly toggle and inherited AWS_* variables, and write screen.txt / screen.ansi / screen.png under target/agent/tui/ (checked for secrets). The console launch (c) through federation to the browser has its own PTY scenario, and one where the URL opener fails and the TUI stays up; 1Password TOTP through the TUI is covered by the CLI scenarios of the shared executor only"
+
+[tui.real]
+not_applicable = "the scenarios drive the real binary on a pseudo terminal"

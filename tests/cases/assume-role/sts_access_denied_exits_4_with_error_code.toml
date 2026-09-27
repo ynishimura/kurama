@@ -1,0 +1,21 @@
+# AWS refusing the role is exit 4 and names the AWS error.
+id = "sts_access_denied_exits_4_with_error_code"
+feature = "assume-role"
+
+[combination]
+command = "env"
+source = "aws-profile"
+role = "assume-role"
+sts_response = "access-denied"
+
+[input]
+args = ["env", "dev"]
+
+[fakes]
+sts = { error = { code = "AccessDenied", message = "User is not authorized to perform: sts:AssumeRole" } }
+
+[expect]
+error = { code = "STS_ACCESS_DENIED", exit = 4 }
+sts_actions = ["AssumeRole"]
+no_files_written = true
+stderr_contains = ["AccessDenied"]

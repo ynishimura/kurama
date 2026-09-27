@@ -1,0 +1,24 @@
+ 鞍馬 kurama  AWS credential switcher                       readonly   console
+  1 AWS   2 Auth   3 API   4 DB   5 Data   6 S3
+┏ Auth sources (2) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃     KIND NAME   STATE                                                        ┃
+┃ ▸ * auth github valid (59m)                                                  ┃
+┃     auth openai not_checked                                                  ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+ ↑↓ move  Enter login  q quit  Tab next tab  ? help

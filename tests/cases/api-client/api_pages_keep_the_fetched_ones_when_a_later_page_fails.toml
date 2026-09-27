@@ -1,0 +1,41 @@
+# A page that fails ends the run with the error a single request has
+# (API_HTTP_ERROR, exit 4), its message starting with the page number and
+# no stop report: every line already on stdout is a page fetched whole.
+# With --json the failing page's envelope follows them, as a single
+# request's does, and stderr is the one error document.
+id = "api_pages_keep_the_fetched_ones_when_a_later_page_fails"
+feature = "api-client"
+
+[combination]
+command = "api"
+source = "none"
+pages = "link"
+api_response = "server-error"
+
+[input]
+args = ["api", "public", "/items?pages=5&fail=3", "--pages", "5"]
+then_run = [["api", "public", "/items?pages=5&fail=3", "--pages", "5", "--json"]]
+config = """
+[api.public]
+base_url = "{server}/api"
+"""
+
+[fakes]
+api = "pages"
+
+[expect]
+exit_code = 4
+api_calls = { count = 3 }
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+stdout = { equals = "{\"page\":1,\"items\":[\"item-1-1\",\"item-1-2\"]}\n{\"page\":2,\"items\":[\"item-2-1\",\"item-2-2\"]}\n" }
+stderr_contains = ["error[API_HTTP_ERROR]: page 3: HTTP 500 Internal Server Error: {\"message\":\"page 3 failed\"}"]
+stderr_excludes = ["# pages:"]
+
+[[expect.runs]]
+run = 1
+stdout = { line_count = 3, contains = ["{\"status\":500,"] }
+stderr_lines = 1
+stderr_json = { "/error/code" = "API_HTTP_ERROR", "/error/exit_code" = 4, "/error/message" = { contains = "page 3: HTTP 500" } }

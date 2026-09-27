@@ -1,0 +1,35 @@
+# `env` on a profile with a role and an MFA serial: the fake STS takes the
+# AssumeRole and the export script names the variables; the real STS takes
+# a session token with the TOTP 1Password answers and the role of the
+# `kurama-real` profile, and the script names the same variables. Only the
+# variable names are asserted -- the values are what must not appear in a
+# report, and the report carries no stdout.
+id = "assume_role_real_env_exports_the_real_profile"
+feature = "assume-role"
+
+[combination]
+command = "env"
+source = "aws-profile"
+role = "assume-role"
+
+[input]
+args = ["env", "dev"]
+
+[expect]
+exit_code = 0
+sts_actions = ["AssumeRole"]
+stdout = "export-script"
+op_calls = 0
+no_files_written = true
+
+[real]
+requires = ["profile:kurama-real", "keychain:OP_SERVICE_ACCOUNT_TOKEN"]
+args = ["env", "kurama-real"]
+
+[real.combination]
+target = "aws-real"
+mfa = "onepassword"
+
+[real.expect]
+exit_code = 0
+stdout = "export-script"

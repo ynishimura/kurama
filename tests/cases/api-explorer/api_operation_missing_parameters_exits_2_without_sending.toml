@@ -1,0 +1,49 @@
+# A value that does not fit the parameter type, an unknown parameter, -P on
+# a plain path and a missing request body are each refused before anything
+# is sent.
+id = "api_operation_missing_parameters_exits_2_without_sending"
+feature = "api-explorer"
+
+[combination]
+command = "api"
+openapi = "file"
+target = "operation"
+parameters = "invalid"
+
+[input]
+args = ["api", "pets", "owners/list-pets", "-P", "adopted=maybe"]
+then_run = [
+  ["api", "pets", "pets/get", "-P", "petId=1", "-P", "color=red"],
+  ["api", "pets", "/pets", "-P", "limit=1"],
+  ["api", "pets", "pets/create"],
+]
+config = """
+[api.pets]
+base_url = "{server}/api"
+openapi = "{fixtures}/petstore.json"
+"""
+
+[expect]
+error = { code = "API_PARAMETER_MISSING", exit = 2 }
+stderr_contains = ["operation pets/create needs a request body (-d)"]
+hint = "run `kurama api pets --describe <OP>`"
+api_calls = { count = 0 }
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+error = { code = "API_ARGUMENT_INVALID", exit = 2 }
+stderr_contains = ["parameter adopted: \"maybe\" is not true or false"]
+api_calls = { count = 0 }
+
+[[expect.runs]]
+run = 1
+error = { code = "API_ARGUMENT_INVALID", exit = 2 }
+stderr_contains = ["unknown parameter \"color\"; the operation takes petId, X-Trace"]
+api_calls = { count = 0 }
+
+[[expect.runs]]
+run = 2
+error = { code = "API_ARGUMENT_INVALID", exit = 2 }
+stderr_contains = ["-P applies to an operation of the API description"]
+api_calls = { count = 0 }

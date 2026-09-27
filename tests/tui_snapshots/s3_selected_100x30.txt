@@ -1,0 +1,30 @@
+ 鞍馬 kurama s3  assets  dev  ap-northeast-1  s3://example-assets/reports/               READ ONLY
+┏ List (5+) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓┏ Details ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃   2024/                                            ┃┃ Key         reports/orders.csv             ┃
+┃   2025/                                            ┃┃ Size        20 bytes                       ┃
+┃ ▸ orders.csv                                    20 ┃┃ Modified    2026-09-01T00:00:00Z           ┃
+┃   summary.json                                  33 ┃┃ ETag        "9b2cf535f27731c974343645a3985 ┃
+┃   events.parquet                           1048576 ┃┃             328"                           ┃
+┃                                                    ┃┃ Class       STANDARD                       ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃ Next        Enter previews it; d opens it  ┃
+┃                                                    ┃┃             as data                        ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃ 5 scanned · more below                             ┃┃                                            ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+ ↑↓ move  Enter open  ← up  / filter  s key search  g content search  d as data  q quit  ? help

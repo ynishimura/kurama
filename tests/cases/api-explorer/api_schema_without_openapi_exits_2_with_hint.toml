@@ -1,0 +1,33 @@
+# --schema on an API without a description is refused like --ops, with the
+# line to add, before any request and with nothing on stdout.
+id = "api_schema_without_openapi_exits_2_with_hint"
+feature = "api-explorer"
+
+[combination]
+command = "api"
+openapi = "none"
+output = "schema"
+
+[input]
+args = ["api", "public", "--schema"]
+then_run = [
+  ["api", "public", "--schema", "pets/list"],
+]
+config = """
+[api.public]
+base_url = "{server}/api"
+"""
+
+[expect]
+error = { code = "API_SPEC_REQUIRED", exit = 2 }
+stderr_contains = ["[api.public] has no openapi description; --schema needs one"]
+hint = "add openapi = \"<URL or file>\" under [api.public] in config.toml"
+stdout = "empty"
+api_calls = { count = 0 }
+spec_calls = { count = 0 }
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+error = { code = "API_SPEC_REQUIRED", exit = 2 }
+stdout = "empty"

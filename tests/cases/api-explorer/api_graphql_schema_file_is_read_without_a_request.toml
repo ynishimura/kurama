@@ -1,0 +1,45 @@
+# `graphql_schema` names a saved introspection result: --ops and --describe
+# read the file and send nothing -- no introspection, no API call -- and
+# read no credential, although the API's source is a 1Password reference.
+id = "api_graphql_schema_file_is_read_without_a_request"
+feature = "api-explorer"
+
+[combination]
+command = "api"
+spec = "graphql"
+openapi = "file"
+source = "token"
+
+[input]
+args = ["api", "linear", "--ops", "query."]
+then_run = [
+  ["api", "linear", "--describe", "query.viewer", "--jq", ".response.description"],
+]
+config = """
+[auth.linear]
+kind = "token"
+token = "op://Agent/linear/credential"
+format = "{token}"
+
+[api.linear]
+base_url = "{server}/api"
+graphql = "/graphql"
+graphql_schema = "{fixtures}/graphql-linear.json"
+"""
+
+[expect]
+exit_code = 0
+stdout = { equals = "User!\n" }
+spec_calls = { count = 0 }
+api_calls = { count = 0 }
+op_calls = 0
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stdout_lines = 5
+stdout = { contains = ["query.viewer", "query.issue"] }
+spec_calls = { count = 0 }
+api_calls = { count = 0 }
+op_calls = 0

@@ -1,0 +1,61 @@
+# A GraphQL operation as TARGET is its query document, POSTed to the
+# endpoint with the API's credential: without --select the return type's
+# scalar and enum fields are selected, and the variables object is empty.
+# The answer is printed like any other body.
+id = "api_graphql_call_sends_the_default_selection"
+feature = "api-explorer"
+
+[combination]
+command = "api"
+spec = "graphql"
+openapi = "file"
+source = "token"
+
+[input]
+args = ["api", "linear", "query.viewer", "--jq", ".data.query"]
+config = """
+[auth.linear]
+kind = "token"
+token = "op://Agent/linear/credential"
+format = "{token}"
+
+[api.linear]
+base_url = "{server}/api"
+graphql = "/graphql"
+graphql_schema = "{fixtures}/graphql-linear.json"
+"""
+
+[fakes]
+api = "graphql"
+op = "enabled"
+
+[expect]
+exit_code = 0
+stdout = { equals = "query { viewer { id createdAt name email admin } }\n" }
+spec_calls = { count = 0 }
+api_calls = { count = 1, authorization = "{fake_client_secret}", calls = [{ method = "POST", path = "/api/graphql", body = "{\"query\":\"query { viewer { id createdAt name email admin } }\",\"variables\":{}}" }] }
+
+# The real layer reads the schema from the trimmed fixture: Linear's own
+# introspection result, cached in the sandbox HOME, holds "Bearer " in its
+# descriptions, which the harness's credential scan cannot tell from a token.
+[real]
+requires = ["keychain:OP_SERVICE_ACCOUNT_TOKEN"]
+args = ["api", "linear", "query.viewer", "--jq", ".data.viewer | (.id | length > 0), has(\"name\")"]
+config = """
+[auth.linear]
+kind = "token"
+token = "op://Agent/xfjngagkbzzl7udtpehrjkrw6a/credential"
+format = "{token}"
+
+[api.linear]
+base_url = "https://api.linear.app"
+graphql = "/graphql"
+graphql_schema = "{fixtures}/graphql-linear.json"
+"""
+
+[real.combination]
+target = "linear"
+
+[real.expect]
+exit_code = 0
+stdout = { equals = "true\ntrue\n" }

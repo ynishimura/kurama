@@ -1,0 +1,54 @@
+# `--only` answers with one kind of row, in both output modes, and reads
+# nothing over the network; a kind the plain table never builds is a usage
+# failure, not an empty table.
+id = "status_only_lists_one_kind_of_row"
+feature = "oauth"
+
+[combination]
+command = "status"
+"status.only" = "api"
+source = "oauth"
+grant = "authorization_code"
+token = "stored"
+rows = "one-kind"
+
+[input]
+args = ["status", "--only", "api", "--json"]
+then_run = [["status", "--only", "auth"], ["status", "--only", "db"]]
+stored_tokens = [{ source = "github", access_token = "{stored_access_token}", expires_in = 3600 }]
+config = """
+[auth.github]
+kind = "oauth"
+grant_type = "authorization_code"
+auth_url = "{server}/oauth/authorize"
+token_url = "{server}/oauth/token"
+client_id = "gh-client"
+scopes = ["repo"]
+env_var = "GITHUB_TOKEN"
+
+[api.github]
+base_url = "{server}/api"
+
+[api.gh-issues]
+base_url = "{server}/api"
+auth = "github"
+"""
+
+[expect]
+sts_actions = []
+op_calls = 0
+
+[[expect.runs]]
+run = 0
+# The api rows alone, not the aws profiles.
+stdout_json = { "/0/name" = "gh-issues", "/0/kind" = "api", "/1/name" = "github", "/1/kind" = "api", "/2" = "<null>" }
+
+[[expect.runs]]
+run = 1
+# The header, then auth rows only (an active row is marked `* `): no aws row.
+stdout = { line_containing = [["KIND"], ["github"]], lines_start_with = ["  KIND", "  auth", "* auth"] }
+
+[[expect.runs]]
+run = 2
+exit_code = 2
+stdout = "empty"

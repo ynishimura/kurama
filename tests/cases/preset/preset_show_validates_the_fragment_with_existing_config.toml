@@ -1,0 +1,52 @@
+# The sections are checked with the file they would join, the way the config
+# writer checks a save: an auth named like an AWS profile is refused, and so
+# is a literal secret, whose value is not echoed; a taken API name asks for
+# `--as`. Nothing is written by any of them.
+id = "preset_show_validates_the_fragment_with_existing_config"
+feature = "preset"
+
+[combination]
+command = "preset-show"
+config = "rejected"
+
+[input]
+args = ["preset", "show", "linear", "--set", "secret=op://Agent/kurama-linear/credential"]
+then_run = [
+  ["preset", "show", "github", "--set", "secret=op://Agent/kurama-github/credential"],
+  ["preset", "show", "google-drive", "--set", "client_id=id", "--set", "client_secret=GOCSPX-literal-987"],
+]
+config = """
+[api.github]
+base_url = "https://api.github.com"
+"""
+aws_config = """
+[default]
+region = us-east-1
+
+[profile linear]
+region = us-east-1
+"""
+
+[expect]
+error = { code = "ARGUMENT_INVALID", exit = 2 }
+stderr_contains = ["--set client_secret must be a secret reference"]
+stderr_excludes = ["GOCSPX-literal-987"]
+stdout = "empty"
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+error = { code = "CONFIG_INVALID", exit = 2 }
+stderr_contains = ["[auth.linear] has the same name as the AWS profile 'linear'"]
+hint = "give the auth another name with --auth-as <name>, or rename that AWS profile in ~/.aws/config; the file was not changed"
+stderr_excludes = ["--as"]
+stdout = "empty"
+
+[[expect.runs]]
+run = 1
+error = { code = "ARGUMENT_INVALID", exit = 2 }
+stderr_contains = ["[api.github] is already in "]
+hint = "give the new API another name with --as <name>"
+stdout = "empty"

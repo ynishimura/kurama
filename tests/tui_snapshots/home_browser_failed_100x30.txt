@@ -1,0 +1,30 @@
+ 鞍馬 kurama  AWS credential switcher                                           readonly   console
+  1 AWS   2 Auth   3 API   4 DB   5 Data   6 S3
+┏ Profiles (4) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓┏ Details ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃     KIND PROFILE     SESSION                       ┃┃ Profile dev                                ┃
+┃     aws  default     -                             ┃┃ Kind    aws                                ┃
+┃ ▸   aws  dev         -                             ┃┃ Role    arn:aws:iam::123456789012:role/dev ┃
+┃   * aws  ops-mfa     valid (11h 59m)               ┃┃ Region  ap-northeast-1                     ┃
+┃     aws  sandbox-mfa none                          ┃┃ MFA     -                                  ┃
+┃                                                    ┃┃ Session -                                  ┃
+┃                                                    ┃┃ Shell   not active                         ┃
+┃                   ┏ Error ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓                   ┃
+┃                   ┃                                                          ┃e role             ┃
+┃                   ┃  Failed to open the browser: `open` exited with exit     ┃                   ┃
+┃                   ┃  status: 1                                               ┃                   ┃
+┃                   ┃                                                          ┃                   ┃
+┃                   ┃  Open the console URL in a browser yourself: q quits     ┃                   ┃
+┃                   ┃  and prints it.                                          ┃                   ┃
+┃                   ┃  Credentials are ready for the shell.                    ┃                   ┃
+┃                   ┃                                                          ┃                   ┃
+┃                   ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛                   ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+ Enter back

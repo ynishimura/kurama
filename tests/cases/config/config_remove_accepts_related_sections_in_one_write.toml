@@ -1,0 +1,57 @@
+# Several sections are removed in one write, an auth together with every
+# API that uses it: the result is checked once, so the intermediate state
+# where the API names a removed auth is never judged. The sections not
+# named stay, and `status` still reads the file.
+id = "config_remove_accepts_related_sections_in_one_write"
+feature = "config"
+
+[combination]
+command = "config-remove"
+output = "json"
+
+[input]
+args = ["config", "remove", "api.sheets", "auth.google", "api.docs", "--json"]
+then_run = [["config", "list"], ["status", "--only", "api", "--json"]]
+replace_config = """
+# mine
+[core]
+log_level = "info"
+
+[auth.google]
+kind = "token"
+token = "op://Agent/google/credential"
+
+[api.sheets]
+base_url = "https://sheets.example.com"
+auth = "google"
+
+[api.docs]
+base_url = "https://docs.example.com"
+auth = "google"
+
+[api.plain]
+base_url = "https://plain.example.com"
+"""
+
+[fakes]
+op = "enabled"
+
+[expect]
+exit_code = 0
+stdout_json = { "/0/name" = "plain", "/0/kind" = "api" }
+sts_actions = []
+op_calls = 0
+secret_reads = []
+api_calls = { count = 0 }
+files_written = ["kurama-config.toml"]
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stderr_empty = true
+stdout_json = { "/changed" = true, "/applied" = true, "/changes" = { length = 3 }, "/changes/0/section" = "api.sheets", "/changes/0/action" = "remove", "/changes/1/section" = "auth.google", "/changes/2/section" = "api.docs" }
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+stdout = { equals = "core: log_level\napi.plain: base_url\n" }

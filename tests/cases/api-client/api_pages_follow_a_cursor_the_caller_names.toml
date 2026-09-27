@@ -1,0 +1,38 @@
+# --cursor PATH=PARAM reads the next page from the JSON body at PATH and
+# sends it as the query parameter PARAM of the first request; a null at PATH
+# ends paging before the limit. Each page is its body as one line.
+id = "api_pages_follow_a_cursor_the_caller_names"
+feature = "api-client"
+
+[combination]
+command = "api"
+source = "none"
+pages = "cursor"
+
+[input]
+args = ["api", "public", "/items?style=cursor&pages=3", "--pages", "10", "--cursor", "meta.next=cursor"]
+then_run = [["api", "public", "/items?style=cursor&pages=3", "--pages", "2", "--cursor", ".meta.next=cursor", "--jq", ".items[]"]]
+config = """
+[api.public]
+base_url = "{server}/api"
+"""
+
+[fakes]
+api = "pages"
+
+[expect]
+exit_code = 0
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+stdout = { equals = "{\"page\":1,\"items\":[\"item-1-1\",\"item-1-2\"],\"meta\":{\"next\":\"c2\"}}\n{\"page\":2,\"items\":[\"item-2-1\",\"item-2-2\"],\"meta\":{\"next\":\"c3\"}}\n{\"page\":3,\"items\":[\"item-3-1\",\"item-3-2\"],\"meta\":{\"next\":null}}\n" }
+stderr_lines = 1
+stderr_contains = ["# pages: 3 fetched (--pages 10); stopped: last"]
+api_calls = { count = 3, calls = [{ path = "/api/items?style=cursor&pages=3" }, { path = "/api/items?style=cursor&pages=3&cursor=c2" }, { path = "/api/items?style=cursor&pages=3&cursor=c3" }] }
+
+[[expect.runs]]
+run = 1
+stdout = { equals = "item-1-1\nitem-1-2\nitem-2-1\nitem-2-2\n" }
+stderr_json = { "/pages/fetched" = 2, "/pages/stopped" = "limit", "/pages/next" = { contains = "/api/items?style=cursor&pages=3&cursor=c3" } }
+api_calls = { count = 2 }

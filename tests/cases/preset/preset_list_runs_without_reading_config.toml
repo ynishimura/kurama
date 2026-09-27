@@ -1,0 +1,29 @@
+# The catalog is compiled in, so the list reads no configuration: it works
+# under a config.toml that is not TOML at all, in text and in JSON, and
+# touches nothing.
+id = "preset_list_runs_without_reading_config"
+feature = "preset"
+
+[combination]
+command = "preset"
+config = "invalid"
+
+[input]
+args = ["preset"]
+then_run = [["preset", "--json"]]
+replace_config = "[invalid TOML"
+
+[expect]
+exit_code = 0
+stderr_empty = true
+stdout_json = { "/0/id" = "github", "/0/auth/kind" = "token", "/0/inputs/0/key" = "secret", "/0/inputs/0/secret" = true, "/2/id" = "google-sheets", "/2/auth/name" = "google", "/2/setup" = "https://console.cloud.google.com/apis/credentials" }
+sts_actions = []
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stderr_empty = true
+stdout = { starts_with = "ID ", contains = ["TITLE", "AUTH", "INPUTS", "SETUP", "github-oauth", "oauth device_code", "linear-oauth", "client_id, client_secret", "https://linear.app/settings/account/security"] }

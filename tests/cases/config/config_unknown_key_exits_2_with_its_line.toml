@@ -1,0 +1,30 @@
+# An unknown table is named with its line. `mfa` is a key of no section, so
+# nothing suggests the binary is older than the file.
+id = "config_unknown_key_exits_2_with_its_line"
+feature = "config"
+
+[combination]
+command = "env"
+config = "rejected"
+
+[input]
+args = ["env", "dev"]
+replace_config = """
+[core]
+log_level = "info"
+
+[mfa.onepassword]
+enabled = false
+"""
+
+[expect]
+error = { code = "CONFIG_INVALID", exit = 2 }
+stderr_contains = [
+  "config.toml line 4: unknown field `mfa`",
+  "/kurama-config.toml (KURAMA_CONFIG_PATH overrides the location)",
+]
+stderr_excludes = ["older than the configuration"]
+hint = "fix /"
+sts_actions = []
+op_calls = 0
+no_files_written = true

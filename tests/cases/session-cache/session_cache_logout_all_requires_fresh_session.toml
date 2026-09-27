@@ -1,0 +1,45 @@
+# `logout --all` clears the cached MFA session (named on stderr, stdout
+# empty), so the next run gets a new one: GetSessionToken again, signed with
+# the long-term key, and AssumeRole signed with the new session -- the fake
+# hands out a different session key each time, so a run that kept using the
+# cleared one would show its key here.
+id = "session_cache_logout_all_requires_fresh_session"
+feature = "session-cache"
+
+[combination]
+command = "logout"
+source = "aws-profile"
+mfa = "onepassword"
+session_cache = "cleared"
+
+[input]
+args = ["env", "ops-mfa"]
+then_run = [["logout", "--all"], ["env", "ops-mfa"]]
+
+[fakes]
+op = "enabled"
+session_cache = true
+
+[expect]
+exit_code = 0
+stdout = "export-script"
+sts_actions = ["GetSessionToken", "AssumeRole"]
+sts_calls = [
+  { action = "GetSessionToken", serial_number = "arn:aws:iam::123456789012:mfa/agent", token_code = "{op_totp}", signing_access_key = "{op_access_key}" },
+  { action = "AssumeRole", token_code = "<none>", signing_access_key = "{second_session_access_key}" },
+]
+
+[[expect.runs]]
+run = 0
+sts_actions = ["GetSessionToken", "AssumeRole"]
+sts_calls = [
+  { action = "GetSessionToken", serial_number = "arn:aws:iam::123456789012:mfa/agent", token_code = "{op_totp}", signing_access_key = "{op_access_key}" },
+  { action = "AssumeRole", token_code = "<none>", signing_access_key = "{session_access_key}" },
+]
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+sts_actions = []
+stdout = "empty"
+stderr_contains = ["# Cleared MFA session: arn:aws:iam::123456789012:mfa/agent"]

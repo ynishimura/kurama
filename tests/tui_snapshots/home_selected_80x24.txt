@@ -1,0 +1,24 @@
+ 鞍馬 kurama  AWS credential switcher         MFA 11h 59m   readonly   console
+  1 AWS   2 Auth   3 API   4 DB   5 Data   6 S3
+┏ Profiles (4) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃     KIND PROFILE     SESSION                                                 ┃
+┃     aws  default     -                                                       ┃
+┃     aws  dev         -                                                       ┃
+┃ ▸ * aws  ops-mfa     valid (11h 59m)                                         ┃
+┃     aws  sandbox-mfa none                                                    ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┃                                                                              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+ ↑↓ move  Enter assume  q quit  / search  ^K go to  ? help  r readonly

@@ -1,0 +1,36 @@
+# -k changes nothing about the token request or the API request.
+id = "api_insecure_flag_is_accepted"
+feature = "api-client"
+
+[combination]
+command = "api"
+source = "oauth"
+grant = "client_credentials"
+token = "none"
+tls = "insecure"
+
+[input]
+args = ["api", "svc", "/user", "-k", "--jq", ".login"]
+config = """
+[auth.svc]
+kind = "oauth"
+grant_type = "client_credentials"
+token_url = "{server}/oauth/token"
+client_id = "svc-client"
+client_secret = "op://Agent/Service/client_secret"
+scopes = ["read"]
+
+[api.svc]
+description = "Service API"
+base_url = "{server}/api"
+"""
+
+[fakes]
+op = "enabled"
+token_store = true
+
+[expect]
+exit_code = 0
+token_grants = ["client_credentials"]
+api_calls = { count = 1, authorization = "Bearer fake-granted-access-token" }
+stdout = { equals = "octocat\n" }

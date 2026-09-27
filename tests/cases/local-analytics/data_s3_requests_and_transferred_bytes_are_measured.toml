@@ -1,0 +1,29 @@
+# An S3 run reports the requests it made and the bytes it asked for, as the
+# server counted them; a local read transfers nothing and says so with null.
+id = "data_s3_requests_and_transferred_bytes_are_measured"
+feature = "local-analytics"
+
+[combination]
+command = "data"
+source = "aws-profile"
+client = "data"
+data_op = "query"
+data_source = "s3"
+format = "parquet"
+role = "assume-role"
+
+[input]
+args = ["data", "--from", "s3://data-bucket/wide/data.parquet", "--aws-profile", "dev", "--query", "SELECT sum(amount) AS total FROM data", "--json"]
+then_run = [["data", "--from", "{repo}/tests/fixtures/data/orders.csv", "--describe", "data", "--json"]]
+
+[expect]
+op_calls = 0
+no_files_written = true
+exit_code = 0
+sts_actions = []
+stdout_json = { "/meta/request_count" = "<null>", "/meta/bytes_transferred" = "<null>" }
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stdout_json = { "/meta/request_count" = "<api_call_count>", "/meta/bytes_transferred" = "<api_bytes_requested>" }

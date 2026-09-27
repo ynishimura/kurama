@@ -1,0 +1,30 @@
+# A key this kurama reads in another section is either misplaced or written
+# for a newer kurama; the hint says both, so the fix is not always to delete
+# the key. The value is not printed back.
+id = "config_a_key_of_another_section_says_the_binary_may_be_older"
+feature = "config"
+
+[combination]
+command = "status"
+config = "rejected"
+
+[input]
+args = ["status"]
+replace_config = """
+[api.example]
+base_url = "https://api.example.com"
+format = "Bearer {token}"
+"""
+
+[expect]
+error = { code = "CONFIG_INVALID", exit = 2 }
+stderr_contains = [
+  "config.toml line 3: unknown field `format`",
+  "this kurama reads `format` only in [[data.*.sources]], [auth.*], so the key is misplaced",
+  "older than the configuration",
+]
+stderr_excludes = ["Bearer"]
+hint = "fix /"
+sts_actions = []
+op_calls = 0
+no_files_written = true

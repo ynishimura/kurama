@@ -1,0 +1,76 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Reference chains",
+    "version": "1"
+  },
+  "paths": {
+    "/long": {
+      "get": {
+        "operationId": "longChain",
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/s0"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/short": {
+      "get": {
+        "operationId": "shortChain",
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/s5"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "s0": {
+        "$ref": "#/components/schemas/s1"
+      },
+      "s1": {
+        "$ref": "#/components/schemas/s2"
+      },
+      "s2": {
+        "$ref": "#/components/schemas/s3"
+      },
+      "s3": {
+        "$ref": "#/components/schemas/s4"
+      },
+      "s4": {
+        "$ref": "#/components/schemas/s5"
+      },
+      "s5": {
+        "$ref": "#/components/schemas/s6"
+      },
+      "s6": {
+        "$ref": "#/components/schemas/s7"
+      },
+      "s7": {
+        "type": "object",
+        "properties": {
+          "deep": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

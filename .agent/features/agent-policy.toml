@@ -1,0 +1,20 @@
+[agent-policy]
+summary = "`[agent]` / `[api.<name>.agent]`: in a run whose environment sets KURAMA_AGENT, api requests outside the policy, db --commit and exec's full permissions need --confirm"
+entry = "src/shell/agent_policy.rs"
+files = [
+  "src/shell/agent_policy.rs",
+  "src/domain/functions/agent_policy.rs",
+  "src/adapters/config/agent.rs",
+]
+scenarios = [
+  "agent_policy_refuses_a_write_before_any_call",
+  "agent_policy_allows_what_the_api_section_widens",
+  "agent_policy_exec_attaches_read_only_access",
+  "agent_policy_db_commit_needs_a_persons_confirmation",
+  "mcp_lists_the_tools_and_calls_an_api",
+]
+depends_on = ["config", "api-client", "audit"]
+notes = "An agent run is KURAMA_AGENT set to anything but empty or 0; a person's run, a pipe included, is never held to the policy. An operation TARGET loads the API description (with the credential only under openapi_auth) before the method is known; a plain TARGET is decided before anything is read"
+
+[agent-policy.real]
+not_applicable = "decides from the local configuration and the environment before any call; the calls it lets through are the api-client, exec and database ones, verified there"

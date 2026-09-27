@@ -1,0 +1,24 @@
+# The setup commands carry `--set` values and the vault as one shell word
+# each: a value with `;` or a space, pasted into a shell, stays the value and
+# runs nothing, and the `<vault>` placeholder is not a redirection. A vault
+# name with a space is the unit test of the same name (the harness owns the
+# `[onepassword]` section).
+id = "preset_setup_commands_shell_quote_dynamic_values"
+feature = "preset"
+
+[combination]
+command = "preset-show"
+output = "text"
+
+[input]
+args = ["preset", "show", "jira", "--set", "secret=op://Agent/kurama-jira/credential", "--set", "site=example", "--set", "email=me; touch /tmp/pwned"]
+
+[expect]
+exit_code = 0
+stdout = { contains = ["username = \"me; touch /tmp/pwned\"\n"] }
+stderr_contains = ["--vault '<vault>' --title kurama-jira ", "kurama preset add jira --set secret=op://Agent/kurama-jira/credential --set site=example --set 'email=me; touch /tmp/pwned'\n"]
+sts_actions = []
+op_calls = 0
+secret_reads = []
+api_calls = { count = 0 }
+no_files_written = true

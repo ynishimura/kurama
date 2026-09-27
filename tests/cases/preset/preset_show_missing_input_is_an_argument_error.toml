@@ -1,0 +1,27 @@
+# An input nobody gave, or one the preset does not take, is the arguments'
+# mistake and not the file's: ARGUMENT_INVALID, in the text line and in the
+# JSON error document, with the same exit code 2.
+id = "preset_show_missing_input_is_an_argument_error"
+feature = "preset"
+
+[combination]
+command = "preset-show"
+input = "missing"
+
+[input]
+args = ["preset", "show", "jira", "--set", "bogus=1"]
+then_run = [["preset", "show", "jira", "--set", "secret=op://Agent/kurama-jira/credential", "--json"]]
+
+[expect]
+json_error = { code = "ARGUMENT_INVALID", exit = 2 }
+stderr_lines = 1
+stderr_json = { "/error/message" = "preset jira needs site, email; give each with --set <key>=<value>" }
+stdout = "empty"
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+error = { code = "ARGUMENT_INVALID", exit = 2, message = "preset jira takes no input bogus; it takes secret, site, email" }
+stdout = "empty"

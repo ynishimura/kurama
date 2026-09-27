@@ -1,0 +1,43 @@
+# Manual dispatch only, like CI: publishes the landing page and the command
+# reference (the files of site/) with the images of docs/assets, which
+# site/assets links to for a local preview, to GitHub Pages. Pages must first
+# be enabled with "GitHub Actions" as its source (docs/development/releasing.md);
+# a Pages site is public even when the repository is not.
+name: Pages
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+
+    # The images only: docs/assets/demo holds the recording scripts.
+    - name: Assemble the site
+      run: |
+        mkdir -p _site/assets
+        cp site/*.html site/*.css site/*.js site/*.json _site/
+        cp docs/assets/*.svg docs/assets/*.png docs/assets/*.gif _site/assets/
+
+    - uses: actions/upload-pages-artifact@v4
+      with:
+        path: _site
+
+    - id: deployment
+      uses: actions/deploy-pages@v4

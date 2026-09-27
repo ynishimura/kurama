@@ -1,0 +1,59 @@
+# A bucket outside the profile's Region: the first request is signed
+# for the profile's Region, S3 answers 301 with the bucket's own, kurama
+# follows it once and reports where it read. The fake layer holds the exact
+# request sequence of a `--describe` against the fixture's `west-bucket`: the
+# first HEAD signed for the profile's Region, every request after the 301
+# for the bucket's; the throwaway layer
+# reads the bucket tests/s3/s3.yaml creates in another Region, which is the
+# real 301 no fake can send.
+id = "data_throwaway_s3_other_region_bucket_is_read"
+feature = "local-analytics"
+
+[combination]
+command = "data"
+source = "aws-profile"
+client = "data"
+data_op = "describe"
+data_source = "s3"
+format = "parquet"
+role = "assume-role"
+region = "bucket"
+
+[input]
+args = ["data", "--from", "s3://west-bucket/orders.parquet", "--aws-profile", "dev", "--describe", "--json"]
+
+[expect]
+exit_code = 0
+sts_actions = ["AssumeRole"]
+op_calls = 0
+stdout_json = { "/meta/region" = "us-west-2", "/meta/sources/0/path" = "s3://west-bucket/orders.parquet", "/parquet/rows" = 3 }
+api_calls = { count = 9, calls = [
+  { method = "HEAD", path = "/west-bucket/orders.parquet", signing_region = "ap-northeast-1" },
+  { method = "HEAD", path = "/west-bucket/orders.parquet", signing_region = "us-west-2" },
+  { method = "HEAD", path = "/west-bucket/orders.parquet", signing_region = "us-west-2" },
+  { method = "GET", path = "/west-bucket/orders.parquet", signing_region = "us-west-2", headers_include = ["range"] },
+  { method = "HEAD", path = "/west-bucket/orders.parquet", signing_region = "us-west-2" },
+  { method = "HEAD", path = "/west-bucket/orders.parquet", signing_region = "us-west-2" },
+  { method = "HEAD", path = "/west-bucket/orders.parquet", signing_region = "us-west-2" },
+  { method = "HEAD", path = "/west-bucket/orders.parquet", signing_region = "us-west-2" },
+  { method = "HEAD", path = "/west-bucket/orders.parquet", signing_region = "us-west-2" },
+] }
+no_files_written = true
+
+[throwaway]
+stacks = ["s3-data"]
+args = ["data", "--from", "s3://{s3_bucket_other_region}/orders.parquet", "--aws-profile", "{throwaway_profile}", "--query", "SELECT count(*) AS rows FROM data", "--json"]
+then_run = [["data", "--from", "s3://{s3_bucket_other_region}/orders.parquet", "--aws-profile", "{throwaway_profile}", "--region", "{s3_same_region}", "--describe", "--json"]]
+
+[throwaway.combination]
+data_op = "query"
+
+[throwaway.expect]
+json_error = { code = "DATA_REJECTED", exit = 4 }
+stderr_json = { "/error/message" = { contains = "in {s3_other_region}, not in {s3_same_region}" }, "/error/hint" = { contains = "--region {s3_other_region}" } }
+no_files_written = true
+
+[[throwaway.expect.runs]]
+run = 0
+exit_code = 0
+stdout_json = { "/rows" = [["3"]], "/meta/region" = "{s3_other_region}" }

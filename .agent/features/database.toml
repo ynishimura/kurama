@@ -1,0 +1,127 @@
+[database]
+summary = "`kurama db`: read a configured database or a SQLite file -- schemas, tables, describe, preview and one read-only statement with bound parameters, as one bounded JSON result; a server user authenticates with a password from 1Password, Secrets Manager or Parameter Store, or with an IAM token (RDS, Aurora, Aurora DSQL)"
+entry = "src/shell/cli/commands/db.rs"
+files = [
+  "src/shell/cli/commands/db.rs",
+  "src/shell/cli/commands/db_command.rs",
+  "src/shell/cli/commands/db_command_tests.rs",
+  "src/shell/cli/commands/db_contract.rs",
+  "src/shell/cli/commands/db_contract_tests.rs",
+  "src/shell/cli/commands/db_render.rs",
+  "src/shell/db_connection.rs",
+  "src/shell/tui/database/",
+  "src/shell/tui/components/result_table.rs",
+  "tests/scenarios/database.rs",
+  "src/domain/types/database.rs",
+  "src/domain/types/database_error.rs",
+  "src/domain/types/database_output.rs",
+  "src/adapters/config/db.rs",
+  "src/adapters/database/",
+  "src/adapters/aws/ssm_tunnel.rs",
+  "src/adapters/aws/db_iam_token.rs",
+  "tests/fakes/session-manager-plugin",
+  "tests/fixtures/db/",
+  "tests/real_db.rs",
+  "tests/db/",
+  "docs/development/database.md",
+]
+tests = ["db_"]
+depends_on = ["tui", "cli-entry", "config", "errors", "agent-guide", "onepassword-mfa", "secrets", "assume-role", "profile-loading", "api-client", "api-explorer", "shell-integration", "status", "agent-policy", "audit"]
+scenarios = [
+  "secrets_one_managed_secret_answers_username_and_password_in_one_call",
+  "secrets_a_reference_that_is_not_usable_is_refused_by_the_configuration",
+  "secrets_an_arn_and_a_region_that_disagree_are_refused_before_anything_is_read",
+  "secrets_a_refused_read_exits_4_and_names_the_iam_action",
+  "secrets_a_value_that_is_not_the_named_secret_exits_2",
+  "secrets_a_tunnel_an_iam_token_and_a_reference_assume_the_role_once",
+  "secrets_a_reference_no_aws_profile_can_place_exits_2",
+  "secrets_status_resolves_no_reference_and_calls_no_aws",
+  "secrets_a_store_that_cannot_be_reached_exits_1",
+  "tui_db_opens_on_a_terminal_and_exits_2_without_one",
+  "tui_db_lists_tables_columns_and_a_preview_over_one_connection",
+  "tui_db_runs_a_statement_and_scrolls_the_result_with_a_cell_detail",
+  "tui_db_esc_stops_a_running_statement_and_the_next_one_still_runs",
+  "tui_db_an_unreachable_database_exits_without_opening_the_screen",
+  "tui_db_no_color_keeps_the_selection_and_the_read_only_badge",
+  "tui_db_dumb_terminal_exits_2_without_control_sequences",
+]
+notes = "The engine-independent behaviour (envelope, bounds, completion rules, cursors, deadline and interrupt, error documents, terminal-safe text) is verified against a real SQLite file in tests/fixtures/db/. PostgreSQL 17 and 18 and MySQL 8.4 are verified against real servers by tests/real_db.rs, which `cargo xtask db-up` starts and `KURAMA_TEST_DB=1` enables; it is outside the gate because it needs Docker, and it found four defects no fake would have: MySQL identifiers quoted the ANSI way, MySQL errors classified by SQLSTATE instead of its own number, PostgreSQL parameters losing their declared type to a second prepare, and the contract naming the wrong code for an uncast parameter. The SSM tunnel is covered end to end by tests/real_db.rs with only AWS and the plugin faked (call sequence, the token staying out of argv, the port handshake, a statement through it, nothing left behind), and its refusal of an offline bastion was verified by hand against real AWS on 2026-09-21; a real bastion that tests/db/bastion.yaml creates carried a statement through a real Session Manager session with verify-ca, and refused verify-full on the same connection; tests/db/delete-account.sh, the script the issue set out to make possible, ran measure-confirm-delete through such a tunnel against MySQL 8.4 with kurama as the only program on its PATH. The private development database behind a real bastion has not been read, because that bastion is offline. A write is covered by scenarios for the two refusals that happen before a connection is opened, by unit tests against a real SQLite file, and by tests/real_db.rs against PostgreSQL and MySQL. IAM authentication: the token matches botocore's for RDS and for both Aurora DSQL actions, and a real Aurora DSQL cluster took it from the real binary on 2026-09-21 for every operation and a write, which found that DSQL refuses statement_timeout, pg_backend_pid and pg_cancel_backend; the same day the RDS PostgreSQL 17.9 and RDS MySQL 8.4.9 of tests/db/rds-iam.yaml took the RDS token directly under verify-full and through a real Session Manager tunnel under verify-ca, the MySQL runs through mysql_clear_password. An Aurora (non-DSQL) cluster is unverified."
+
+# `cargo xtask db-up` starts the servers; `cargo xtask verify-real database`
+# runs these tests against them and records what they answered.
+[database.real]
+command = ["cargo", "test", "--locked", "--features", "test-fakes", "--test", "real_db", "--", "--show-output"]
+source = "tests/real_db.rs"
+environment = "local-docker"
+access = "throwaway"
+requires = ["KURAMA_TEST_DB"]
+fixtures = ["tests/db/postgres.sql", "tests/db/mysql.sql"]
+
+[[database.real.contracts]]
+real = "db_real_reads_every_value_as_the_server_stored_it"
+mock = ["db_sqlite_structure_preview_and_query_use_the_cli_contract"]
+
+[[database.real.contracts]]
+real = "db_real_postgres_keeps_the_values_no_decimal_type_holds"
+mock = []
+note = "only a real PostgreSQL sends numeric values wider than any decimal type; no fake knows those bytes"
+
+[[database.real.contracts]]
+real = "db_real_read_guard_refuses_every_way_of_writing"
+mock = ["db_one_statement_only_and_the_file_stays_read_only"]
+
+[[database.real.contracts]]
+real = "db_real_one_connection_reissues_the_read_guard_for_every_request"
+mock = ["tui_db_esc_stops_a_running_statement_and_the_next_one_still_runs"]
+note = "the explorer keeps one connection; only a real server shows that the guard it opens again after each request refuses a write with 25006"
+
+[[database.real.contracts]]
+real = "db_real_refuses_a_second_statement_and_one_that_returns_nothing"
+mock = ["db_one_statement_only_and_the_file_stays_read_only"]
+
+[[database.real.contracts]]
+real = "db_real_names_the_columns_of_a_result_with_no_rows"
+mock = ["db_sqlite_structure_preview_and_query_use_the_cli_contract"]
+
+[[database.real.contracts]]
+real = "db_real_binds_parameters_and_postgres_needs_the_cast_the_contract_names"
+mock = []
+note = "the parameter type PostgreSQL infers is the server's answer; the agent contract names the cast and db_agent_contract_status_and_dry_run_open_nothing prints it"
+
+[[database.real.contracts]]
+real = "db_real_catalog_lists_what_the_database_has"
+mock = ["db_listing_pages_continue_only_their_own_listing"]
+
+[[database.real.contracts]]
+real = "db_real_stops_at_the_bounds_and_says_which_one"
+mock = ["db_query_limits_return_one_partial_result_and_one_error"]
+
+[[database.real.contracts]]
+real = "db_real_a_cancel_from_a_second_connection_stops_the_statement"
+mock = ["db_a_statement_that_passes_its_deadline_is_stopped_and_says_why"]
+
+[[database.real.contracts]]
+real = "db_real_execute_rolls_back_commits_and_stops_a_change_that_reaches_too_far"
+mock = ["db_execute_reports_its_statements_and_a_cut_returning_is_partial", "db_execute_is_refused_unless_the_database_and_the_call_both_allow_it"]
+
+[[database.real.contracts]]
+real = "db_real_refuses_a_wrong_password_and_an_unknown_certificate_authority"
+mock = ["db_server_that_does_not_answer_is_unreachable_after_its_secret_is_read"]
+
+[[database.real.contracts]]
+real = "db_real_a_tunnel_carries_the_connection_and_leaves_nothing_behind"
+mock = ["db_tunnel_settings_are_checked_before_anything_is_contacted", "db_iam_behind_a_tunnel_assumes_the_shared_role_once"]
+
+[[database.real.contracts]]
+real = "db_real_a_tunnel_through_a_real_bastion_carries_the_connection"
+mock = ["db_iam_behind_a_tunnel_assumes_the_shared_role_once"]
+requires = ["KURAMA_TEST_BASTION"]
+
+[[database.real.contracts]]
+real = "db_tunnel_failures_are_classified_and_close_the_session_they_opened"
+mock = ["db_tunnel_refuses_a_plugin_that_would_put_the_session_token_in_argv"]
+
+[[database.real.contracts]]
+real = "db_real_engines_names_exactly_the_servers_these_tests_run"
+mock = []
+note = "checks this file against the engines the configuration names; it needs no server"

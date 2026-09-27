@@ -1,0 +1,18 @@
+min_version: 2.1.14
+
+# The gate has two stages. A push from an integration branch runs the full
+# `cargo xtask check` (every test); a push from a feature branch runs the
+# lighter `cargo xtask branch-check` (the tests, scenarios and mutants that
+# branch affects). Both run fmt, clippy and unused dependencies first and stop
+# there when one fails. Every commit that reaches dev has
+# still passed `check` once, on the push that put it there.
+pre-push:
+  jobs:
+    - name: rust
+      group:
+        piped: true
+        jobs:
+          - name: gate
+            run: 'branch=$(git rev-parse --abbrev-ref HEAD); case $branch in dev|main) mise exec -- cargo xtask check ;; *) mise exec -- cargo xtask branch-check ;; esac'
+          - name: sweep
+            run: mise run sweep

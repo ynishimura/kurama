@@ -1,0 +1,54 @@
+# A GraphQL API names its endpoint under `graphql`: kurama introspects it
+# (a POST of the introspection query with the API's own credential) and
+# lists every field of the Query and Mutation types as `query.<field>` /
+# `mutation.<field>`, each `POST <endpoint>`. The result is cached like a
+# description, so the next --ops sends nothing.
+id = "api_graphql_lists_root_fields_as_operations"
+feature = "api-explorer"
+
+[combination]
+command = "api"
+spec = "graphql"
+openapi = "url"
+source = "oauth"
+token = "stored"
+output = "ops"
+
+[input]
+stored_tokens = [{ source = "linear", access_token = "stored-access-token", expires_in = 3600 }]
+args = ["api", "linear", "--ops"]
+then_run = [
+  ["api", "linear", "--ops", "mutation.", "--json"],
+]
+config = """
+[auth.linear]
+kind = "oauth"
+grant_type = "authorization_code"
+auth_url = "{server}/oauth/authorize"
+token_url = "{server}/oauth/token"
+client_id = "linear-client"
+
+[api.linear]
+base_url = "{server}"
+graphql = "/spec/graphql-linear.json"
+"""
+
+[expect]
+exit_code = 0
+spec_calls = { count = 0 }
+api_calls = { count = 0 }
+token_grants = []
+stdout_json = { "" = { length = 1 }, "/0/id" = "mutation.issueCreate", "/0/method" = "POST", "/0/path" = "/spec/graphql-linear.json", "/0/tags" = ["mutation"] }
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+spec_calls = { count = 1, status = 200, authorization = "Bearer stored-access-token" }
+stdout = { contains = [
+  "query.attachmentIssue  POST    /spec/graphql-linear.json",
+  "query.issue            POST    /spec/graphql-linear.json  One specific issue, looked up by its unique identifier.\n",
+  "query.viewer           POST    /spec/graphql-linear.json  The currently authenticated user making the API request.\n",
+  "query.issues           POST    /spec/graphql-linear.json  All issues.\n",
+  "mutation.issueCreate   POST    /spec/graphql-linear.json  Creates a new issue.\n",
+] }
+stdout_lines = 6

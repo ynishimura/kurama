@@ -1,0 +1,64 @@
+# What the schema says a call needs is checked before anything is sent: a
+# non-null argument without a value is API_PARAMETER_MISSING (exit 2)
+# naming it, a -P the field does not take and a value that is not of its
+# type are API_ARGUMENT_INVALID, and so is a return type with no scalar
+# field to select by default without --select, or --select on a target
+# that is not a GraphQL operation.
+id = "api_graphql_call_missing_argument_exits_2_before_sending"
+feature = "api-explorer"
+
+[combination]
+command = "api"
+spec = "graphql"
+openapi = "file"
+source = "token"
+
+[input]
+args = ["api", "linear", "query.issue"]
+then_run = [
+  ["api", "linear", "query.issue", "-P", "id=x", "-P", "nope=1"],
+  ["api", "linear", "query.issues", "-P", "first=three", "--select", "nodes { id }"],
+  ["api", "linear", "query.issues"],
+  ["api", "linear", "/graphql", "--select", "id"],
+]
+config = """
+[auth.linear]
+kind = "token"
+token = "op://Agent/linear/credential"
+format = "{token}"
+
+[api.linear]
+base_url = "{server}/api"
+graphql = "/graphql"
+graphql_schema = "{fixtures}/graphql-linear.json"
+"""
+
+[fakes]
+api = "graphql"
+op = "enabled"
+
+[expect]
+error = { code = "API_ARGUMENT_INVALID", exit = 2 }
+stderr_contains = ["--select applies to a GraphQL operation (query.<field> or mutation.<field>); TARGET \"/graphql\" is not one"]
+api_calls = { count = 0 }
+
+[[expect.runs]]
+run = 0
+error = { code = "API_PARAMETER_MISSING", exit = 2 }
+stderr_contains = ["operation query.issue needs -P id=<value>"]
+api_calls = { count = 0 }
+
+[[expect.runs]]
+run = 1
+error = { code = "API_ARGUMENT_INVALID", exit = 2 }
+stderr_contains = ["unknown parameter \"nope\"; the operation takes id"]
+
+[[expect.runs]]
+run = 2
+error = { code = "API_ARGUMENT_INVALID", exit = 2 }
+stderr_contains = ["parameter first: \"three\" is not an integer"]
+
+[[expect.runs]]
+run = 3
+error = { code = "API_ARGUMENT_INVALID", exit = 2 }
+stderr_contains = ["operation query.issues returns no scalar field to select by default; name what to select with --select (its fields: nodes)"]

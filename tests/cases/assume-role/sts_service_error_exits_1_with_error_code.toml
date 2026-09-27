@@ -1,0 +1,20 @@
+# STS itself failing is exit 1: nothing the person did.
+id = "sts_service_error_exits_1_with_error_code"
+feature = "assume-role"
+
+[combination]
+command = "env"
+source = "aws-profile"
+role = "assume-role"
+sts_response = "service-error"
+
+[input]
+args = ["env", "dev"]
+
+[fakes]
+sts = { error = { code = "ServiceUnavailable", message = "Service is temporarily unavailable" } }
+
+[expect]
+error = { code = "STS_SERVICE_ERROR", exit = 1 }
+sts_actions = ["AssumeRole"]
+no_files_written = true

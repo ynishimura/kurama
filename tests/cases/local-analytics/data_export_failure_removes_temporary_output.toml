@@ -1,0 +1,19 @@
+# A failed export never publishes its destination and leaves no temporary file.
+id = "data_export_failure_removes_temporary_output"
+feature = "local-analytics"
+
+[combination]
+command = "data"
+client = "data"
+data_op = "export"
+data_source = "local"
+format = "csv"
+
+[input]
+args = ["data", "--from", "{repo}/tests/fixtures/data/orders.csv", "--query", "SELECT CAST(note AS INTEGER) FROM data", "--export", "{home}/failed.csv", "--json"]
+
+[expect]
+json_error = { code = "DATA_FAILED", exit = 1 }
+sts_actions = []
+op_calls = 0
+no_files_written = true

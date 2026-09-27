@@ -1,0 +1,52 @@
+# The same GetCallerIdentity through the sandbox profile `kurama-sandbox`: two profiles
+# with the same source and MFA serial assume two roles, and each answer
+# names an assumed role. The fake side signs for `sts` in the configured
+# region; the real side is asserted by shape only.
+id = "api_real_sts_names_the_assumed_role_of_the_sandbox_profile"
+feature = "api-client"
+
+[combination]
+command = "api"
+auth = "aws-profile"
+role = "assume-role"
+service = "configured"
+region = "profile"
+
+[input]
+args = ["api", "sts", "/?Action=GetCallerIdentity&Version=2011-06-15"]
+config = """
+[api.sts]
+base_url = "{server}/api"
+aws_profile = "dev"
+service = "sts"
+headers = { Accept = "application/json" }
+"""
+
+[fakes]
+api = "ok"
+
+[expect]
+exit_code = 0
+sts_actions = ["AssumeRole"]
+token_grants = []
+op_calls = 0
+api_calls = { count = 1, sigv4 = { service = "sts", region = "ap-northeast-1" } }
+no_files_written = true
+
+[real]
+requires = ["profile:kurama-sandbox", "keychain:OP_SERVICE_ACCOUNT_TOKEN"]
+config = """
+[api.sts]
+base_url = "https://sts.ap-northeast-1.amazonaws.com"
+aws_profile = "kurama-sandbox"
+service = "sts"
+headers = { Accept = "application/json" }
+"""
+
+[real.combination]
+target = "sts"
+mfa = "onepassword"
+
+[real.expect]
+exit_code = 0
+stdout_json = { "/GetCallerIdentityResponse/GetCallerIdentityResult/Arn" = { contains = ":assumed-role/" } }

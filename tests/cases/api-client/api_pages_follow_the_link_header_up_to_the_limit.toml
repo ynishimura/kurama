@@ -1,0 +1,57 @@
+# --pages N follows the Link rel="next" of each response, one line per page
+# on stdout: at the limit the stop report names the page left unrequested,
+# at the end of the listing it says last; --json prints each page's
+# envelope with the report as a JSON document on stderr, --jq filters each
+# page, and a dry run sends nothing and plans the requests that may follow.
+id = "api_pages_follow_the_link_header_up_to_the_limit"
+feature = "api-client"
+
+[combination]
+command = "api"
+source = "none"
+pages = "link"
+
+[input]
+args = ["api", "public", "/items?pages=5", "--pages", "3"]
+then_run = [
+  ["api", "public", "/items?pages=2", "--pages", "5", "--json"],
+  ["api", "public", "/items?pages=3", "--pages", "3", "--jq", ".page"],
+  ["api", "public", "/items?pages=3", "--pages", "3", "--dry-run", "--json"],
+]
+config = """
+[api.public]
+base_url = "{server}/api"
+"""
+
+[fakes]
+api = "pages"
+
+[expect]
+exit_code = 0
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+stdout = { equals = "{\"page\":1,\"items\":[\"item-1-1\",\"item-1-2\"]}\n{\"page\":2,\"items\":[\"item-2-1\",\"item-2-2\"]}\n{\"page\":3,\"items\":[\"item-3-1\",\"item-3-2\"]}\n" }
+stderr_lines = 1
+stderr_contains = ["# pages: 3 fetched (--pages 3); stopped: limit, a next page was named: http://", "/api/items?pages=5&page=4"]
+api_calls = { count = 3, calls = [{ path = "/api/items?pages=5", no_authorization = true }, { path = "/api/items?pages=5&page=2" }, { path = "/api/items?pages=5&page=3" }] }
+
+[[expect.runs]]
+run = 1
+stdout = { line_count = 2, lines_start_with = ["{\"status\":200,\"headers\":{"] }
+stdout_excludes = ["\"page\":3"]
+stderr_lines = 1
+stderr_json = { "/schema_version" = 1, "/pages/fetched" = 2, "/pages/limit" = 5, "/pages/stopped" = "last", "/pages/next" = "<null>", "/pages/detail" = "<null>" }
+api_calls = { count = 2, calls = [{ path = "/api/items?pages=2" }, { path = "/api/items?pages=2&page=2" }] }
+
+[[expect.runs]]
+run = 2
+stdout = { equals = "1\n2\n3\n" }
+stderr_json = { "/pages/fetched" = 3, "/pages/stopped" = "last" }
+api_calls = { count = 3 }
+
+[[expect.runs]]
+run = 3
+stdout_json = { "/pages/limit" = 3, "/pages/follow" = "link", "/effects/0/when" = "always", "/effects/1/effect" = "api_request", "/effects/1/when" = "on_next_page", "/effects/1/detail" = { contains = "up to 2 more requests" } }
+api_calls = { count = 0 }

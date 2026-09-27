@@ -1,0 +1,55 @@
+# The structure, preview and query operations against the SQLite fixture,
+# and a SQLite path read as an ad-hoc database with `--jq`: the CLI contract
+# of `kurama db`, run by run.
+id = "db_sqlite_structure_preview_and_query_use_the_cli_contract"
+feature = "database"
+
+[combination]
+command = "db"
+client = "db"
+engine = "sqlite"
+db_op = "query"
+
+[input]
+args = ["db", "app", "--tables", "--json"]
+then_run = [
+  ["db", "app", "--describe", "main.orders", "--json"],
+  ["db", "app", "--preview", "orders", "--columns", "id", "--max-rows", "2"],
+  ["db", "app", "--query", "SELECT id, amount FROM orders WHERE status = ? ORDER BY id", "--param", "open", "--json"],
+  ["db", "{repo}/tests/fixtures/db/app.sqlite3", "--query", "SELECT count(*) AS n FROM orders", "--jq", ".rows[0][0]"],
+]
+config = """
+[db.app]
+engine = "sqlite"
+path = "{repo}/tests/fixtures/db/app.sqlite3"
+
+[db.writable]
+engine = "sqlite"
+allow_write = true
+path = "{repo}/tests/fixtures/db/app.sqlite3"
+"""
+
+[expect]
+exit_code = 0
+sts_actions = []
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true
+stdout = { equals = "\"4\"\n" }
+
+[[expect.runs]]
+run = 0
+stdout_json = { "/operation" = "tables", "/target" = "app", "/rows" = [["main", "customers", "table"], ["main", "open_orders", "view"], ["main", "orders", "table"]], "/meta/next_cursor" = "<null>", "/meta/consistency" = "single_statement" }
+
+[[expect.runs]]
+run = 1
+stdout_json = { "/rows/0/0" = "id", "/rows/0/1" = "INTEGER", "/rows/0/2" = "true", "/rows/0/3" = "false", "/rows/0/4" = "true", "/rows/0/5" = "<null>", "/rows/1" = ["customer_id", "INTEGER", "true", "false", "false", "customers.id"], "/rows/3/1" = "<null>" }
+
+[[expect.runs]]
+run = 2
+exit_code = 0
+stdout = { equals = "id\n1\n2\n" }
+
+[[expect.runs]]
+run = 3
+stdout_json = { "/rows" = [["1", "42"], ["4", "9223372036854775807"]], "/columns/1/encoding" = "text", "/row_count" = 2, "/truncated" = false }

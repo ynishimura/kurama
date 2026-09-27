@@ -1,0 +1,22 @@
+# The federation endpoint refusing is exit 4, and the browser is not opened.
+id = "console_federation_failure_exits_4_without_opening_a_browser"
+feature = "console-federation"
+
+[combination]
+command = "console"
+source = "aws-profile"
+role = "assume-role"
+federation = "failed"
+
+[input]
+args = ["console", "dev"]
+
+[fakes]
+browser = true
+federation_fails = true
+
+[expect]
+error = { code = "FEDERATION_FAILED", exit = 4 }
+sts_actions = ["AssumeRole"]
+open_calls = []
+no_files_written = true

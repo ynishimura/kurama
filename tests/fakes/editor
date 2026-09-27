@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Fake $EDITOR for tests/scenarios/: records the file it was handed in
+# $KURAMA_FAKE_EDITOR_LOG (one line per invocation), then replaces the file
+# with a fixed JSON body and exits, the way a person would save and quit.
+set -euo pipefail
+
+if [ -n "${KURAMA_FAKE_EDITOR_LOG:-}" ]; then
+  tr '\n' ' ' < "$1" >> "$KURAMA_FAKE_EDITOR_LOG"
+  printf '\n' >> "$KURAMA_FAKE_EDITOR_LOG"
+fi
+printf '{"name":"from-editor","tags":["edited"]}\n' > "$1"

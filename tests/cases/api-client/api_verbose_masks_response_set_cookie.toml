@@ -1,0 +1,29 @@
+# -v prints the response headers, and a Set-Cookie is a session credential
+# the API hands out: its value is masked on stderr, every one of them, while
+# the other response headers are printed as they came. The body, on stdout,
+# is what the fake turned into the cookies, so it says they were sent.
+id = "api_verbose_masks_response_set_cookie"
+feature = "api-client"
+
+[combination]
+command = "api"
+source = "none"
+mode = "verbose"
+api_response = "set-cookie"
+
+[input]
+args = ["api", "public", "/echo?set_cookies", "-d", "session=s3cret-session-id; Path=/; HttpOnly\nremember=s3cret-remember-me", "-v"]
+config = """
+[api.public]
+base_url = "{server}/api"
+"""
+
+[fakes]
+api = "echo"
+
+[expect]
+exit_code = 0
+stdout = { equals = "session=s3cret-session-id; Path=/; HttpOnly\nremember=s3cret-remember-me" }
+stderr_contains = ["< HTTP 200", "< set-cookie: ****\n< set-cookie: ****", "< content-type: application/octet-stream"]
+stderr_excludes = ["s3cret"]
+api_calls = { count = 1 }

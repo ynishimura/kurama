@@ -1,0 +1,47 @@
+# Every key under a prefix, three a page and four a run: the first run stops
+# inside the second page, and each cursor asks for that page again and skips
+# what the last run saw, so the three runs return every key once.
+id = "s3_recursive_listing_continues_with_a_cursor"
+feature = "s3-explorer"
+
+[combination]
+command = "s3"
+source = "aws-profile"
+role = "assume-role"
+s3_op = "list"
+s3_listing = "recursive"
+
+[input]
+args = ["s3", "assets", "s3://browse-bucket/reports/", "--list", "--recursive", "--max-objects", "4", "--json"]
+then_run = [
+  ["s3", "assets", "s3://browse-bucket/reports/", "--list", "--recursive", "--max-objects", "4", "--cursor", "eyJidWNrZXQiOiJicm93c2UtYnVja2V0IiwicHJlZml4IjoicmVwb3J0cy8iLCJvcGVyYXRpb24iOiJsaXN0IiwicmVjdXJzaXZlIjp0cnVlLCJzZWFyY2giOm51bGwsInBhZ2Vfc2l6ZSI6MywicG9zaXRpb24iOnsidG9rZW4iOiJvZmZzZXQtMyIsInNraXAiOjF9fQ", "--json"],
+  ["s3", "assets", "s3://browse-bucket/reports/", "--list", "--recursive", "--max-objects", "4", "--cursor", "eyJidWNrZXQiOiJicm93c2UtYnVja2V0IiwicHJlZml4IjoicmVwb3J0cy8iLCJvcGVyYXRpb24iOiJsaXN0IiwicmVjdXJzaXZlIjp0cnVlLCJzZWFyY2giOm51bGwsInBhZ2Vfc2l6ZSI6MywicG9zaXRpb24iOnsidG9rZW4iOiJvZmZzZXQtNiIsInNraXAiOjJ9fQ", "--json"],
+]
+config = """
+[s3.assets]
+aws_profile = "dev"
+page_size = 3
+"""
+
+[expect]
+exit_code = 0
+op_calls = 0
+no_files_written = true
+stdout_json = { "/objects/0/key" = "reports/日本語 +%//x.csv", "/objects/1" = "<null>", "/prefixes" = [], "/scanned_objects" = 1, "/complete" = true, "/cursor" = "<null>" }
+api_calls = { count = 1, sigv4 = { service = "s3", region = "ap-northeast-1" }, calls = [{ path = "/browse-bucket/?list-type=2&max-keys=3&prefix=reports%2F&continuation-token=offset-6" }] }
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+sts_actions = ["AssumeRole"]
+stdout_json = { "/objects/0/key" = "reports/2024/a.csv", "/objects/1/key" = "reports/2024/b.csv", "/objects/2/key" = "reports/2025/c.csv", "/objects/3/key" = "reports/Invoice-003.pdf", "/objects/4" = "<null>", "/scanned_objects" = 4, "/complete" = false, "/stop_reason" = "max_objects", "/cursor" = "eyJidWNrZXQiOiJicm93c2UtYnVja2V0IiwicHJlZml4IjoicmVwb3J0cy8iLCJvcGVyYXRpb24iOiJsaXN0IiwicmVjdXJzaXZlIjp0cnVlLCJzZWFyY2giOm51bGwsInBhZ2Vfc2l6ZSI6MywicG9zaXRpb24iOnsidG9rZW4iOiJvZmZzZXQtMyIsInNraXAiOjF9fQ" }
+api_calls = { count = 2, sigv4 = { service = "s3", region = "ap-northeast-1" }, calls = [
+  { path = "/browse-bucket/?list-type=2&max-keys=3&prefix=reports%2F" },
+  { path = "/browse-bucket/?list-type=2&max-keys=3&prefix=reports%2F&continuation-token=offset-3" },
+] }
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+stdout_json = { "/objects/0/key" = "reports/a b/../c+d%20.csv", "/objects/1/key" = "reports/invoice-001.pdf", "/objects/2/key" = "reports/invoice-002.pdf", "/objects/3/key" = "reports/summary.txt", "/objects/4" = "<null>", "/scanned_objects" = 4, "/complete" = false, "/cursor" = "eyJidWNrZXQiOiJicm93c2UtYnVja2V0IiwicHJlZml4IjoicmVwb3J0cy8iLCJvcGVyYXRpb24iOiJsaXN0IiwicmVjdXJzaXZlIjp0cnVlLCJzZWFyY2giOm51bGwsInBhZ2Vfc2l6ZSI6MywicG9zaXRpb24iOnsidG9rZW4iOiJvZmZzZXQtNiIsInNraXAiOjJ9fQ" }
+api_calls = { count = 2, sigv4 = { service = "s3", region = "ap-northeast-1" } }

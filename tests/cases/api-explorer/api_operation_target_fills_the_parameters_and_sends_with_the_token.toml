@@ -1,0 +1,72 @@
+# An operation target places path, header and query parameters from the
+# description and sends the request with the token; `METHOD /path` from the
+# description posts with the operation's media type; --dry-run resolves the
+# request and sends nothing; a `METHOD /path` the description lacks is sent
+# as a plain request.
+id = "api_operation_target_fills_the_parameters_and_sends_with_the_token"
+feature = "api-explorer"
+
+[combination]
+command = "api"
+openapi = "file"
+source = "oauth"
+token = "stored"
+target = "operation"
+
+[input]
+stored_tokens = [{ source = "github", access_token = "stored-access-token", expires_in = 3600 }]
+args = ["api", "github", "pets/get", "-P", "petId=p 1", "-P", "x-trace=t1", "--jq", ".path"]
+then_run = [
+  ["api", "github", "pets/list", "-P", "limit=5", "-P", "status=sold", "--json"],
+  ["api", "github", "POST /pets", "-d", "{\"name\":\"rex\"}", "-H", "X-Trace: 2", "--jq", ".body"],
+  ["api", "github", "pets/get", "-P", "petId=p-1", "--dry-run"],
+  ["api", "github", "GET /undocumented", "--jq", ".path"],
+]
+config = """
+[auth.github]
+kind = "oauth"
+grant_type = "authorization_code"
+auth_url = "{server}/oauth/authorize"
+token_url = "{server}/oauth/token"
+client_id = "gh-client"
+
+[api.github]
+base_url = "{server}/api"
+openapi = "{fixtures}/petstore.json"
+"""
+
+[expect]
+exit_code = 0
+token_grants = []
+stdout = "plain-text"
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stdout = { equals = "/api/pets/p%201\n" }
+api_calls = { count = 1, authorization = "Bearer stored-access-token", calls = [{ method = "GET", path = "/api/pets/p%201", headers = { "x-trace" = "t1" } }] }
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+api_calls = { count = 1, authorization = "Bearer stored-access-token", calls = [{ path = "/api/pets?limit=5&status=sold" }] }
+stdout_json = { "/status" = 200, "/body/path" = "/api/pets" }
+
+[[expect.runs]]
+run = 2
+exit_code = 0
+stdout = { equals = "{\"name\":\"rex\"}\n" }
+api_calls = { count = 1, authorization = "Bearer stored-access-token", calls = [{ method = "POST", path = "/api/pets", body = "{\"name\":\"rex\"}", headers = { "content-type" = "application/json", "x-trace" = "2" } }] }
+
+[[expect.runs]]
+run = 3
+exit_code = 0
+api_calls = { count = 0 }
+stdout = "empty"
+stderr_contains = ["/api/pets/p-1\n", "> Authorization: Bearer ****"]
+
+[[expect.runs]]
+run = 4
+exit_code = 0
+stdout = { equals = "/api/undocumented\n" }
+api_calls = { count = 1, authorization = "Bearer stored-access-token" }

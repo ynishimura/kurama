@@ -1,0 +1,446 @@
+# The architecture rules, one table per rule: what `cargo xtask
+# architecture-audit` reports on and holds to the tests and the list in
+# `tests/architecture/main.rs`.
+#
+# id                  ARCH-NNN, never reused: a removed rule leaves its number
+#                     unused rather than handing it to a different rule.
+# summary             one line: what the rule keeps.
+# method              "syntax" when its checks read the Rust syntax
+#                     (tests/architecture/syntax.rs), "text" (the default)
+#                     when they scan text.
+# limits              for a syntax rule: what the reading cannot see.
+# checks              the tests that detect a violation, `<file>::<test>`.
+# docs                documents that publish the rule to a person.
+# exemptions          the lists in the test source that allow what the rule
+#                     would otherwise refuse, `<file>::<CONST>`.
+# violating_fixtures  tests that feed the detector a violation and expect it
+#                     to be refused, `<file>::<test>`.
+# passing_fixtures    tests that feed the detector allowed code and expect it
+#                     to pass, `<file>::<test>`.
+#
+# Every `#[test]` under `tests/architecture/` is named by exactly one rule,
+# as a check or as a fixture.
+
+[[rule]]
+id = "ARCH-001"
+summary = "src/domain and src/workflows are pure: no I/O, no clock, no logging, no dependency on adapters or the shell"
+method = "syntax"
+limits = "names are not resolved: super:: and self:: stay relative, a glob import is the path it names, a macro body is read as tokens, and a path built by a macro from pieces is not seen"
+checks = ["tests/architecture/layers.rs::domain_and_workflows_do_no_io_and_read_no_clock"]
+violating_fixtures = ["tests/architecture/layers.rs::a_forbidden_import_nested_aliased_or_split_is_found"]
+passing_fixtures = ["tests/architecture/layers.rs::a_forbidden_path_in_a_comment_a_string_or_test_code_is_not_found"]
+docs = ["AGENTS.md", "docs/development/fp-architecture.md"]
+exemptions = []
+
+[[rule]]
+id = "ARCH-002"
+summary = "src/ports holds traits and plain data: no adapter or shell imports"
+method = "syntax"
+limits = "names are not resolved: super:: and self:: stay relative, a glob import is the path it names, a macro body is read as tokens, and a path built by a macro from pieces is not seen"
+checks = ["tests/architecture/layers.rs::ports_hold_traits_and_data_only"]
+docs = ["AGENTS.md", "docs/development/fp-architecture.md"]
+exemptions = []
+
+[[rule]]
+id = "ARCH-003"
+summary = ".agent/features/ matches the tree: paths and scenarios exist, every file and scenario is claimed, depends_on names features"
+checks = [
+  "tests/architecture/feature_map.rs::feature_files_declare_the_feature_they_are_named_after",
+  "tests/architecture/feature_map.rs::feature_map_paths_and_scenarios_exist",
+  "tests/architecture/feature_map.rs::feature_map_dependencies_name_other_features",
+  "tests/architecture/feature_map.rs::every_feature_entry_is_claimed_by_its_files",
+  "tests/architecture/feature_map.rs::every_source_and_test_file_belongs_to_a_feature",
+  "tests/architecture/feature_map.rs::every_scenario_is_claimed_by_a_feature",
+]
+violating_fixtures = ["tests/architecture/feature_map.rs::a_file_or_a_scenario_no_feature_claims_is_found"]
+passing_fixtures = ["tests/architecture/feature_map.rs::a_file_under_a_claimed_directory_and_a_listed_scenario_are_allowed"]
+docs = ["AGENTS.md", ".agent/features/README.md"]
+exemptions = []
+
+[[rule]]
+id = "ARCH-004"
+summary = "Every error code is expected by a scenario, except the listed fallback"
+checks = ["tests/architecture/errors.rs::every_error_code_is_pinned_by_a_scenario"]
+docs = ["AGENTS.md", "docs/development/setup.md"]
+exemptions = ["tests/architecture/errors.rs::ERROR_CODES_WITHOUT_SCENARIO"]
+
+[[rule]]
+id = "ARCH-005"
+summary = "#[path] loads <name>_tests.rs files only; a production submodule is a file under its parent's directory"
+checks = ["tests/architecture/layers.rs::path_attributes_load_test_files_only"]
+docs = ["AGENTS.md", "docs/development/module-structure.md"]
+exemptions = []
+
+[[rule]]
+id = "ARCH-006"
+summary = "src/shell, src/workflows and src/domain keep typed errors typed: no map_err(|e| X(e.to_string())), no anyhow!(\"{e}\")"
+method = "syntax"
+limits = "names are not resolved: super:: and self:: stay relative, a glob import is the path it names, a macro body is read as tokens, and a path built by a macro from pieces is not seen"
+checks = ["tests/architecture/errors.rs::typed_errors_are_never_flattened_into_strings"]
+violating_fixtures = ["tests/architecture/errors.rs::a_flattened_error_on_one_line_or_several_is_found"]
+passing_fixtures = ["tests/architecture/errors.rs::a_kept_error_a_comment_a_string_or_a_test_is_not_flattened"]
+docs = ["AGENTS.md"]
+exemptions = []
+
+[[rule]]
+id = "ARCH-007"
+summary = "Every public function of src/domain/functions is exercised by a test in its own file or its <name>_tests.rs"
+checks = ["tests/architecture/docs.rs::domain_functions_are_tested_in_their_own_file"]
+docs = ["docs/development/module-structure.md"]
+exemptions = []
+
+[[rule]]
+id = "ARCH-008"
+summary = "Every production file starts with a //! line, which cargo xtask map prints"
+checks = ["tests/architecture/docs.rs::every_production_file_starts_with_a_module_doc"]
+docs = ["AGENTS.md"]
+exemptions = []
+
+[[rule]]
+id = "ARCH-009"
+summary = "DuckDB calls use the reviewed entry points and the exception-catching Arrow bridge only"
+method = "syntax"
+limits = "names are not resolved: super:: and self:: stay relative, a glob import is the path it names, a macro body is read as tokens, and a path built by a macro from pieces is not seen; the C++ bridge is read as text"
+checks = ["tests/architecture/database.rs::only_reviewed_duckdb_entry_points_are_called"]
+violating_fixtures = ["tests/architecture/database.rs::an_unreviewed_duckdb_name_in_any_form_is_found"]
+passing_fixtures = ["tests/architecture/database.rs::a_reviewed_duckdb_name_a_comment_or_a_test_is_not_found"]
+docs = ["AGENTS.md", "docs/development/data.md"]
+exemptions = [
+  "tests/architecture/database.rs::RUST_ENTRY_POINTS",
+  "tests/architecture/database.rs::RAW_TYPES_AND_CONSTANTS",
+  "tests/architecture/database.rs::BRIDGE_ENTRY_POINTS",
+  "tests/architecture/database.rs::BRIDGE_EXPORTS",
+]
+
+[[rule]]
+id = "ARCH-010"
+summary = "Scenarios that reach S3 require test-fakes, so they cannot contact a real S3 endpoint"
+checks = ["tests/architecture/feature_map.rs::scenarios_that_reach_s3_require_the_fake_endpoint"]
+docs = ["docs/development/data.md"]
+exemptions = []
+
+[[rule]]
+id = "ARCH-011"
+summary = "Every clap argument explains itself in command help"
+checks = ["tests/architecture/cli.rs::every_cli_argument_explains_itself"]
+violating_fixtures = ["tests/architecture/cli.rs::an_argument_without_help_is_found_in_a_subcommand"]
+passing_fixtures = ["tests/architecture/cli.rs::an_argument_with_help_or_long_help_is_allowed"]
+docs = ["AGENTS.md"]
+exemptions = []
+
+[[rule]]
+id = "ARCH-012"
+summary = "Documented command examples are accepted by the real CLI parser"
+checks = ["tests/architecture/cli.rs::documented_commands_are_accepted_by_the_parser"]
+docs = ["AGENTS.md"]
+exemptions = []
+
+[[rule]]
+id = "ARCH-013"
+summary = "Adapters do not depend on the shell"
+method = "syntax"
+limits = "names are not resolved: super:: and self:: stay relative, a glob import is the path it names, a macro body is read as tokens, and a path built by a macro from pieces is not seen"
+checks = ["tests/architecture/layers.rs::adapters_do_not_depend_on_the_shell"]
+docs = ["AGENTS.md", "docs/development/fp-architecture.md"]
+exemptions = []
+
+[[rule]]
+id = "ARCH-014"
+summary = "No error variant prints its own cause twice under {error:#}"
+checks = ["tests/architecture/errors.rs::error_variants_do_not_print_their_source_twice"]
+docs = ["AGENTS.md"]
+exemptions = []
+
+[[rule]]
+id = "ARCH-015"
+summary = "Every value-taking CLI argument says how its value completes"
+checks = ["tests/architecture/cli.rs::every_value_taking_argument_says_how_to_complete_it"]
+violating_fixtures = ["tests/architecture/cli.rs::a_value_that_never_says_how_it_completes_is_found"]
+passing_fixtures = ["tests/architecture/cli.rs::a_value_hint_possible_values_or_a_flag_is_allowed"]
+docs = ["AGENTS.md"]
+exemptions = []
+
+[[rule]]
+id = "ARCH-016"
+summary = "One implementation per concern: media type selection, and each progress line a person reads to decide something"
+checks = [
+  "tests/architecture/layers.rs::media_type_selection_has_one_implementation",
+  "tests/architecture/layers.rs::a_progress_line_is_printed_from_one_place",
+]
+docs = ["AGENTS.md"]
+exemptions = []
+
+[[rule]]
+id = "ARCH-017"
+summary = "The blocking file lock is only taken behind an async entry point"
+checks = ["tests/architecture/layers.rs::the_blocking_lock_is_taken_only_behind_an_async_entry_point"]
+docs = ["AGENTS.md"]
+exemptions = ["tests/architecture/layers.rs::BLOCKING_LOCK_FILES"]
+
+[[rule]]
+id = "ARCH-018"
+summary = "The agent contract names every flag and only real error codes"
+checks = [
+  "tests/architecture/cli.rs::the_agent_contract_names_every_flag",
+  "tests/architecture/cli.rs::the_agent_contract_names_real_error_codes",
+]
+docs = ["AGENTS.md"]
+exemptions = [
+  "tests/architecture/cli.rs::FLAGS_OFF_THE_CONTRACT",
+  "tests/architecture/cli.rs::CLIENT_CONTRACT_SOURCES",
+]
+
+[[rule]]
+id = "ARCH-019"
+summary = "One file signs with SigV4; every other signature goes through it"
+method = "syntax"
+limits = "names are not resolved: super:: and self:: stay relative, a glob import is the path it names, a macro body is read as tokens, and a path built by a macro from pieces is not seen"
+checks = ["tests/architecture/layers.rs::only_the_sigv4_adapter_signs"]
+violating_fixtures = ["tests/architecture/layers.rs::a_sigv4_import_path_or_alias_is_a_signature"]
+passing_fixtures = ["tests/architecture/layers.rs::a_sigv4_mention_in_a_comment_a_string_or_a_test_is_not_a_signature"]
+docs = ["AGENTS.md", "docs/development/database.md"]
+exemptions = ["tests/architecture/layers.rs::FILES_THAT_SIGN"]
+
+[[rule]]
+id = "ARCH-020"
+summary = "A claim a development document lists under Held by names exactly one test function, found by parsing"
+checks = ["tests/architecture/docs.rs::every_published_claim_names_a_test_that_exists"]
+violating_fixtures = [
+  "tests/architecture/test_index.rs::a_claim_on_a_function_without_a_test_attribute_does_not_resolve",
+  "tests/architecture/test_index.rs::a_claim_on_a_name_in_a_comment_or_a_string_does_not_resolve",
+  "tests/architecture/test_index.rs::a_claim_naming_two_tests_is_ambiguous_and_lists_both",
+]
+passing_fixtures = [
+  "tests/architecture/test_index.rs::a_claim_resolves_sync_async_and_nested_tests",
+  "tests/architecture/test_index.rs::a_case_file_is_a_test_named_after_it",
+]
+docs = ["AGENTS.md", "docs/development/database.md"]
+exemptions = []
+
+[[rule]]
+id = "ARCH-021"
+summary = "Every import that crosses into another feature's files is declared in depends_on (cargo xtask deps)"
+checks = [
+  "xtask/src/deps.rs::every_crossed_feature_boundary_is_declared",
+  "xtask/src/deps.rs::dropping_a_declared_edge_is_reported_with_the_import",
+]
+docs = ["AGENTS.md"]
+exemptions = []
+
+[[rule]]
+id = "ARCH-022"
+summary = "xtask: every file starts with a //! line, and only board.rs starts gh"
+checks = ["tests/architecture/xtask.rs::xtask_files_say_what_they_are_for_and_only_the_board_reaches_github"]
+docs = ["AGENTS.md"]
+exemptions = ["tests/architecture/xtask.rs::XTASK_GH_FILES"]
+
+[[rule]]
+id = "ARCH-023"
+summary = "xtask's integration tests start the binary only through xtask/tests/support/, which sandboxes HOME, CARGO_HOME and every kurama override"
+checks = ["tests/architecture/xtask.rs::xtask_tests_start_the_binary_only_through_the_sandbox_helper"]
+docs = ["AGENTS.md"]
+exemptions = []
+
+[[rule]]
+id = "ARCH-024"
+summary = "The TUI's view, update, layout, theme and components are pure: no I/O, no clock, no logging, no adapters"
+method = "syntax"
+limits = "names are not resolved: super:: and self:: stay relative, a glob import is the path it names, a macro body is read as tokens, and a path built by a macro from pieces is not seen"
+checks = ["tests/architecture/layers.rs::tui_view_update_layout_theme_and_components_are_pure"]
+docs = ["AGENTS.md", "docs/development/tui-testing.md"]
+exemptions = []
+
+[[rule]]
+id = "ARCH-025"
+summary = "A child process is started only in the named files, each tested for its stdio, reaping and deadline"
+method = "syntax"
+limits = "names are not resolved: super:: and self:: stay relative, a glob import is the path it names, a macro body is read as tokens, and a path built by a macro from pieces is not seen"
+checks = ["tests/architecture/layers.rs::only_named_files_start_a_child_process"]
+violating_fixtures = ["tests/architecture/layers.rs::a_spawn_through_any_import_or_across_lines_is_found"]
+passing_fixtures = ["tests/architecture/layers.rs::a_clap_command_a_comment_a_string_or_a_test_is_not_a_spawn"]
+docs = ["AGENTS.md"]
+exemptions = ["tests/architecture/layers.rs::FILES_THAT_SPAWN"]
+
+[[rule]]
+id = "ARCH-026"
+summary = "Only console.rs rewrites a line in place"
+checks = ["tests/architecture/layers.rs::only_named_files_rewrite_a_line_in_place"]
+docs = []
+exemptions = ["tests/architecture/layers.rs::FILES_THAT_REWRITE_A_LINE"]
+
+[[rule]]
+id = "ARCH-027"
+summary = "xtask starts cargo only through its cargo helper, which drops what cargo run set for xtask"
+checks = ["tests/architecture/xtask.rs::xtask_starts_cargo_only_through_its_cargo_helper"]
+docs = []
+exemptions = []
+
+[[rule]]
+id = "ARCH-028"
+summary = "Every section file of the agent guide is printed by kurama agent"
+checks = ["tests/architecture/cli.rs::every_guide_section_is_printed"]
+docs = ["AGENTS.md"]
+exemptions = []
+
+[[rule]]
+id = "ARCH-029"
+summary = "The byte-budget table in docs/development/data.md matches DataRequest::spends_byte_budget"
+checks = ["tests/architecture/docs.rs::the_byte_budget_table_matches_the_rule_it_publishes"]
+docs = ["AGENTS.md", "docs/development/data.md"]
+exemptions = []
+
+[[rule]]
+id = "ARCH-030"
+summary = "Scenarios that obtain or store a token require the fake token store"
+checks = [
+    "tests/architecture/feature_map.rs::scenarios_that_store_a_token_require_the_fake_store",
+    "tests/architecture/feature_map.rs::every_generated_case_requires_test_fakes",
+]
+docs = []
+exemptions = []
+
+[[rule]]
+id = "ARCH-031"
+summary = "A hint is never invented when the lookup behind it finds nothing"
+checks = ["tests/architecture/errors.rs::a_hint_is_never_invented_when_the_lookup_finds_nothing"]
+docs = []
+exemptions = []
+
+[[rule]]
+id = "ARCH-032"
+summary = "Every derived hint is pinned by a scenario that reads it"
+checks = ["tests/architecture/errors.rs::every_derived_hint_is_pinned_by_a_scenario_that_reads_it"]
+docs = []
+exemptions = []
+
+[[rule]]
+id = "ARCH-033"
+summary = "An adapter never turns an anyhow chain into text"
+checks = ["tests/architecture/errors.rs::an_adapter_never_turns_an_anyhow_chain_into_text"]
+docs = ["AGENTS.md"]
+exemptions = []
+
+[[rule]]
+id = "ARCH-034"
+summary = "SQLite's C API is reached through the reviewed entry points only"
+checks = ["tests/architecture/database.rs::only_reviewed_sqlite_entry_points_are_called"]
+violating_fixtures = ["tests/architecture/database.rs::an_unreviewed_sqlite_call_or_a_second_file_reaching_sqlite_is_found"]
+passing_fixtures = ["tests/architecture/database.rs::a_reviewed_sqlite_call_is_allowed"]
+docs = ["docs/development/database.md"]
+exemptions = ["tests/architecture/database.rs::SQLITE_ENTRY_POINTS"]
+
+[[rule]]
+id = "ARCH-035"
+summary = "A server statement is prepared in exactly one place, which declares its parameter types"
+checks = ["tests/architecture/database.rs::a_server_statement_is_prepared_in_one_place"]
+docs = ["AGENTS.md", "docs/development/database.md"]
+exemptions = []
+
+[[rule]]
+id = "ARCH-036"
+summary = "A database failure never holds a bare String"
+checks = ["tests/architecture/database.rs::a_database_failure_carries_no_bare_string"]
+docs = ["docs/development/database.md"]
+exemptions = []
+
+[[rule]]
+id = "ARCH-037"
+summary = "A choice made per database engine names every engine, with no catch-all arm"
+checks = ["tests/architecture/database.rs::a_choice_made_per_engine_names_every_engine"]
+docs = ["AGENTS.md", "docs/development/database.md"]
+exemptions = []
+
+[[rule]]
+id = "ARCH-038"
+summary = "Every database engine the configuration names has a real-database test"
+checks = ["tests/architecture/database.rs::every_database_engine_has_a_real_database_test"]
+docs = ["AGENTS.md", "docs/development/database.md"]
+exemptions = []
+
+[[rule]]
+id = "ARCH-039"
+summary = "This registry, the tests under tests/architecture/ and the list in its main.rs name the same rules (cargo xtask architecture-audit)"
+checks = [
+  "xtask/src/architecture_audit_tests.rs::a_test_no_rule_names_is_reported",
+  "xtask/src/architecture_audit_tests.rs::a_check_naming_a_missing_test_is_reported",
+  "xtask/src/architecture_audit_tests.rs::a_rule_only_the_list_names_is_reported",
+  "xtask/src/architecture_audit_tests.rs::a_rule_the_list_does_not_name_is_reported",
+  "xtask/src/architecture_audit_tests.rs::a_duplicate_id_is_reported",
+]
+docs = ["AGENTS.md"]
+exemptions = []
+
+[[rule]]
+id = "ARCH-040"
+summary = "Every allowlist entry exists, once, with a reason, is still needed, and a file allowed across a boundary names the test that exercises it"
+checks = [
+  "tests/architecture/allowlists.rs::every_allowed_file_exists_once_with_a_reason_a_test_and_a_need",
+  "tests/architecture/allowlists.rs::every_reviewed_entry_point_is_listed_once_and_still_used",
+  "tests/architecture/allowlists.rs::every_error_code_exemption_is_a_real_code_with_its_reasons",
+]
+violating_fixtures = [
+  "tests/architecture/allowlists.rs::an_allowlist_entry_that_is_missing_repeated_idle_or_unexplained_is_refused",
+  "tests/architecture/allowlists.rs::a_reviewed_entry_point_that_repeats_or_is_unused_is_refused",
+  "tests/architecture/allowlists.rs::an_error_code_exemption_that_repeats_is_unexplained_unknown_or_pinned_is_refused",
+]
+passing_fixtures = [
+  "tests/architecture/allowlists.rs::an_allowlist_entry_that_is_sound_passes",
+  "tests/architecture/allowlists.rs::a_sound_error_code_exemption_passes",
+]
+docs = ["AGENTS.md"]
+exemptions = []
+
+[[rule]]
+id = "ARCH-041"
+summary = "Every rule that reads the Rust syntax states what the reading cannot see"
+checks = ["tests/architecture/syntax.rs::every_syntax_rule_states_what_the_reading_cannot_see"]
+docs = []
+exemptions = []
+
+[[rule]]
+id = "ARCH-042"
+summary = "Every feature says how it is verified against the real thing, and a probe pairs each of its tests with the mock scenarios that pin the same contract"
+checks = [
+  "xtask/src/verify_real_tests.rs::every_feature_declares_how_it_is_verified_for_real",
+  "xtask/src/verify_real_tests.rs::every_way_a_declaration_can_be_wrong_is_named",
+  "xtask/src/verify_real_tests.rs::every_test_of_the_probe_is_a_contract_and_every_contract_a_test",
+]
+docs = ["AGENTS.md"]
+exemptions = []
+
+[[rule]]
+id = "ARCH-043"
+summary = "A SIGINT listener is registered before the work it stops: tokio::signal::ctrl_c() only where it is polled in the same select! as that work"
+checks = ["tests/architecture/layers.rs::a_sigint_listener_is_registered_before_the_work_it_stops"]
+violating_fixtures = [
+  "tests/architecture/layers.rs::a_ctrl_c_in_code_is_found",
+  "tests/architecture/layers.rs::a_ctrl_c_listener_polled_after_the_work_started_is_found",
+]
+passing_fixtures = [
+  "tests/architecture/layers.rs::a_ctrl_c_named_in_a_comment_beside_an_eager_listener_is_not",
+  "tests/architecture/layers.rs::a_ctrl_c_listener_first_polled_with_the_work_is_not",
+]
+docs = []
+exemptions = ["tests/architecture/layers.rs::FILES_THAT_WAIT_ON_CTRL_C"]
+
+[[rule]]
+id = "ARCH-044"
+summary = "Only src/shell/tui/terminal.rs asks whether a stream is a terminal, outside the adapters: what a run declared non-interactive shows is decided in one place"
+checks = ["tests/architecture/layers.rs::only_terminal_rs_decides_whether_a_run_is_interactive"]
+violating_fixtures = ["tests/architecture/layers.rs::a_stream_asked_whether_it_is_a_terminal_is_found"]
+passing_fixtures = ["tests/architecture/layers.rs::a_terminal_named_in_a_comment_is_not"]
+docs = ["docs/development/tui-testing.md"]
+exemptions = []
+
+[[rule]]
+id = "ARCH-045"
+summary = "README.ja.md translates the current README.md: the same headings, code blocks and images per section (`<name>.ja.<ext>` counts as the Japanese version of `<name>.<ext>`), and each section carries the digest of the English it translated"
+checks = ["tests/architecture/readme.rs::the_japanese_readme_translates_the_current_english_one"]
+violating_fixtures = [
+  "tests/architecture/readme.rs::an_english_edit_left_untranslated_is_found",
+  "tests/architecture/readme.rs::a_code_block_or_image_that_differs_is_found",
+  "tests/architecture/readme.rs::a_heading_missing_from_the_translation_is_found",
+]
+passing_fixtures = ["tests/architecture/readme.rs::a_current_translation_passes"]
+docs = ["AGENTS.md"]
+exemptions = []

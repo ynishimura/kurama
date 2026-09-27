@@ -1,0 +1,40 @@
+ 鞍馬 kurama audit  watching ~/.local/state/kurama/audit.jsonl
+┏ Calls (2) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓┏ Call ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃   UTC      CMD  TARGET         REQUEST         STATUS  TOOK   ┃┃ Time      2027-01-15T08:00:00.000Z                  ┃
+┃   08:00:01 api  pets           GET /v1/pets    200     142ms  ┃┃ By        agent                                     ┃
+┃ ▸ 08:00:00 api  an-api-whose-… GET /v1/organi… 200     142ms  ┃┃ Command   api                                       ┃
+┃                                                               ┃┃ Target    an-api-whose-name-is-longer-than-its-colu ┃
+┃                                                               ┃┃           mn                                        ┃
+┃                                                               ┃┃ Request   GET                                       ┃
+┃                                                               ┃┃           /v1/organizations/1234567890/projects/098 ┃
+┃                                                               ┃┃           7654321/members/ユーザー\u{1b}[31m        ┃
+┃                                                               ┃┃ Status    200                                       ┃
+┃                                                               ┃┃ Exit code 0                                         ┃
+┃                                                               ┃┃ Error     -                                         ┃
+┃                                                               ┃┃ Took      142ms                                     ┃
+┃                                                               ┃┃ Run again kurama api                                ┃
+┃                                                               ┃┃           an-api-whose-name-is-longer-than-its-colu ┃
+┃                                                               ┃┃           mn                                        ┃
+┃                                                               ┃┃           '/v1/organizations/1234567890/projects/09 ┃
+┃                                                               ┃┃           87654321/members/ユーザー\u{1b}[31m'      ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+ ↑↓ move  y copy command  Enter details  q quit

@@ -1,0 +1,36 @@
+# The authorization server refuses the grant: the remote side rejected.
+id = "oauth_rejected_grant_exits_4"
+feature = "oauth"
+
+[combination]
+command = "token"
+source = "oauth"
+grant = "client_credentials"
+secret = "op"
+token_response = "rejected"
+
+[input]
+args = ["token", "svc"]
+config = """
+[auth.svc]
+kind = "oauth"
+grant_type = "client_credentials"
+token_url = "{server}/oauth/token"
+client_id = "svc-client"
+client_secret = "op://Agent/Service/client_secret"
+scopes = ["read"]
+
+[api.svc]
+description = "Service API"
+base_url = "{server}/api"
+"""
+
+[fakes]
+op = "enabled"
+oauth = { rejected = "invalid_client" }
+token_store = true
+
+[expect]
+error = { code = "OAUTH_REJECTED", exit = 4 }
+token_grants = ["client_credentials"]
+stderr_contains = ["invalid_client: rejected by the fake"]

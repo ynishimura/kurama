@@ -1,0 +1,39 @@
+# --dry-run on a SigV4 API infers service and region from the host, prints
+# the signed request with the signature and session token masked, and calls
+# neither STS nor the API.
+id = "api_sigv4_dry_run_infers_the_target_and_masks_the_signature"
+feature = "api-client"
+
+[combination]
+command = "api"
+auth = "aws-profile"
+service = "host"
+region = "host"
+mode = "dry-run"
+
+[input]
+args = ["api", "apigw", "/items", "-X", "POST", "-d", "{\"x\":1}", "-H", "X-Trace: 1", "--dry-run"]
+config = """
+[api.apigw]
+base_url = "https://abc123.execute-api.ap-northeast-1.amazonaws.com/prod"
+aws_profile = "dev"
+"""
+
+[expect]
+exit_code = 0
+stdout = "empty"
+stderr_contains = [
+  "# dry run: nothing is sent",
+  "> POST https://abc123.execute-api.ap-northeast-1.amazonaws.com/prod/items\n",
+  "Credential=<access-key-id>/",
+  "/ap-northeast-1/execute-api/aws4_request, SignedHeaders=",
+  "SignedHeaders=accept;content-type;host;x-amz-date;x-amz-security-token;x-trace, Signature=****",
+  "> body (7 bytes): {\"x\":1}",
+  "x-amz-security-token: ****",
+]
+stderr_excludes = ["<session-token>", "<secret-access-key>"]
+op_calls = 0
+token_grants = []
+sts_actions = []
+api_calls = { count = 0 }
+no_files_written = true

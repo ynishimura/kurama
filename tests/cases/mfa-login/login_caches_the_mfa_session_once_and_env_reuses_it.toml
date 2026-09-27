@@ -1,0 +1,52 @@
+# `login` gets one MFA session with the TOTP from 1Password and caches it; a
+# second `login` finds it valid and asks nobody; `--force` asks 1Password
+# again for a new session; `env` signs AssumeRole with that one and skips
+# 1Password.
+id = "login_caches_the_mfa_session_once_and_env_reuses_it"
+feature = "mfa-login"
+
+[combination]
+command = "login"
+source = "aws-profile"
+mfa = "onepassword"
+session_cache = "enabled"
+
+[input]
+args = ["login", "ops-mfa"]
+then_run = [["login", "ops-mfa"], ["login", "ops-mfa", "--force"], ["env", "ops-mfa"]]
+
+[fakes]
+op = "enabled"
+session_cache = true
+
+[expect]
+exit_code = 0
+stdout = "export-script"
+files_written = ["session-cache.json"]
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+sts_actions = ["GetSessionToken"]
+sts_calls = [{ action = "GetSessionToken", token_code = "{op_totp}", signing_access_key = "{op_access_key}" }]
+stdout = "empty"
+stderr_contains = ["# Logged in: MFA session for arn:aws:iam::123456789012:mfa/agent"]
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+sts_actions = []
+op_calls = 0
+stderr_contains = ["is still valid"]
+
+[[expect.runs]]
+run = 2
+exit_code = 0
+sts_actions = ["GetSessionToken"]
+op_calls_containing = { "--otp" = 1 }
+
+[[expect.runs]]
+run = 3
+sts_actions = ["AssumeRole"]
+sts_calls = [{ action = "AssumeRole", signing_access_key = "{second_session_access_key}" }]
+op_calls = 0

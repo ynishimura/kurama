@@ -1,0 +1,34 @@
+# A SigV4 API on a host that names no service is refused before STS or the
+# API is called; --service and --region make the request, signed for them.
+id = "api_sigv4_custom_domain_needs_service_and_region"
+feature = "api-client"
+
+[combination]
+command = "api"
+auth = "aws-profile"
+service = "cli"
+region = "cli"
+
+[input]
+args = ["api", "custom", "/items"]
+then_run = [["api", "custom", "/items", "--service", "execute-api", "--region", "us-east-1", "--jq", ".path"]]
+config = """
+[api.custom]
+base_url = "{server}/api"
+aws_profile = "dev"
+"""
+
+[expect]
+exit_code = 0
+sts_actions = ["AssumeRole"]
+api_calls = { count = 1, sigv4 = { service = "execute-api", region = "us-east-1" } }
+stdout = { contains = ["/api/items"] }
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+error = { code = "API_SIGNING_TARGET_REQUIRED", exit = 2 }
+stderr_contains = ["error[API_SIGNING_TARGET_REQUIRED]: [api.custom] the SigV4 service to sign for cannot be told from host \"127.0.0.1\""]
+hint = "set the missing SigV4 setting under [api.custom] in config.toml, or pass its --service / --region option"
+sts_actions = []
+api_calls = { count = 0 }

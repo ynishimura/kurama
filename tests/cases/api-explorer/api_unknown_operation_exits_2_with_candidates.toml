@@ -1,0 +1,39 @@
+# A `METHOD /path` the description lacks is sent as is; with -P it is refused
+# instead of dropping the parameters; a misspelt operationId names the
+# candidates.
+id = "api_unknown_operation_exits_2_with_candidates"
+feature = "api-explorer"
+
+[combination]
+command = "api"
+openapi = "file"
+target = "unknown-operation"
+
+[input]
+args = ["api", "pets", "GET /pet", "--jq", ".path"]
+then_run = [
+  ["api", "pets", "GET /undocumented", "-P", "x=1"],
+  ["api", "pets", "pets/lst"],
+]
+config = """
+[api.pets]
+base_url = "{server}/api"
+openapi = "{fixtures}/petstore.json"
+"""
+
+[expect]
+error = { code = "API_OPERATION_NOT_FOUND", exit = 2 }
+stderr_contains = ["operation \"pets/lst\" is not in the API description; did you mean pets/list, pets/get?"]
+hint = "run `kurama api pets --ops [QUERY]` to list the operations"
+api_calls = { count = 0 }
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stdout = { equals = "/api/pet\n" }
+api_calls = { count = 1 }
+
+[[expect.runs]]
+run = 1
+error = { code = "API_OPERATION_NOT_FOUND", exit = 2 }
+api_calls = { count = 0 }

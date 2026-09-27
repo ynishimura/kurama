@@ -1,0 +1,11 @@
+# Coordinates of `kurama inventory` that no case verifies because they do not
+# apply, each with the reason. `cargo xtask verify-matrix` reads this file:
+# a coordinate listed here is NOT_APPLICABLE instead of UNCLASSIFIED. A
+# coordinate a person has to prepare something for goes in needs-human.toml
+# instead. A coordinate no case has been written for yet is UNCLASSIFIED and
+# fails the gate: write the case, or say here why none can be written.
+#
+# [[not_applicable]]
+# reason = "why no case can or should verify it"
+# [not_applicable.combination]
+# command = "..."

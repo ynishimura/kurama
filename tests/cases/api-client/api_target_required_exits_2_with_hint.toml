@@ -1,0 +1,35 @@
+# Without a TARGET the command is refused with a hint; a TARGET that is not
+# a path is API_ARGUMENT_INVALID. Nothing is sent either way.
+id = "api_target_required_exits_2_with_hint"
+feature = "api-client"
+
+[combination]
+command = "api"
+target = "missing-or-invalid"
+
+[input]
+args = ["api", "github"]
+then_run = [["api", "github", "user"]]
+config = """
+[auth.github]
+kind = "oauth"
+grant_type = "authorization_code"
+auth_url = "{server}/oauth/authorize"
+token_url = "{server}/oauth/token"
+client_id = "gh-client"
+scopes = ["repo"]
+env_var = "GITHUB_TOKEN"
+
+[api.github]
+base_url = "{server}/api"
+"""
+
+[expect]
+error = { code = "API_ARGUMENT_INVALID", exit = 2 }
+stderr_contains = ["TARGET must be a path starting with '/'"]
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+error = { code = "API_TARGET_REQUIRED", exit = 2 }
+hint = "pass a TARGET"

@@ -1,0 +1,95 @@
+# The structure and preview reads of `kurama db`, against the SQLite fixture
+# on the fake layer and against the PostgreSQL 17 and 18 that `cargo xtask
+# db-up` starts on the local one: the same operations, and what each server
+# calls its schema, its key columns and its rows: SQLite says `table` and
+# `view`, PostgreSQL's information_schema says `BASE TABLE` and `VIEW`.
+id = "db_local_postgresql_lists_describes_and_previews_the_fixture"
+feature = "database"
+
+[combination]
+command = "db"
+engine = "sqlite"
+
+[input]
+args = ["db", "app", "--tables", "--json"]
+then_run = [
+  ["db", "app", "--describe", "main.orders", "--json"],
+  ["db", "app", "--preview", "orders", "--columns", "id", "--max-rows", "2"],
+]
+config = """
+[db.app]
+engine = "sqlite"
+path = "{repo}/tests/fixtures/db/app.sqlite3"
+"""
+
+[fakes]
+op = "enabled"
+
+[expect]
+exit_code = 0
+sts_actions = []
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true
+stdout = { equals = "id\n1\n2\n" }
+
+[[expect.runs]]
+run = 0
+stdout_json = { "/operation" = "tables", "/target" = "app", "/rows/0" = ["main", "customers", "table"], "/rows/1" = ["main", "open_orders", "view"], "/rows/2" = ["main", "orders", "table"], "/meta/consistency" = "single_statement" }
+
+[[expect.runs]]
+run = 1
+stdout_json = { "/operation" = "describe", "/rows/0/0" = "id", "/rows/1/0" = "customer_id", "/rows/1/5" = "customers.id" }
+
+[local]
+args = ["db", "pg17", "--tables", "--json"]
+then_run = [
+  ["db", "pg17", "--describe", "public.orders", "--json"],
+  ["db", "pg17", "--preview", "orders", "--columns", "id", "--max-rows", "2"],
+  ["db", "pg18", "--tables", "--json"],
+]
+config = """
+[db.pg17]
+engine = "postgresql"
+host = "127.0.0.1"
+port = {pg17_port}
+database = "app"
+username = "kurama"
+password = "op://Agent/db/password"
+tls = "verify-ca"
+ca_file = "{db_tls_dir}/ca.pem"
+
+[db.pg18]
+engine = "postgresql"
+host = "127.0.0.1"
+port = {pg18_port}
+database = "app"
+username = "kurama"
+password = "op://Agent/db/password"
+tls = "verify-ca"
+ca_file = "{db_tls_dir}/ca.pem"
+"""
+
+[local.combination]
+engine = "postgresql"
+tls = "verify-ca"
+
+[local.expect]
+exit_code = 0
+sts_actions = []
+op_calls = 1
+api_calls = { count = 0 }
+no_files_written = true
+stdout_json = { "/operation" = "tables", "/target" = "pg18", "/rows/0" = ["public", "customers", "BASE TABLE"], "/meta/engine/name" = "postgresql", "/meta/engine/server_version" = { contains = "18." } }
+
+[[local.expect.runs]]
+run = 0
+stdout_json = { "/operation" = "tables", "/target" = "pg17", "/rows/0" = ["public", "customers", "BASE TABLE"], "/rows/1" = ["public", "open_orders", "VIEW"], "/rows/2" = ["public", "orders", "BASE TABLE"], "/meta/engine/server_version" = { contains = "17." } }
+
+[[local.expect.runs]]
+run = 1
+stdout_json = { "/operation" = "describe", "/rows/0/0" = "id", "/rows/1/0" = "customer_id" }
+
+[[local.expect.runs]]
+run = 2
+stdout = { equals = "id\n1\n2\n" }

@@ -1,0 +1,63 @@
+# One value behind two references in two 1Password items, and a third
+# reference, in Parameter Store, to another value. The fake `op` answers every
+# `op item get` with one value, which is what makes the two items hold the same
+# secret; the fake Parameter Store answers the name it was asked for. Each
+# reference is read the way `token` reads it, and only once.
+id = "oauth_token_fingerprint_is_the_same_for_two_references_to_one_value"
+feature = "oauth"
+
+[combination]
+command = "token"
+source = "token"
+secret = "op"
+output = "fingerprint"
+
+[input]
+args = ["token", "first", "--fingerprint"]
+then_run = [["token", "copy", "--fingerprint"], ["token", "example", "--fingerprint"]]
+config = """
+[auth.example]
+kind = "token"
+token = "aws-ssm://dev/kurama/api-key"
+header = "xi-api-key"
+format = "{token}"
+env_var = "EXAMPLE_TOKEN"
+
+[api.example]
+base_url = "{server}/api"
+
+[auth.first]
+kind = "token"
+token = "op://Agent/Example/credential"
+
+[auth.copy]
+kind = "token"
+token = "op://Agent/Example-copy/credential"
+"""
+
+[fakes]
+op = "enabled"
+aws_secrets = "from-id"
+
+[expect]
+exit_code = 0
+token_grants = []
+no_files_written = true
+secret_reads = [{ operation = "ssm:GetParameter", id = "/kurama/api-key", region = "ap-northeast-1" }]
+
+# The two items print one fingerprint, the SHA-256 of the value, and not the value.
+[[expect.runs]]
+run = 0
+op_reads = ["item get Example --format json --vault Agent"]
+stdout = { equals = "{sha256:{fake_client_secret}}\n" }
+
+[[expect.runs]]
+run = 1
+op_reads = ["item get Example-copy --format json --vault Agent"]
+stdout = { equals = "{sha256:{fake_client_secret}}\n" }
+
+# Another value prints another fingerprint.
+[[expect.runs]]
+run = 2
+stdout = { equals = "{sha256:parameter-of/kurama/api-key}\n" }
+stderr_excludes = ["parameter-of/kurama/api-key"]

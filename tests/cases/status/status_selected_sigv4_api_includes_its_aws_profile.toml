@@ -1,0 +1,27 @@
+# `status <API>` on a SigV4 API lists the AWS profile it signs with next to
+# the API row, and no other profile of ~/.aws/config.
+id = "status_selected_sigv4_api_includes_its_aws_profile"
+feature = "status"
+
+[combination]
+command = "status"
+auth = "aws-profile"
+output = "json"
+rows = "selected"
+
+[input]
+args = ["status", "apigw", "--json"]
+config = """
+[api.apigw]
+base_url = "{server}/api"
+aws_profile = "ops-mfa"
+service = "execute-api"
+"""
+
+[expect]
+exit_code = 0
+sts_actions = []
+op_calls = 0
+api_calls = { count = 0 }
+stdout_json = { "/0/kind" = "aws", "/0/name" = "ops-mfa", "/1/kind" = "api", "/1/name" = "apigw", "/1/aws_profile" = "ops-mfa", "/1/auth_status" = "<null>", "/2" = "<null>" }
+no_files_written = true

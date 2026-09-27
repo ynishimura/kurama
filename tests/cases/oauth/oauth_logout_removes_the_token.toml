@@ -1,0 +1,50 @@
+# logout reports the cleared token, status no longer finds one, and
+# `logout --all` clears the source again and exits 0.
+id = "oauth_logout_removes_the_token"
+feature = "oauth"
+
+[combination]
+command = "logout"
+source = "oauth"
+grant = "authorization_code"
+token = "stored"
+
+[input]
+args = ["logout", "github"]
+then_run = [["status", "github", "--json"], ["logout", "--all"]]
+stored_tokens = [{ source = "github", access_token = "{stored_access_token}", expires_in = 3600 }]
+config = """
+[auth.github]
+kind = "oauth"
+grant_type = "authorization_code"
+auth_url = "{server}/oauth/authorize"
+token_url = "{server}/oauth/token"
+client_id = "gh-client"
+scopes = ["repo"]
+env_var = "GITHUB_TOKEN"
+
+[api.github]
+base_url = "{server}/api"
+"""
+
+[fakes]
+session_cache = true
+
+[expect]
+exit_code = 0
+sts_actions = []
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stdout = "empty"
+stderr_contains = ["# Cleared token: github"]
+
+[[expect.runs]]
+run = 1
+stdout_json = { "/0/token" = "missing", "/0/logged_in" = false }
+
+[[expect.runs]]
+run = 2
+exit_code = 0
+stderr_contains = ["# Cleared token: github"]

@@ -1,0 +1,30 @@
+ 鞍馬 kurama api  pets  Petstore 1.2.0                                              bearer   sigv4
+┏ Operations 4/5  /pets_/ ━━━━━━━━━━━━━━━━━━━━━━━━━━━┓┏ Operation ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃   METHOD ID                                        ┃┃ Operation pets/list                        ┃
+┃ ▸ GET    pets/list                                 ┃┃ Request   GET /pets                        ┃
+┃   POST   pets/create                               ┃┃ Summary   List pets                        ┃
+┃   GET    pets/get                                  ┃┃ About     List the pets of the store.      ┃
+┃   DELETE DELETE /pets/{petId}                      ┃┃ Tags      pets                             ┃
+┃                                                    ┃┃ Scopes    read:pets                        ┃
+┃                                                    ┃┃ Params    limit (query, integer); status   ┃
+┃                                                    ┃┃           (query, available|sold)          ┃
+┃                                                    ┃┃ Body      -                                ┃
+┃                                                    ┃┃ Docs      -                                ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃ Next      Enter opens the form             ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+ type filter  Enter keep  Esc clear  ↑↓ move

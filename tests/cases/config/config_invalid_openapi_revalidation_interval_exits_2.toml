@@ -1,0 +1,22 @@
+# A negative revalidation interval is refused when the file is read.
+id = "config_invalid_openapi_revalidation_interval_exits_2"
+feature = "config"
+
+[combination]
+command = "status"
+config = "rejected"
+
+[input]
+args = ["status"]
+replace_config = """
+[openapi]
+revalidate_after = -1
+"""
+
+[expect]
+error = { code = "CONFIG_INVALID", exit = 2 }
+stderr_contains = ["revalidate_after", "non-negative integer"]
+hint = "fix /"
+sts_actions = []
+op_calls = 0
+no_files_written = true

@@ -1,0 +1,25 @@
+# Fireworks AI serves an OpenAI-compatible API under /inference/v1 and takes
+# its key as a Bearer token in Authorization, kurama's default. Nothing is
+# resolved or contacted.
+id = "preset_show_fireworks_sends_the_key_as_a_bearer_token"
+feature = "preset"
+
+[combination]
+command = "preset-show"
+output = "text"
+
+[input]
+args = ["preset", "show", "fireworks", "--set", "secret=op://Agent/kurama-fireworks/credential"]
+
+[fakes]
+op = "enabled"
+
+[expect]
+exit_code = 0
+stdout = { starts_with = "# kurama preset: fireworks (kurama ", contains = ["[auth.fireworks]\nkind = \"token\"\ntoken = \"op://Agent/kurama-fireworks/credential\"\nenv_var = \"FIREWORKS_API_KEY\"\n", "[api.fireworks]\ndescription = \"Fireworks AI inference API\"\nbase_url = \"https://api.fireworks.ai/inference/v1\"\nauth = \"fireworks\"\n"] }
+stderr_contains = ["# Setup for fireworks", "https://app.fireworks.ai/settings/users/api-keys", "--title kurama-fireworks", "kurama api fireworks /models"]
+sts_actions = []
+op_calls = 0
+secret_reads = []
+api_calls = { count = 0 }
+no_files_written = true

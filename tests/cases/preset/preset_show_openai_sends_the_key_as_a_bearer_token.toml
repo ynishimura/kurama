@@ -1,0 +1,26 @@
+# OpenAI takes its API key as a Bearer token in Authorization, kurama's
+# default, and its OpenAPI description lists paths under the `/v1` server,
+# so base_url carries `/v1` for operation targets to line up. Nothing is
+# resolved or contacted.
+id = "preset_show_openai_sends_the_key_as_a_bearer_token"
+feature = "preset"
+
+[combination]
+command = "preset-show"
+output = "text"
+
+[input]
+args = ["preset", "show", "openai", "--set", "secret=op://Agent/kurama-openai/credential"]
+
+[fakes]
+op = "enabled"
+
+[expect]
+exit_code = 0
+stdout = { starts_with = "# kurama preset: openai (kurama ", contains = ["[auth.openai]\nkind = \"token\"\ntoken = \"op://Agent/kurama-openai/credential\"\nenv_var = \"OPENAI_API_KEY\"\n", "[api.openai]\ndescription = \"OpenAI API\"\nbase_url = \"https://api.openai.com/v1\"\n", "openapi = \"https://raw.githubusercontent.com/openai/openai-openapi/main/openapi.json\""] }
+stderr_contains = ["# Setup for openai", "https://platform.openai.com/api-keys", "--title kurama-openai", "kurama api openai /models"]
+sts_actions = []
+op_calls = 0
+secret_reads = []
+api_calls = { count = 0 }
+no_files_written = true

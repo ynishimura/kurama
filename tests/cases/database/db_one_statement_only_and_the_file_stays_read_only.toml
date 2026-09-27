@@ -1,0 +1,55 @@
+# A read is one statement that returns rows: a second statement and a
+# statement without rows are refused before anything runs, a write the
+# database itself refuses is `DB_REJECTED` as the database's own answer, an
+# unknown table points at `--tables`, and the fixture is byte for byte what
+# it was after every refused write.
+id = "db_one_statement_only_and_the_file_stays_read_only"
+feature = "database"
+
+[combination]
+command = "db"
+client = "db"
+engine = "sqlite"
+db_op = "query"
+
+[input]
+args = ["db", "app", "--query", "SELECT 1; DROP TABLE orders", "--json"]
+then_run = [
+  ["db", "app", "--query", "DELETE FROM orders", "--json"],
+  ["db", "app", "--query", "INSERT INTO orders VALUES (9, 1, 'open', 1, NULL) RETURNING id", "--json"],
+  ["db", "app", "--query", "SELECT id FROM nope", "--json"],
+]
+config = """
+[db.app]
+engine = "sqlite"
+path = "{repo}/tests/fixtures/db/app.sqlite3"
+
+[db.writable]
+engine = "sqlite"
+allow_write = true
+path = "{repo}/tests/fixtures/db/app.sqlite3"
+"""
+
+[expect]
+exit_code = 4
+sts_actions = []
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true
+stderr_json = { "/error/code" = "DB_REJECTED", "/error/next_actions/0/operation" = "tables", "/error/server/code" = "1" }
+files_unchanged = ["{repo}/tests/fixtures/db/app.sqlite3"]
+
+[[expect.runs]]
+run = 0
+exit_code = 2
+stderr_json = { "/error/code" = "DB_INVALID", "/error/message" = { contains = "exactly one statement" } }
+
+[[expect.runs]]
+run = 1
+exit_code = 2
+stderr_json = { "/error/code" = "DB_INVALID", "/error/message" = { contains = "returns no rows" } }
+
+[[expect.runs]]
+run = 2
+exit_code = 4
+stderr_json = { "/error/code" = "DB_REJECTED", "/error/server/message" = { contains = "readonly database" } }

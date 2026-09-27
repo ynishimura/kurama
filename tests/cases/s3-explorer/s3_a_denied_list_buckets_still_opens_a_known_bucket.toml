@@ -1,0 +1,45 @@
+# A role that may not list the buckets still opens the one it names; the
+# refusal, and a bucket that does not exist, exit 4 with the code S3 gave,
+# never as an empty list.
+id = "s3_a_denied_list_buckets_still_opens_a_known_bucket"
+feature = "s3-explorer"
+
+[combination]
+command = "s3"
+source = "aws-profile"
+role = "assume-role"
+s3_op = "buckets"
+s3_response = "denied"
+
+[input]
+args = ["s3", "assets", "--buckets", "--json"]
+then_run = [
+  ["s3", "assets", "--list", "--json"],
+  ["s3", "assets", "s3://browse-missing/", "--list"],
+]
+config = """
+[s3.assets]
+aws_profile = "dev"
+bucket = "browse-bucket"
+"""
+
+[expect]
+error = { code = "S3_REJECTED", exit = 4 }
+stderr_contains = ["NoSuchBucket"]
+hint = "check the bucket name and that the AWS profile's role may list it: s3:ListBucket on the bucket, s3:ListAllMyBuckets for --buckets"
+stdout_lines = 0
+op_calls = 0
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+exit_code = 4
+sts_actions = ["AssumeRole"]
+stderr_json = { "/error/code" = "S3_REJECTED", "/error/message" = { contains = "AccessDenied" } }
+stdout_lines = 0
+api_calls = { count = 1, calls = [{ method = "GET", path = "/?x-id=ListBuckets&max-buckets=200", signing_region = "ap-northeast-1" }] }
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+stdout_json = { "/prefixes" = ["other/", "reports/"], "/objects" = [], "/complete" = true }

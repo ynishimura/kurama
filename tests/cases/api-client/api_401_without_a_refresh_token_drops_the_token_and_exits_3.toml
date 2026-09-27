@@ -1,0 +1,44 @@
+# A rejected token that cannot be refreshed is dropped: exit 3 with the login
+# hint and no token request, and status no longer reports it.
+id = "api_401_without_a_refresh_token_drops_the_token_and_exits_3"
+feature = "api-client"
+
+[combination]
+command = "api"
+source = "oauth"
+grant = "authorization_code"
+token = "stored"
+api_response = "unauthorized"
+
+[input]
+stored_tokens = [{ source = "github", access_token = "stored-access-token", expires_in = 3600 }]
+args = ["api", "github", "/user"]
+then_run = [["status", "github", "--json"]]
+config = """
+[auth.github]
+kind = "oauth"
+grant_type = "authorization_code"
+auth_url = "{server}/oauth/authorize"
+token_url = "{server}/oauth/token"
+client_id = "gh-client"
+scopes = ["repo"]
+env_var = "GITHUB_TOKEN"
+
+[api.github]
+base_url = "{server}/api"
+"""
+
+[fakes]
+api = "unauthorized"
+
+[[expect.runs]]
+run = 0
+error = { code = "OAUTH_LOGIN_REQUIRED", exit = 3 }
+hint = "run `kurama login github`"
+api_calls = { count = 1, authorization = "Bearer stored-access-token" }
+oauth_paths = []
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+stdout_json = { "/0/token" = "missing", "/0/needs_human" = true }

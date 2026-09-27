@@ -1,0 +1,32 @@
+# --service on an API without aws_profile is API_ARGUMENT_INVALID; nothing
+# is called.
+id = "api_service_option_needs_aws_profile_exits_2"
+feature = "api-client"
+
+[combination]
+command = "api"
+source = "oauth"
+service = "cli-without-aws-profile"
+
+[input]
+args = ["api", "svc", "/items", "--service", "execute-api"]
+config = """
+[auth.svc]
+kind = "oauth"
+grant_type = "client_credentials"
+token_url = "{server}/oauth/token"
+client_id = "svc-client"
+client_secret = "op://Agent/Service/client_secret"
+scopes = ["read"]
+
+[api.svc]
+description = "Service API"
+base_url = "{server}/api"
+"""
+
+[expect]
+error = { code = "API_ARGUMENT_INVALID", exit = 2 }
+sts_actions = []
+api_calls = { count = 0 }
+token_grants = []
+op_calls = 0

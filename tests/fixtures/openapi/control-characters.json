@@ -1,0 +1,31 @@
+{
+  "openapi": "3.0.3",
+  "info": {"title": "Pets\u001b\u0007\u0085\u200b", "version": "1\t", "description": "About\u001b\n\nPets\u0007\u2066"},
+  "servers": [{"url": "https://pets.example\u001b"}],
+  "security": [{"oauth": ["read:pets\u0007"]}],
+  "paths": {
+    "/pets\u001b": {
+      "get": {
+        "operationId": "pets/list\u001b",
+        "summary": "List pets \u001b[31mRED\u001b[0m \u001b]0;title-injected\u0007 end\u202e",
+        "description": "First\u0085 paragraph\n\nSecond\u001b paragraph\ufeff",
+        "tags": ["pets\t"],
+        "externalDocs": {"url": "https://pets.example/docs\u0007"},
+        "parameters": [{"name": "limit\u0007", "in": "query", "description": "max \u001b[2Jcleared", "schema": {"type": "string\u001b", "enum": ["few\u0007"], "default": "few\u0085", "example": "few\t"}}],
+        "requestBody": {
+          "description": "Body\u001b\n\nDetails",
+          "content": {"application/json\u0007": {"schema": {"type": "object\u001b", "required": ["name\u0007"], "properties": {
+            "name\u0007": {"type": "string", "example": "cat\u001b"},
+            "nested\u0085": {"type": "array", "items": {"type": "object", "default": {"key\u001b": ["value\u0007"]}}},
+            "external": {"$ref": "https://pets.example/other\u001b"}
+          }}}}
+        }
+      },
+      "post": {
+        "summary": "Create\n pet",
+        "security": [{"oauth": ["write:pets\u001b"]}],
+        "parameters": [{"name": "cookie\u001b", "in": "cookie"}]
+      }
+    }
+  }
+}

@@ -1,0 +1,31 @@
+# No match in a search a bound stopped is incomplete; no match in a search
+# that read every object in full is complete. The two never read the same.
+id = "s3_content_search_distinguishes_no_match_from_unfinished"
+feature = "s3-explorer"
+
+[combination]
+command = "s3"
+source = "aws-profile"
+role = "assume-role"
+s3_op = "content-search"
+s3_result = "no-match"
+
+[input]
+args = ["s3", "assets", "s3://browse-objects/logs/", "--search-content", "absent", "--max-objects", "2", "--json"]
+then_run = [["s3", "assets", "s3://browse-objects/notes/", "--search-content", "absent", "--json"]]
+config = """
+[s3.assets]
+aws_profile = "dev"
+"""
+
+[expect]
+exit_code = 0
+op_calls = 0
+no_files_written = true
+stdout_json = { "/matches" = [], "/skipped" = [], "/searched/0/full" = true, "/searched/1/full" = true, "/scanned_objects" = 2, "/complete" = true, "/stop_reason" = "<null>", "/cursor" = "<null>", "/bytes_read" = 23, "/bytes_decoded" = 23 }
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+sts_actions = ["AssumeRole"]
+stdout_json = { "/matches" = [], "/scanned_objects" = 2, "/complete" = false, "/stop_reason" = "max_objects" }

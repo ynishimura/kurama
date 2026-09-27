@@ -1,0 +1,71 @@
+# --ops prints an ID / METHOD / PATH / SUMMARY table with every operation;
+# with a query it matches ids, paths, summaries and tags; --json prints the
+# matching operations with their tags and scopes; --jq applies to the listing
+# and to a description. An empty match is said on stderr, except with --json.
+id = "api_ops_lists_operations_from_a_file_as_a_table_and_json"
+feature = "api-explorer"
+
+[combination]
+command = "api"
+openapi = "file"
+output = "ops"
+
+[input]
+args = ["api", "pets", "--ops"]
+then_run = [
+  ["api", "pets", "--ops", "pets/", "--json"],
+  ["api", "pets", "--ops", "owner"],
+  ["api", "pets", "--ops", "nothing-matches", "--json"],
+  ["api", "pets", "--ops", "--jq", ".[] | select(.deprecated) | .id"],
+  ["api", "pets", "--describe", "pets/get", "--jq", ".parameters[].name"],
+  ["api", "pets", "--ops", "nothing-matches"],
+]
+config = """
+[api.pets]
+base_url = "{server}/api"
+openapi = "{fixtures}/petstore.json"
+"""
+
+[expect]
+exit_code = 0
+stdout = "plain-text"
+api_calls = { count = 0 }
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stdout = { equals = "ID                    METHOD  PATH                    SUMMARY\npets/list             GET     /pets                   List pets\npets/create           POST    /pets                   Create a pet\npets/get              GET     /pets/{petId}           Get a pet\nDELETE /pets/{petId}  DELETE  /pets/{petId}           Delete a pet\nowners/list-pets      GET     /owners/{ownerId}/pets  List the pets of an owner\n" }
+
+[[expect.runs]]
+run = 1
+stdout_lines = 1
+stdout_json = { "" = { length = 4 }, "/0/id" = "pets/list", "/1/id" = "pets/create", "/2/id" = "pets/get", "/3/id" = "DELETE /pets/{petId}", "/0/method" = "GET", "/0/path" = "/pets", "/0/summary" = "List pets", "/0/tags" = ["pets"], "/0/scopes" = ["read:pets"], "/1/scopes" = ["read:pets", "write:pets"] }
+
+[[expect.runs]]
+run = 2
+stdout_lines = 2
+stdout = { contains = ["owners/list-pets"] }
+
+[[expect.runs]]
+run = 3
+exit_code = 0
+stdout = { equals = "[]\n" }
+# With --json stderr is left to an error document.
+stderr_empty = true
+
+[[expect.runs]]
+run = 4
+exit_code = 0
+stdout = { equals = "DELETE /pets/{petId}\n" }
+
+[[expect.runs]]
+run = 5
+exit_code = 0
+stdout = { equals = "petId\nX-Trace\n" }
+
+[[expect.runs]]
+run = 6
+exit_code = 0
+stdout = { equals = "ID  METHOD  PATH  SUMMARY\n" }
+stderr_contains = ["# no operation matches \"nothing-matches\""]

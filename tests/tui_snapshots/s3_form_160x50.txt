@@ -1,0 +1,50 @@
+ 鞍馬 kurama s3  assets  dev  ap-northeast-1  s3://example-assets/reports/                                                                           READ ONLY
+┏ List (5+) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓┏ Details ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ ▸ 2024/                                                                                      ┃┃ Prefix      reports/2024/                                    ┃
+┃   2025/                                                                                      ┃┃                                                              ┃
+┃   orders.csv                                                                              20 ┃┃ Next        Enter opens it                                   ┃
+┃   summary.json                                                                            33 ┃┃                                                              ┃
+┃   events.parquet                                                                     1048576 ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                 ┏ Content search ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓                                                 ┃
+┃                                                 ┃                                                          ┃                                                 ┃
+┃                                                 ┃  in           s3://example-assets/reports/               ┃                                                 ┃
+┃                                                 ┃  text         request-id-123                             ┃                                                 ┃
+┃                                                 ┃  max objects  0▏                                         ┃                                                 ┃
+┃                                                 ┃                                                          ┃                                                 ┃
+┃                                                 ┃  Reads each object under the prefix, to the bounds, and  ┃                                                 ┃
+┃                                                 ┃  lists every line that contains the text.                ┃                                                 ┃
+┃                                                 ┃  At most 8 MiB an object, 50 MiB and 1000 lines a        ┃                                                 ┃
+┃                                                 ┃  search. Enter starts it; Esc stops it.                  ┃                                                 ┃
+┃                                                 ┃                                                          ┃                                                 ┃
+┃                                                 ┃  max objects is a number from 1 to 100000                ┃                                                 ┃
+┃                                                 ┃                                                          ┃                                                 ┃
+┃                                                 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛                                                 ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃                                                                                              ┃┃                                                              ┃
+┃ 5 scanned · more below                                                                       ┃┃                                                              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+ Enter start  Tab field  Esc cancel

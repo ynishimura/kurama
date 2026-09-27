@@ -1,0 +1,17 @@
+# An id the catalog does not have is a usage error that points at the list.
+id = "preset_unknown_id_exits_2_with_hint"
+feature = "preset"
+
+[combination]
+command = "preset-show"
+preset = "unknown"
+
+[input]
+args = ["preset", "show", "gitlab"]
+
+[expect]
+error = { code = "PRESET_NOT_FOUND", exit = 2, message = "no preset is named gitlab" }
+hint = "run `kurama preset` to list the presets"
+stdout = "empty"
+op_calls = 0
+no_files_written = true

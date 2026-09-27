@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "feature": "assume-role",
+  "status": "verified",
+  "reason": null,
+  "commit": "f25350f48a14513d94b3e46e7710d6fb399b16c6",
+  "feature_hash": "9b166988b8cf6622",
+  "diff_hash": "176597806f149d9d",
+  "environment": "real-services",
+  "access": "read-only",
+  "command": [
+    "cargo",
+    "xtask",
+    "verify",
+    "--layer",
+    "real",
+    "assume-role"
+  ],
+  "generated_at": "2026-09-27T08:31:32.849739+00:00",
+  "observed": [
+    {
+      "test": "assume_role_real_env_exports_the_real_profile",
+      "result": "passed",
+      "mock": [
+        "assume_role_real_env_exports_the_real_profile"
+      ]
+    },
+    {
+      "test": "assume_role_real_env_exports_the_sandbox_profile",
+      "result": "passed",
+      "mock": [
+        "assume_role_real_env_exports_the_sandbox_profile"
+      ]
+    }
+  ],
+  "fixtures": {}
+}

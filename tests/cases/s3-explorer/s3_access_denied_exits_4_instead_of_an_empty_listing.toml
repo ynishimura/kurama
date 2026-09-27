@@ -1,0 +1,48 @@
+# A read the role is refused ends the run with exit 4 and the code S3 gave,
+# never as a search that found nothing; a key that does not exist is a
+# refusal too.
+id = "s3_access_denied_exits_4_instead_of_an_empty_listing"
+feature = "s3-explorer"
+
+[combination]
+command = "s3"
+source = "aws-profile"
+role = "assume-role"
+s3_op = "content-search"
+s3_response = "denied"
+
+[input]
+args = ["s3", "assets", "s3://browse-objects/secret/", "--search-content", "keys", "--json"]
+then_run = [
+  ["s3", "assets", "s3://browse-objects/data/missing.txt", "--preview", "--json"],
+  ["s3", "assets", "s3://browse-objects/secret/", "--search-content", "keys"],
+]
+config = """
+[s3.assets]
+aws_profile = "dev"
+"""
+
+[expect]
+error = { code = "S3_REJECTED", exit = 4 }
+hint = "check the key and that the AWS profile's role may read it: s3:GetObject on the object (without s3:ListBucket a missing key reads as AccessDenied)"
+stderr_contains = ["AccessDenied"]
+stdout_lines = 0
+op_calls = 0
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+exit_code = 4
+sts_actions = ["AssumeRole"]
+stderr_json = { "/error/code" = "S3_REJECTED", "/error/message" = { contains = "AccessDenied" } }
+stdout_lines = 0
+api_calls = { count = 2, sigv4 = { service = "s3", region = "ap-northeast-1" }, calls = [
+  { method = "GET", path = "/browse-objects/?list-type=2&max-keys=200&prefix=secret%2F" },
+  { method = "GET", path = "/browse-objects/secret/keys.txt?x-id=GetObject" },
+] }
+
+[[expect.runs]]
+run = 1
+exit_code = 4
+stderr_json = { "/error/code" = "S3_REJECTED" }
+stdout_lines = 0

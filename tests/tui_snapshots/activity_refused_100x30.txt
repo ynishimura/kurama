@@ -1,0 +1,30 @@
+ 鞍馬 kurama audit  watching ~/.local/state/kurama/audit.jsonl
+┏ Calls (6) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓┏ Call ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃   UTC      CMD  TARGET REQUEST      STATUS  TOOK   ┃┃ Time      2027-01-15T08:01:01.000Z         ┃
+┃   08:05:05 api  pets   DELETE /v1/… 204     142ms  ┃┃ By        agent                            ┃
+┃   08:04:04 exec dev    aws          exec    812ms  ┃┃ Command   api                              ┃
+┃   08:03:03 db   app    sha256:a824… ok      1.2s   ┃┃ Target    pets                             ┃
+┃   08:02:02 api  pets   GET /v1/pet… 404     142ms  ┃┃ Request   POST /v1/pets                    ┃
+┃ ▸ 08:01:01 api  pets   POST /v1/pe… refused 3ms    ┃┃ Status    refused                          ┃
+┃   08:00:00 api  pets   GET /v1/pets 200     142ms  ┃┃ Exit code 3                                ┃
+┃                                                    ┃┃ Error     AGENT_POLICY_DENIED              ┃
+┃                                                    ┃┃ Took      3ms                              ┃
+┃                                                    ┃┃ Run again kurama api pets -X POST /pets    ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┃                                                    ┃┃                                            ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+ ↑↓ move  y copy command  Enter details  q quit

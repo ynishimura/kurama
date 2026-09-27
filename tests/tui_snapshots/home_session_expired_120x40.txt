@@ -1,0 +1,40 @@
+ 鞍馬 kurama  AWS credential switcher                                                 MFA expired   readonly   console
+  1 AWS   2 Auth   3 API   4 DB   5 Data   6 S3
+┏ Profiles (4) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓┏ Details ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃     KIND PROFILE     SESSION                                  ┃┃ Profile ops-mfa                                     ┃
+┃     aws  default     -                                        ┃┃ Kind    aws                                         ┃
+┃     aws  dev         -                                        ┃┃ Role    arn:aws:iam::123456789012:role/ops-mfa      ┃
+┃ ▸ * aws  ops-mfa     valid (11h 59m)                          ┃┃ Region  ap-northeast-1                              ┃
+┃     aws  sandbox-mfa none                                     ┃┃ MFA     arn:aws:iam::123456789012:mfa/agent         ┃
+┃                                                               ┃┃ Session valid (11h 59m)                             ┃
+┃                                                               ┃┃ Shell   this shell holds its credentials            ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃ Next    Enter assumes the role                      ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+ ↑↓ move  Enter assume  q quit  / search  ^K go to  ? help  r readonly  c console  Tab next tab

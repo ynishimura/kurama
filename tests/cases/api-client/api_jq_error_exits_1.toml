@@ -1,0 +1,33 @@
+# An invalid jq filter is JQ_ERROR, exit 1, as a JSON error document: --jq
+# asks for JSON.
+id = "api_jq_error_exits_1"
+feature = "api-client"
+
+[combination]
+command = "api"
+source = "oauth"
+grant = "authorization_code"
+token = "stored"
+jq = "invalid"
+
+[input]
+stored_tokens = [{ source = "github", access_token = "stored-access-token", expires_in = 3600 }]
+args = ["api", "github", "/user", "--jq", ".["]
+config = """
+[auth.github]
+kind = "oauth"
+grant_type = "authorization_code"
+auth_url = "{server}/oauth/authorize"
+token_url = "{server}/oauth/token"
+client_id = "gh-client"
+scopes = ["repo"]
+env_var = "GITHUB_TOKEN"
+
+[api.github]
+base_url = "{server}/api"
+"""
+
+[expect]
+json_error = { code = "JQ_ERROR", exit = 1 }
+stderr_lines = 1
+stderr_json = { "/error/message" = { contains = "invalid jq filter" }, "/error/next_actions/0/message" = { contains = "--jq" } }

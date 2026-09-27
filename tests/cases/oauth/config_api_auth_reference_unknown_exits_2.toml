@@ -1,0 +1,20 @@
+# An `[api.*]` naming a source that does not exist.
+id = "config_api_auth_reference_unknown_exits_2"
+feature = "oauth"
+
+[combination]
+command = "status"
+config = "api-auth-names-no-source"
+
+[input]
+args = ["status"]
+config = """
+[api.svc]
+base_url = "https://api.example.com"
+auth = "nope"
+"""
+
+[expect]
+error = { code = "CONFIG_INVALID", exit = 2 }
+stderr_contains = ["[api.svc] auth = \"nope\" names no [auth.nope] section"]
+no_files_written = true

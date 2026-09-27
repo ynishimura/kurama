@@ -1,0 +1,33 @@
+# An expired access token with a refresh token is reported as expired and
+# refreshable, and status leaves it as it is: no token endpoint call, no
+# write to the store.
+id = "status_json_reports_expired_refreshable_oauth_token"
+feature = "status"
+
+[combination]
+command = "status"
+"status.only" = "auth"
+source = "oauth"
+token = "expired-refreshable"
+output = "json"
+
+[input]
+args = ["status", "--only", "auth", "--json"]
+stored_tokens = [{ source = "github", access_token = "{stored_access_token}", expires_in = -60, refreshable = true }]
+config = """
+[auth.github]
+kind = "oauth"
+grant_type = "authorization_code"
+auth_url = "{server}/oauth/authorize"
+token_url = "{server}/oauth/token"
+client_id = "gh-client"
+"""
+
+[expect]
+exit_code = 0
+sts_actions = []
+op_calls = 0
+token_grants = []
+oauth_paths = []
+stdout_json = { "/0/name" = "github", "/0/kind" = "auth", "/0/token" = "expired", "/0/logged_in" = false, "/0/expires_at" = "<null>", "/0/refreshable" = true, "/1" = "<null>" }
+no_files_written = true

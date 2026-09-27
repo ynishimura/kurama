@@ -1,0 +1,30 @@
+ 鞍馬 kurama  AWS credential switcher                                           readonly   console
+  1 AWS   2 Auth   3 API   4 DB   5 Data   6 S3
+┏ Profiles (40) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓┏ Details ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃     KIND PROFILE    SESSION                        ┃┃ Profile account-37                         ┃
+┃     aws  account-14 -                              ┃┃ Kind    aws                                ┃
+┃     aws  account-15 -                              ┃┃ Role    arn:aws:iam::123456789012:role/acc ┃
+┃     aws  account-16 -                              ┃┃         ount-37                            ┃
+┃     aws  account-17 -                              ┃┃ Region  ap-northeast-1                     ┃
+┃     aws  account-18 -                              ┃┃ MFA     -                                  ┃
+┃     aws  account-19 -                              ┃┃ Session -                                  ┃
+┃     aws  account-20 -                              ┃┃ Shell   this shell holds its credentials   ┃
+┃     aws  account-21 -                              ┃┃                                            ┃
+┃     aws  account-22 -                              ┃┃ Next    Enter assumes the role             ┃
+┃     aws  account-23 -                              ┃┃                                            ┃
+┃     aws  account-24 -                              ┃┃                                            ┃
+┃     aws  account-25 -                              ┃┃                                            ┃
+┃     aws  account-26 -                              ┃┃                                            ┃
+┃     aws  account-27 -                              ┃┃                                            ┃
+┃     aws  account-28 -                              ┃┃                                            ┃
+┃     aws  account-29 -                              ┃┃                                            ┃
+┃     aws  account-30 -                              ┃┃                                            ┃
+┃     aws  account-31 -                              ┃┃                                            ┃
+┃     aws  account-32 -                              ┃┃                                            ┃
+┃     aws  account-33 -                              ┃┃                                            ┃
+┃     aws  account-34 -                              ┃┃                                            ┃
+┃     aws  account-35 -                              ┃┃                                            ┃
+┃     aws  account-36 -                              ┃┃                                            ┃
+┃ ▸ * aws  account-37 -                              ┃┃                                            ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+ ↑↓ move  Enter assume  q quit  / search  ^K go to  ? help  r readonly  c console  Tab next tab

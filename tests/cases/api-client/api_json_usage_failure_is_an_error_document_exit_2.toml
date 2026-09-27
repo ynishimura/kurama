@@ -1,0 +1,39 @@
+# A clap usage failure of api with --json is one JSON error document naming
+# the option, not clap's help text; without --json it stays clap's text.
+id = "api_json_usage_failure_is_an_error_document_exit_2"
+feature = "api-client"
+
+[combination]
+command = "api"
+output = "json"
+
+[input]
+args = ["api", "github", "/user", "--json", "--no-such-flag"]
+then_run = [["api", "github", "/user", "--no-such-flag"]]
+config = """
+[auth.github]
+kind = "oauth"
+grant_type = "authorization_code"
+auth_url = "{server}/oauth/authorize"
+token_url = "{server}/oauth/token"
+client_id = "gh-client"
+scopes = ["repo"]
+env_var = "GITHUB_TOKEN"
+
+[api.github]
+base_url = "{server}/api"
+"""
+
+[expect]
+exit_code = 2
+stderr_contains = ["error: unexpected argument '--no-such-flag'"]
+stderr_excludes = ["API_ARGUMENT_INVALID"]
+stdout = "empty"
+api_calls = { count = 0 }
+
+[[expect.runs]]
+run = 0
+json_error = { code = "API_ARGUMENT_INVALID", exit = 2 }
+stderr_lines = 1
+stderr_json = { "/error/category" = "usage", "/error/message" = "unknown argument --no-such-flag; consult kurama api --help" }
+api_calls = { count = 0 }

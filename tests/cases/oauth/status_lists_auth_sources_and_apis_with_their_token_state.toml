@@ -1,0 +1,54 @@
+# The table lists aws, auth and api rows, `*` marks the source the shell
+# holds; the JSON has every kind, the auth source active and logged in, and
+# `status <API>` carries the state of a source with another name.
+id = "status_lists_auth_sources_and_apis_with_their_token_state"
+feature = "oauth"
+
+[combination]
+command = "status"
+source = "oauth"
+grant = "authorization_code"
+token = "stored"
+
+[input]
+args = ["status"]
+then_run = [["status", "--json"], ["status", "gh-issues", "--json"]]
+env = { KURAMA_AUTH = "github" }
+stored_tokens = [{ source = "github", access_token = "{stored_access_token}", expires_in = 3600 }]
+config = """
+[auth.github]
+kind = "oauth"
+grant_type = "authorization_code"
+auth_url = "{server}/oauth/authorize"
+token_url = "{server}/oauth/token"
+client_id = "gh-client"
+scopes = ["repo"]
+env_var = "GITHUB_TOKEN"
+
+[api.github]
+base_url = "{server}/api"
+
+[api.gh-issues]
+base_url = "{server}/api"
+auth = "github"
+"""
+
+[expect]
+exit_code = 0
+sts_actions = []
+op_calls = 0
+stdout = "plain-text"
+
+[[expect.runs]]
+run = 0
+stdout = { line_containing = [["aws", "ops-mfa"], ["* auth", "github", "valid (59m)"], ["  api", "github", "auth=github"]] }
+
+# Auth rows start with name and kind, as the contract shows them.
+[[expect.runs]]
+run = 1
+stdout = { contains = ["{\"name\":\"github\",\"kind\":\"auth\","] }
+stdout_json = { "/0/kind" = "aws", "/1/kind" = "aws", "/2/kind" = "aws", "/3/kind" = "auth", "/4/kind" = "api", "/5/kind" = "api", "/6" = "<null>", "/3/name" = "github", "/3/active" = true, "/3/logged_in" = true, "/3/env_var" = "GITHUB_TOKEN", "/3/expires_at" = "<string>", "/4/auth_status/logged_in" = true }
+
+[[expect.runs]]
+run = 2
+stdout_json = { "/0/kind" = "api", "/0/name" = "gh-issues", "/0/auth" = "github", "/0/auth_status/logged_in" = true, "/1" = "<null>" }

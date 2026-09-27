@@ -1,0 +1,24 @@
+# `--skill` prints the Agent Skill whose frontmatter names kurama and whose
+# body points at `kurama agent`; it reads the configuration no more than the
+# contract does.
+id = "agent_skill_prints_the_skill_that_points_at_the_contract"
+feature = "agent-guide"
+
+[combination]
+command = "agent"
+output = "skill"
+config = "unread"
+
+[input]
+args = ["agent", "--skill"]
+replace_config = """
+[mfa.onepassword]
+enabled = false
+"""
+
+[expect]
+exit_code = 0
+stdout = { kind = "plain-text", starts_with = "---\nname: kurama\ndescription: ", contains = ["`kurama agent`"] }
+sts_actions = []
+op_calls = 0
+no_files_written = true

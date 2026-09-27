@@ -1,0 +1,37 @@
+# A preview stops successfully at its requested row window; a byte limit
+# still reports an incomplete preview.
+id = "data_preview_limits_are_successful_windows_except_byte_limits"
+feature = "local-analytics"
+
+[combination]
+command = "data"
+client = "data"
+data_op = "preview"
+data_source = "local"
+format = "csv"
+
+[input]
+args = ["data", "{repo}/tests/fixtures/data/ids.csv", "--json"]
+then_run = [
+  ["data", "{repo}/tests/fixtures/data/ids.csv", "--preview", "--max-rows", "1", "--json"],
+  ["data", "{repo}/tests/fixtures/data/ids.csv", "--preview", "--max-result-bytes", "2", "--json"],
+]
+
+[expect]
+exit_code = 1
+stdout_json = { "/truncated" = true, "/stop_reason" = "max_result_bytes" }
+stderr_json = { "/error/code" = "DATA_FAILED" }
+sts_actions = []
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stdout_json = { "/row_count" = 100, "/truncated" = true, "/stop_reason" = "max_rows" }
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+stdout_json = { "/row_count" = 1, "/truncated" = true, "/stop_reason" = "max_rows" }

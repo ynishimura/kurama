@@ -1,0 +1,55 @@
+# cargo-mutants settings (`cargo xtask mutate`).
+#
+# xtask functions whose whole job is to start another program -- cargo,
+# cargo-mutants itself, git -- and hand back its exit status. A mutant that
+# makes one of them return Ok(()) without running anything is only caught by a
+# test that runs the program, which for `mutate` and `branch-check` means running
+# a gate inside a gate. What they decide is in the pure functions next to them
+# (`path_run`, `run_of_diff`, `mutate_paths`, `render_report`), which are
+# mutated and tested.
+exclude_re = [
+  "xtask/src/mutate.rs:.*replace (mutate|mutate_branch|execute|out_dir|diff_run|branch_runs|count|write_branch_diff|new_file_diff|require_mutants) ",
+  "xtask/src/mutate.rs:.*delete ! in execute",
+  "xtask/src/branch_check.rs:.*replace (branch_check|run_cargo|mutants_installed) ",
+  "xtask/src/branch_check.rs:.* in branch_check$",
+  # `check` is the gate itself: it runs every test, so a test of it is a
+  # gate inside a gate. The audit it adds is tested in architecture_audit.rs.
+  "xtask/src/main.rs:.*(replace check |in check$)",
+  # The fixture run starts cargo test; what it reads from the output is
+  # `outcomes`, mutated and tested with a recorded output.
+  "xtask/src/architecture_fixtures.rs:.*replace (run|run_tests) ",
+  "xtask/src/architecture_fixtures.rs:.* in run_tests$",
+  "xtask/src/architecture_audit.rs:.*replace gate_with_fixtures ",
+  "xtask/src/architecture_audit.rs:.* in gate_with_fixtures$",
+  # The probe run starts the probe; what is judged from its output is `judge`,
+  # mutated and tested, and xtask/tests/verify_real.rs runs the rest.
+  "xtask/src/verify_real.rs:.*replace run_probe ",
+  "xtask/src/verify_real.rs:.* in run_probe$",
+  # The static checks start cargo fmt, cargo clippy and cargo-machete; which
+  # command runs them is `prelude_of`, mutated and tested, and the arguments
+  # are constants a test pins. `tui_check` and `doctor` start cargo and the
+  # toolchain the same way.
+  "xtask/src/static_checks.rs:.*replace (run|results|unused_dependencies|machete_command|machete_installed) ",
+  "xtask/src/static_checks.rs:.* in (run|unused_dependencies|machete_command)$",
+  "xtask/src/main.rs:.*replace (prelude|doctor) ",
+  "xtask/src/tui_check.rs:.*replace tui_check ",
+  # `impact` reads the branch from git and `inventory` from the built binary;
+  # what they decide from it is `impact_of` / `select_features` and `report`,
+  # mutated and tested.
+  "xtask/src/impact.rs:.*(replace (impact_command|default_base|compute_impact) |in (impact_command|compute_impact)$)",
+  "xtask/src/inventory.rs:.*(replace run_binary |in run_binary$)",
+  # The no-op token store is compiled only off macOS, and every gate runs on
+  # macOS, where no test can reach it.
+  "src/adapters/token_store/mod.rs:.*NoopTokenStore",
+  # Closing a server connection, running a statement kurama wrote and
+  # listing schemas need a PostgreSQL or MySQL server: tests/real_db.rs
+  # (`KURAMA_TEST_DB=1`, `cargo xtask verify-real database`) runs them, the
+  # gate does not start a server.
+  "src/adapters/database/server.rs:.*replace (Wire::close|ServerSession::close|ServerSession::run) ",
+  "src/adapters/database/server_catalog.rs:.*replace ServerSession::fetch_scalars ",
+  # Writing a keychain entry needs the real macOS keychain, which only the
+  # ignored `keyring_round_trip_missing_and_corrupt_entry` touches; what the
+  # write decides (delete, retry once, whose failure) is `write_replacing`,
+  # mutated and tested with a scripted entry.
+  "src/adapters/keychain.rs:.*replace store_json ",
+]

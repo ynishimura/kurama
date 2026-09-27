@@ -1,0 +1,36 @@
+# `config unset --json` is the save result with one change per key removed,
+# each naming its section and the dotted key; the keys are gone from the
+# saved file and the rest of each section stays.
+id = "config_unset_json_reports_removed_keys"
+feature = "config"
+
+[combination]
+command = "config-unset"
+output = "json"
+
+[input]
+args = ["config", "unset", "aws.session_cache.duration", "api.svc.description", "--json"]
+then_run = [["config", "list", "--json"]]
+replace_config = """
+[aws.session_cache]
+enabled = true
+duration = 3600
+
+[api.svc]
+description = "my service"
+base_url = "https://svc.example.com"
+"""
+
+[expect]
+exit_code = 0
+stderr_empty = true
+stdout_json = { "/sections" = [{ name = "aws", keys = ["session_cache.enabled"] }, { name = "api.svc", keys = ["base_url"] }] }
+sts_actions = []
+op_calls = 0
+files_written = ["kurama-config.toml"]
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stderr_empty = true
+stdout_json = { "" = { length = 5 }, "/path" = { contains = "/kurama-config.toml" }, "/changed" = true, "/applied" = true, "/changes" = [{ section = "aws", action = "unset", key = "aws.session_cache.duration" }, { section = "api.svc", action = "unset", key = "api.svc.description" }], "/warnings" = [] }

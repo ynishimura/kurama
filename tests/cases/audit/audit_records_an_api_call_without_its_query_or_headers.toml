@@ -1,0 +1,46 @@
+# With `[audit] enabled = true` a person's call is recorded too. The entry
+# names the API, the method and the path -- never the query string, a header
+# or the credential, and the harness holds every audit line of every
+# scenario to the same rule. `kurama audit --json` reads it back.
+id = "audit_records_an_api_call_without_its_query_or_headers"
+feature = "audit"
+
+[combination]
+command = "api"
+source = "token"
+secret = "op"
+audit = "enabled"
+
+[input]
+args = ["api", "example", "/items?token=query-secret&q=1", "-H", "X-Trace: header-secret"]
+then_run = [["audit", "--json"]]
+config = """
+[audit]
+enabled = true
+
+[auth.example]
+kind = "token"
+token = "op://Agent/Example/credential"
+
+[api.example]
+base_url = "{server}/api"
+"""
+
+[fakes]
+op = "enabled"
+
+[expect]
+exit_code = 0
+token_grants = []
+files_written = ["home/.local/state/kurama/audit.jsonl"]
+
+[[expect.runs]]
+run = 0
+api_calls = { count = 1, authorization = "Bearer {fake_client_secret}", calls = [{ method = "GET", path = "/api/items?token=query-secret&q=1" }] }
+
+[[expect.runs]]
+run = 1
+op_calls = 0
+api_calls = { count = 0 }
+stdout_json = { "/entries" = { length = 1 }, "/entries/0/command" = "api", "/entries/0/target" = "example", "/entries/0/agent" = false, "/entries/0/method" = "GET", "/entries/0/path" = "/api/items", "/entries/0/status" = 200, "/entries/0/exit_code" = 0, "/entries/0/time" = "<string>" }
+stdout_excludes = ["query-secret", "token=", "header-secret", "X-Trace", "fake-client-secret", "op://"]

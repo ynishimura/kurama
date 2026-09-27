@@ -1,0 +1,30 @@
+[verification-harness]
+summary = "Runtime verification harness, scenarios, architecture rules and agent metadata"
+entry = "tests/support/mod.rs"
+files = [
+  "tests/support/",
+  "tests/scenarios/",
+  "tests/cases/",
+  "tests/architecture/",
+  "tests/fakes/",
+  ".agent/features/",
+  ".agent/real/",
+  ".github/workflows/ci.yml",
+  "lefthook.yml",
+  "mise.toml",
+]
+# `cargo test -- --list` prints test function names without the target name,
+# so integration tests are matched by function name.
+tests = ["adapters_do_not_depend_on_the_shell", "do_no_io", "ports_hold", "feature_map", "belongs_to_a_feature", "claimed_by_a_feature", "pinned_by_a_scenario", "error_code_repeated_causes", "xtask_files_say", "xtask_tests_start_the_binary", "xtask_starts_cargo_only"]
+scenarios = [
+  "verification_cases_execute_real_binary_and_compare_contract",
+  "verification_matrix_records_profile_role_region_and_side_effects",
+  "verification_harness_stdin_delivery_is_timeout_bounded",
+  "verification_harness_secret_scan_fails_closed",
+  "verification_harness_rejects_cases_without_expectations",
+  "verification_harness_architecture_detects_late_ctrl_c_listener",
+  "verification_harness_architecture_rejects_invalid_error_code_exemptions",
+]
+
+[verification-harness.real]
+not_applicable = "the harness is the fake side itself; what it stands in for is declared by the feature it stands in for"

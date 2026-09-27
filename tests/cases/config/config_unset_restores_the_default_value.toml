@@ -1,0 +1,40 @@
+# `config unset` removes a key, and the default applies again. A duration
+# below the allowed minimum makes the file invalid; unsetting it repairs the
+# file, because the result is what is checked, and `config check` then
+# passes. The rest of the section and the comment beside the other key stay.
+id = "config_unset_restores_the_default_value"
+feature = "config"
+
+[combination]
+command = "config-unset"
+output = "json"
+
+[input]
+args = ["config", "unset", "aws.session_cache.duration", "--json"]
+then_run = [["config", "show", "aws.session_cache"], ["config", "check", "--json"]]
+replace_config = """
+[core]
+log_level = "debug"   # loud
+
+[aws.session_cache]
+enabled = true   # keep
+duration = 60    # too short
+"""
+
+[expect]
+exit_code = 0
+stdout_json = { "/valid" = true }
+sts_actions = []
+op_calls = 0
+files_written = ["kurama-config.toml"]
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stderr_empty = true
+stdout_json = { "/changed" = true, "/applied" = true, "/changes" = { length = 1 }, "/changes/0/section" = "aws", "/changes/0/action" = "unset", "/changes/0/key" = "aws.session_cache.duration", "/warnings" = { length = 0 } }
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+stdout = { equals = "[aws.session_cache]\nenabled = true   # keep\n" }

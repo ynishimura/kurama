@@ -1,0 +1,50 @@
+# `config list` names each saved section with its keys, as saved; a SECTION
+# narrows it to one table, one section or the keys inside one, and one that
+# the file does not have is CONFIG_INVALID.
+id = "config_list_names_each_section_and_its_keys"
+feature = "config"
+
+[combination]
+command = "config-list"
+output = "json"
+config = "valid"
+
+[input]
+args = ["config", "list"]
+then_run = [["config", "list", "auth.nope"], ["config", "list", "aws.session_cache", "--json"]]
+replace_config = """
+[aws.session_cache]
+enabled = false
+duration = 3600
+
+[aws.session_name]
+prefix = "team"
+
+[auth.svc]
+kind = "token"
+token = "op://Agent/svc/credential"
+
+[api.svc]
+base_url = "https://svc.example.com"
+headers = { Accept = "application/json" }
+"""
+
+[expect]
+exit_code = 0
+stderr_empty = true
+stdout_json = { "/sections" = { length = 1 }, "/sections/0/name" = "aws", "/sections/0/keys" = ["session_cache.enabled", "session_cache.duration"] }
+sts_actions = []
+op_calls = 0
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stderr_empty = true
+stdout = { equals = "aws: session_cache.enabled, session_cache.duration, session_name.prefix\nauth.svc: kind, token\napi.svc: base_url, headers.Accept\n" }
+
+[[expect.runs]]
+run = 1
+error = { code = "CONFIG_INVALID", exit = 2 }
+stderr_contains = ["has no auth.nope"]
+hint = "`kurama config list` shows the sections and keys the file has"

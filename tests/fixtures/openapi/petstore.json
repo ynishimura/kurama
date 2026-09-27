@@ -1,0 +1,93 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Petstore",
+    "version": "1.2.0",
+    "description": "A small pet store, the way GitHub's description is shaped."
+  },
+  "servers": [{"url": "https://petstore.example.com/v1"}],
+  "security": [{"oauth2": ["read:pets"]}],
+  "paths": {
+    "/pets": {
+      "get": {
+        "operationId": "pets/list",
+        "summary": "List pets",
+        "description": "List the pets of the store.\n\nPaginated.",
+        "tags": ["pets"],
+        "parameters": [
+          {"name": "limit", "in": "query", "description": "Page size", "schema": {"type": "integer", "default": 20}},
+          {"$ref": "#/components/parameters/status"}
+        ],
+        "responses": {"200": {"description": "ok"}}
+      },
+      "post": {
+        "operationId": "pets/create",
+        "summary": "Create a pet",
+        "tags": ["pets"],
+        "security": [{"oauth2": ["write:pets", "read:pets"]}],
+        "requestBody": {"$ref": "#/components/requestBodies/NewPet"},
+        "externalDocs": {"url": "https://docs.example.com/pets#create"},
+        "responses": {"201": {"description": "created"}}
+      }
+    },
+    "/pets/{petId}": {
+      "parameters": [
+        {"name": "petId", "in": "path", "required": true, "description": "The pet id", "schema": {"type": "string"}}
+      ],
+      "get": {
+        "operationId": "pets/get",
+        "summary": "Get a pet",
+        "tags": ["pets"],
+        "parameters": [
+          {"name": "X-Trace", "in": "header", "description": "Trace id", "schema": {"type": "string"}}
+        ],
+        "responses": {"200": {"description": "ok"}}
+      },
+      "delete": {
+        "summary": "Delete a pet",
+        "tags": ["pets"],
+        "deprecated": true,
+        "responses": {"204": {"description": "gone"}}
+      }
+    },
+    "/owners/{ownerId}/pets": {
+      "get": {
+        "operationId": "owners/list-pets",
+        "summary": "List the pets of an owner",
+        "tags": ["owners", "pets"],
+        "parameters": [
+          {"name": "ownerId", "in": "path", "required": true, "schema": {"type": "integer"}},
+          {"name": "adopted", "in": "query", "schema": {"type": "boolean"}}
+        ],
+        "responses": {"200": {"description": "ok"}}
+      }
+    }
+  },
+  "components": {
+    "parameters": {
+      "status": {"name": "status", "in": "query", "description": "Only pets in this state", "schema": {"type": "string", "enum": ["available", "sold"]}}
+    },
+    "requestBodies": {
+      "NewPet": {
+        "required": true,
+        "description": "The pet to add",
+        "content": {
+          "application/json": {"schema": {"$ref": "#/components/schemas/NewPet"}},
+          "application/xml": {"schema": {"$ref": "#/components/schemas/NewPet"}}
+        }
+      }
+    },
+    "schemas": {
+      "NewPet": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": {"type": "string"},
+          "tags": {"type": "array", "items": {"type": "string"}},
+          "owner": {"$ref": "#/components/schemas/Owner"}
+        }
+      },
+      "Owner": {"type": "object", "properties": {"login": {"type": "string", "example": "octocat"}}}
+    }
+  }
+}

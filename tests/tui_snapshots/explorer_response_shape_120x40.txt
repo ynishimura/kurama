@@ -1,0 +1,40 @@
+ 鞍馬 kurama api  pets  Response shapes 1                                                               bearer   sigv4
+┏ Operations (2) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓┏ Operation ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃   METHOD ID                                                   ┃┃ Operation pets/list                                 ┃
+┃ ▸ GET    pets/list                                            ┃┃ Request   GET /pets                                 ┃
+┃   GET    fallback                                             ┃┃ Summary   List pets                                 ┃
+┃                                                               ┃┃ Tags      -                                         ┃
+┃                                                               ┃┃ Scopes    -                                         ┃
+┃                                                               ┃┃ Params    -                                         ┃
+┃                                                               ┃┃ Body      -                                         ┃
+┃                                                               ┃┃ Response  200 application/json                      ┃
+┃                                                               ┃┃           A page                                    ┃
+┃                                                               ┃┃ Docs      -                                         ┃
+┃                                                               ┃┃ Shape     {                                         ┃
+┃                                                               ┃┃             "content": [                            ┃
+┃                                                               ┃┃               {                                     ┃
+┃                                                               ┃┃                 "id": "integer",                    ┃
+┃                                                               ┃┃                 "name": "string",                   ┃
+┃                                                               ┃┃                 "parent": {}                        ┃
+┃                                                               ┃┃               }                                     ┃
+┃                                                               ┃┃             ],                                      ┃
+┃                                                               ┃┃             "page": "integer"                       ┃
+┃                                                               ┃┃           }                                         ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃ Next      Enter opens the form                      ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┃                                                               ┃┃                                                     ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+ ↑↓ move  Enter open  / search  q quit  h history  ? help  c copy  o docs

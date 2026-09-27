@@ -1,0 +1,54 @@
+# URL validation and static planning reveal no signature and make no call;
+# a dry run reports only the normalized key.
+id = "data_https_errors_and_dry_run_make_no_service_calls"
+feature = "local-analytics"
+
+[combination]
+command = "data"
+source = "aws-profile"
+client = "data"
+data_op = "dry-run"
+data_source = "https"
+format = "jsonl"
+
+[input]
+args = ["data", "https://data-bucket.s3.amazonaws.com/events.jsonl?Signature=SYNTHETIC_SIGNATURE", "--json"]
+then_run = [
+  ["data", "https://data-bucket.s3.amazonaws.com.evil.test/events.jsonl?Signature=SYNTHETIC_SIGNATURE", "--aws-profile", "dev", "--json"],
+  ["data", "--bad-option", "https://data-bucket.s3.amazonaws.com/events.jsonl?Signature=SYNTHETIC_SIGNATURE"],
+  ["data", "https://data-bucket.s3.amazonaws.com/events.jsonl?Signature=SYNTHETIC_SIGNATURE", "--aws-profile", "dev", "--dry-run", "--json"],
+]
+
+[expect]
+exit_code = 0
+sts_actions = []
+api_calls = { count = 0 }
+stdout_excludes = ["SYNTHETIC_SIGNATURE"]
+stderr_excludes = ["SYNTHETIC_SIGNATURE"]
+stdout_json = { "/dry_run" = true, "/meta/sources/0/path" = "s3://data-bucket/events.jsonl" }
+op_calls = 0
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+exit_code = 2
+sts_actions = []
+api_calls = { count = 0 }
+stdout_excludes = ["SYNTHETIC_SIGNATURE"]
+stderr_excludes = ["SYNTHETIC_SIGNATURE"]
+
+[[expect.runs]]
+run = 1
+exit_code = 2
+sts_actions = []
+api_calls = { count = 0 }
+stdout_excludes = ["SYNTHETIC_SIGNATURE"]
+stderr_excludes = ["SYNTHETIC_SIGNATURE"]
+
+[[expect.runs]]
+run = 2
+exit_code = 2
+sts_actions = []
+api_calls = { count = 0 }
+stdout_excludes = ["SYNTHETIC_SIGNATURE"]
+stderr_excludes = ["SYNTHETIC_SIGNATURE"]

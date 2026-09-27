@@ -1,0 +1,24 @@
+ 鞍馬 kurama api  pets  Petstore 1.2.0                          bearer   sigv4
+┏ Operations (5) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃   METHOD┏ Help ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓         ┃
+┃ ▸ GET   ┃                                                          ┃         ┃
+┃   POST  ┃  ↑↓ or j/k    move through operations                    ┃         ┃
+┃   GET   ┃  /            search by id, path, summary or tag         ┃         ┃
+┃   DELETE┃  Enter        open the form; Enter again sends           ┃         ┃
+┃   GET   ┃  h            sent requests and favorites (on the list)  ┃         ┃
+┃         ┃  Tab          next field; letters go into it             ┃         ┃
+┃         ┃  Ctrl-A/E     move to the start/end of input             ┃         ┃
+┃         ┃  e or Ctrl-E  edit the focused body row in $EDITOR       ┃         ┃
+┃         ┃  c or Ctrl-Y  copy the CLI command (Ctrl-Y in the form)  ┃         ┃
+┃         ┃  j            jq filter on the result                    ┃         ┃
+┃         ┃  h            show the response headers                  ┃         ┃
+┃         ┃  t            the response as a tree; y copies a path    ┃         ┃
+┃         ┃  o            open the documentation link                ┃         ┃
+┃         ┃  ? or F1      this help (F1 in the form)                 ┃         ┃
+┃         ┃  Esc          back                                       ┃         ┃
+┃         ┃  q or Ctrl-C  quit (Ctrl-C in the form)                  ┃         ┃
+┃         ┃                                                          ┃         ┃
+┃         ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛         ┃
+┃                                                                              ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+ Esc close

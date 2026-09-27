@@ -1,0 +1,34 @@
+# A dry run with --output writes nothing: the human dry run says where the
+# body would go, and the plan lists the write as an effect the run would
+# have, after the request it depends on.
+id = "api_output_dry_run_writes_no_file"
+feature = "api-client"
+
+[combination]
+command = "api"
+source = "none"
+mode = "dry-run"
+output = "file"
+
+[input]
+args = ["api", "public", "/user", "--dry-run", "--output", "{home}/out/body.json"]
+then_run = [["api", "public", "/user", "--dry-run", "--json", "--output", "{home}/out/body.json"]]
+config = """
+[api.public]
+base_url = "{server}/api"
+"""
+
+[expect]
+exit_code = 0
+stdout_lines = 1
+stderr_empty = true
+stdout_json = { "/effects/0/effect" = "api_request", "/effects/1/effect" = "file_write", "/effects/1/performed" = false, "/effects/1/network" = false, "/effects/1/when" = "on_success", "/effects/1/detail" = { contains = "/out/body.json" }, "/effects" = { length = 2 } }
+api_calls = { count = 0 }
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stdout = "empty"
+stderr_contains = ["# dry run: nothing is sent", "# a 2xx body would be written to "]
+api_calls = { count = 0 }

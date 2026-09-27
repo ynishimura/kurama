@@ -1,0 +1,32 @@
+# AWS_CONFIG_FILE names an AWS config that does not exist: the report names
+# that file and the variable, checks no aws_profile reference against it, and
+# still finds the `[auth.default]` that `status` refuses, because without an
+# AWS config the one profile is `default`.
+id = "config_check_names_the_aws_config_file_override"
+feature = "config"
+
+[combination]
+command = "config-check"
+output = "json"
+config = "auth-name-collides"
+
+[input]
+args = ["config", "check", "--json"]
+env = { AWS_CONFIG_FILE = "/nonexistent/kurama-aws/config" }
+replace_config = """
+[auth.default]
+kind = "token"
+token = "op://Agent/default/credential"
+
+[api.signed]
+base_url = "https://execute-api.ap-northeast-1.amazonaws.com/prod"
+aws_profile = "nowhere"
+"""
+
+[expect]
+json_error = { code = "CONFIG_INVALID", exit = 2 }
+stderr_lines = 1
+stdout_json = { "/aws_config/path" = "/nonexistent/kurama-aws/config", "/aws_config/source" = "AWS_CONFIG_FILE", "/aws_config/exists" = false, "/diagnostics" = { length = 1 }, "/diagnostics/0/section" = "auth.default", "/diagnostics/0/message" = { contains = "same name as the AWS profile 'default'" } }
+sts_actions = []
+op_calls = 0
+no_files_written = true

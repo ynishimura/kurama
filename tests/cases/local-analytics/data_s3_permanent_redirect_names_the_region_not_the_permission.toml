@@ -1,0 +1,38 @@
+# A 301 for a bucket outside the region the request named is a region
+# mismatch, not a permission: text and JSON both name the region the request
+# was signed for and the bucket's, and the recovery advice is the region, never
+# S3 permissions or credentials. One HEAD, no retry elsewhere.
+id = "data_s3_permanent_redirect_names_the_region_not_the_permission"
+feature = "local-analytics"
+
+[combination]
+command = "data"
+source = "aws-profile"
+client = "data"
+data_op = "describe"
+data_source = "s3"
+format = "parquet"
+role = "assume-role"
+region = "cli"
+s3_response = "redirect"
+
+[input]
+args = ["data", "--from", "s3://west-bucket/orders.parquet", "--aws-profile", "dev", "--region", "ap-northeast-1", "--describe"]
+then_run = [["data", "--from", "s3://west-bucket/orders.parquet", "--aws-profile", "dev", "--region", "ap-northeast-1", "--describe", "--json"]]
+
+[expect]
+json_error = { code = "DATA_REJECTED", exit = 4 }
+stderr_json = { "/error/message" = { contains = ["in us-west-2, not in ap-northeast-1"] }, "/error/hint" = { contains = ["--region us-west-2", "[s3.*]"] }, "/error/next_actions/0/message" = { contains = ["--region us-west-2"] } }
+stderr_excludes = ["permission", "AWS credentials"]
+sts_actions = ["AssumeRole"]
+api_calls = { count = 1, sigv4 = { service = "s3", region = "ap-northeast-1" }, calls = [{ method = "HEAD", path = "/west-bucket/orders.parquet" }] }
+op_calls = 0
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+error = { code = "DATA_REJECTED", exit = 4 }
+stderr_contains = ["in us-west-2, not in ap-northeast-1"]
+hint = "use --region us-west-2"
+stderr_excludes = ["permission", "AWS credentials"]
+api_calls = { count = 1, sigv4 = { service = "s3", region = "ap-northeast-1" }, calls = [{ method = "HEAD", path = "/west-bucket/orders.parquet" }] }

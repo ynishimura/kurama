@@ -1,0 +1,140 @@
+# Every refused edit leaves the file as it was, and each says why: a value
+# of the wrong type (named by its line in the edited file), a reference to
+# an auth nobody wrote, a key in a section the file does not have, a literal
+# secret (never printed back), a VALUE that is not TOML, an input with one
+# bad section among good ones, a change to an auth that makes an API it did
+# not touch invalid (a header the API's own `headers` sets), a key given
+# twice, a key with the section that holds it, a key or a section the file
+# lacks, and missing arguments asked for as JSON.
+id = "config_edit_invalid_candidates_leave_the_file_unchanged"
+feature = "config"
+
+[combination]
+command = "config-set"
+config = "rejected"
+input = "file"
+
+[input]
+args = ["config", "set", "api.svc.description", "42"]
+then_run = [
+  ["config", "set", "api.svc.auth", "\"missing\""],
+  ["config", "set", "api.new.base_url", "\"https://new.example.com\""],
+  ["config", "set", "auth.svc.token", "\"plain-token-value\""],
+  ["config", "set", "core.log_level", "debug"],
+  ["config", "set", "--file", "{home}/edit/half-bad.toml"],
+  ["config", "unset", "core.log_level", "core.log_level"],
+  ["config", "remove", "api.svc", "api.svc.auth"],
+  ["config", "unset", "core.nope"],
+  ["config", "remove", "api.none", "--json"],
+  ["config", "set", "auth.svc.header", "\"X-Key\""],
+  ["config", "set", "--file", "{home}/edit/header.toml"],
+  ["config", "unset", "--json"],
+]
+config = """
+[core]
+log_level = "info"
+
+[auth.svc]
+kind = "token"
+token = "op://Agent/svc/credential"
+
+[api.svc]
+base_url = "https://svc.example.com"
+auth = "svc"
+headers = { X-Key = "1" }
+"""
+
+[input.home_files]
+"edit/half-bad.toml" = """
+[core]
+log_level = "warn"
+
+[api.svc]
+base_url = "https://svc.example.com"
+auth = "nope"
+"""
+
+"edit/header.toml" = """
+[auth.svc]
+kind = "token"
+token = "op://Agent/svc/credential"
+header = "X-Key"
+"""
+
+[expect]
+json_error = { code = "ARGUMENT_INVALID", exit = 2 }
+stderr_lines = 1
+stderr_json = { "/error/hint" = "run `kurama config --help` to see its subcommands, and `kurama config <subcommand> --help` for their arguments" }
+stdout = "empty"
+sts_actions = []
+op_calls = 0
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+error = { code = "CONFIG_INVALID", exit = 2 }
+stderr_contains = ["after the edit, config.toml line ", "invalid type"]
+hint = "fix the input; the file was not changed"
+
+[[expect.runs]]
+run = 1
+error = { code = "CONFIG_INVALID", exit = 2 }
+stderr_contains = ["[api.svc]", "names no [auth.missing]"]
+hint = "fix the input; the file was not changed"
+
+[[expect.runs]]
+run = 2
+error = { code = "CONFIG_INVALID", exit = 2 }
+stderr_contains = ["[api.new] is not in ", "/kurama-config.toml; nothing was changed"]
+hint = "`kurama config list` shows the sections the file has, and `kurama config add` adds a new one; the file was not changed"
+
+[[expect.runs]]
+run = 3
+error = { code = "CONFIG_INVALID", exit = 2 }
+stderr_contains = ["auth.svc.token must be a secret reference", "the value is not shown"]
+stderr_excludes = ["plain-token-value"]
+
+[[expect.runs]]
+run = 4
+error = { code = "CONFIG_INVALID", exit = 2 }
+stderr_contains = ["the value for core.log_level is not a TOML value", "write a string in quotes"]
+
+[[expect.runs]]
+run = 5
+error = { code = "CONFIG_INVALID", exit = 2 }
+stderr_contains = ["names no [auth.nope]"]
+hint = "fix the input; the file was not changed"
+
+[[expect.runs]]
+run = 6
+error = { code = "CONFIG_INVALID", exit = 2 }
+stderr_contains = ["core.log_level is given more than once; give each once"]
+
+[[expect.runs]]
+run = 7
+error = { code = "CONFIG_INVALID", exit = 2 }
+stderr_contains = ["api.svc already holds api.svc.auth; give one of them"]
+
+[[expect.runs]]
+run = 8
+error = { code = "CONFIG_INVALID", exit = 2 }
+stderr_contains = ["/kurama-config.toml has no core.nope"]
+hint = "`kurama config list` shows the sections and keys the file has"
+
+[[expect.runs]]
+run = 9
+json_error = { code = "CONFIG_INVALID", exit = 2 }
+stderr_lines = 1
+stderr_json = { "/error/message" = { contains = "[api.none] is not in " } }
+
+[[expect.runs]]
+run = 10
+error = { code = "CONFIG_INVALID", exit = 2 }
+stderr_contains = ["[api.svc]", "X-Key"]
+hint = "fix the input; the file was not changed"
+
+[[expect.runs]]
+run = 11
+error = { code = "CONFIG_INVALID", exit = 2 }
+stderr_contains = ["[api.svc]", "X-Key"]
+hint = "fix the input; the file was not changed"

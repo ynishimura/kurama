@@ -1,0 +1,16 @@
+[exec]
+summary = "`kurama exec <PROFILE> -- <CMD>`: get the source's credentials and exec(2) the command with them in its environment"
+entry = "src/shell/cli/commands/profile.rs"
+files = [
+  "src/shell/cli/commands/profile.rs",
+  "src/shell/cli/executor.rs",
+]
+tests = ["exec"]
+scenarios = [
+  "oauth_token_kind_sends_the_configured_header",
+]
+depends_on = ["assume-role", "oauth", "agent-policy", "audit"]
+notes = "Signals reach the command directly because kurama replaces itself; Ctrl-C handling is not scenario-tested (no TTY)"
+
+[exec.real]
+not_applicable = "the scenarios start the real child process kurama exec replaces itself with"

@@ -1,0 +1,35 @@
+[s3-explorer]
+summary = "`kurama s3 <S3>`: the explorer on a terminal, or walk a bucket and prefix (--list, --recursive), search keys by literal substring (--search) or list buckets (--buckets) with an [s3.*] connection's assumed role; bounded runs that say whether they are complete and continue with a cursor; one object's metadata (--head), a bounded conditional range of it (--preview: UTF-8 boundaries, gzip from the start, binary as a hex head) and a bounded literal line search of the objects under a prefix (--search-content); contents never written to disk"
+entry = "src/shell/cli/commands/s3.rs"
+files = [
+  "src/shell/cli/commands/s3.rs",
+  "src/shell/cli/commands/s3_command.rs",
+  "src/shell/cli/commands/s3_read.rs",
+  "src/shell/cli/commands/s3_contract.rs",
+  "src/domain/types/s3_object.rs",
+  "src/domain/functions/s3_text.rs",
+  "src/adapters/aws/s3_object.rs",
+  "src/domain/types/s3_browse.rs",
+  "src/domain/functions/s3_scan.rs",
+  "src/domain/functions/s3_handoff.rs",
+  "src/adapters/aws/s3_browse.rs",
+  "tests/support/s3_browse.rs",
+  "docs/agents/kurama/s3.md",
+  "src/shell/tui/s3/",
+  "tests/scenarios/s3_explorer.rs",
+]
+depends_on = ["tui", "cli-entry", "config", "errors", "assume-role", "profile-loading", "local-analytics", "shell-integration", "api-client", "api-explorer", "status"]
+scenarios = [
+  "tui_s3_browses_buckets_prefixes_and_objects",
+  "tui_s3_preview_shows_the_fetched_range_and_its_limits",
+  "tui_s3_content_search_starts_only_from_a_confirmed_form",
+  "tui_s3_esc_stops_the_search_and_keeps_the_partial_result",
+  "tui_s3_open_as_data_hands_the_uri_to_data",
+  "tui_s3_no_color_keeps_the_selection",
+  "tui_s3_renews_the_role_before_it_expires",
+  "tui_s3_tab_shows_the_session_of_its_aws_profile",
+]
+notes = "The fake S3 (tests/support/s3_browse.rs) answers ListObjectsV2 with common prefixes, pages and continuation tokens over exact keys, follows per-bucket regions and refuses ListBuckets; the scan's page-boundary resumption is exhaustively unit-tested in src/domain/functions/s3_scan.rs. Real S3: the public overturemaps-us-west-2 bucket read through a sandbox profile from ap-northeast-1 (the region correction included). ListBuckets success, paging and a real AccessDenied are verified by hand only. The same fake answers HeadObject and a ranged GetObject with If-Match over bodies in every format (a gzip, a binary, an empty, an archived object, one listed with a stale ETag, keys the role may not read). Real S3: --head and --preview of overturemaps-us-west-2 objects. The explorer TUI: `kurama s3 <S3>` on a terminal with no operation, or Enter on the home screen's S3 tab, walks the bucket list, levels (a page at a time) and previews through the same adapters, with a local filter, a key search and a content search that starts only from a confirmed form and streams what it finds; Esc drops the request in flight and starts no other (the fake's browse-slow bucket answers every page but the first after 30 s). `d` shows the kurama data request (the same s3_handoff as --json next_actions) and copies its command; nothing runs it. Render regression: src/shell/tui/s3/view_snapshot_tests.rs, tests/tui_snapshots/s3_*. The role is assumed before the screen opens through AssumedRoles; before each request the explorer task asks it again, which hands back the same credentials while they have more than a minute left and otherwise assumes the role through the same path, and the clients are rebuilt with the new credentials (the bucket regions kept). tui_s3_renews_the_role_before_it_expires drives it with an STS fake whose credentials end after 30 s. The home screen S3 tab STATE is the SESSION the AWS tab shows for the connection's aws_profile (`unknown profile` when ~/.aws/config lacks it), from the profile rows the home screen already loaded (tui_s3_tab_shows_the_session_of_its_aws_profile). agent --kind s3 --json and status --kind s3 are src/shell/cli/commands/s3_contract.rs."
+
+[s3-explorer.real]
+cases = "the public overturemaps-us-west-2 bucket listed, and ranges and a gzip of the public noaa-ghcn-pds bucket previewed, through the cm profile, signed first for ap-northeast-1"

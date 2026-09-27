@@ -1,0 +1,51 @@
+# --describe prints the operation, its parameters, the body skeleton with the
+# required properties only, the optional names, the scopes and an example
+# command, as text and as JSON; a misspelt operation names the closest one.
+id = "api_describe_prints_parameters_the_body_skeleton_and_the_example_command"
+feature = "api-explorer"
+
+[combination]
+command = "api"
+openapi = "file"
+output = "describe"
+
+[input]
+args = ["api", "pets", "--describe", "pets/create"]
+then_run = [
+  ["api", "pets", "--describe", "GET /pets/{petId}", "--json"],
+  ["api", "pets", "--describe", "pets/create", "--json"],
+  ["api", "pets", "--describe", "pets/creat"],
+]
+config = """
+[api.pets]
+base_url = "{server}/api"
+openapi = "{fixtures}/petstore.json"
+"""
+
+[expect]
+error = { code = "API_OPERATION_NOT_FOUND", exit = 2 }
+stderr_contains = ["operation \"pets/creat\" is not in the API description; did you mean pets/create"]
+hint = "run `kurama api pets --ops [QUERY]`"
+api_calls = { count = 0 }
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stdout = { starts_with = "pets/create\n  POST /pets\n  Create a pet\n", contains = [
+  "  tags: pets\n  docs: https://docs.example.com/pets#create\n",
+  "\nParameters\n  none\n",
+  "\nRequest body  application/json (required)\n  The pet to add\n  {\n    \"name\": \"\"\n  }\n  optional: tags, owner\n",
+  "\nScopes\n  read:pets, write:pets\n",
+  "\nExample\n  kurama api pets pets/create -d '{\"name\":\"\"}'\n",
+] }
+stdout_excludes = ["octocat"]
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+stdout_json = { "/id" = "pets/get", "/parameters/0/name" = "petId", "/parameters/0/in" = "path", "/parameters/0/required" = true, "/parameters/0/type" = "string", "/parameters/1/name" = "X-Trace", "/parameters/1/in" = "header", "/example_command" = "kurama api pets pets/get -P 'petId=<petId>'" }
+
+[[expect.runs]]
+run = 2
+exit_code = 0
+stdout_json = { "/request_body/content_type" = "application/json", "/request_body/required" = true, "/request_body/skeleton" = { name = "" }, "/request_body/optional" = ["tags", "owner"], "/example_command" = "kurama api pets pets/create -d '{\"name\":\"\"}'", "/parameters" = [] }

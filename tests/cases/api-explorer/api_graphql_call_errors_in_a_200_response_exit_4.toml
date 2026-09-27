@@ -1,0 +1,47 @@
+# A GraphQL server answers a failed operation with 200 and `errors`: that
+# is API_GRAPHQL_ERROR (exit 4), one line with the first error's message,
+# its path and how many more there are, and nothing on stdout. With --json
+# the envelope, data and errors included, is printed first.
+id = "api_graphql_call_errors_in_a_200_response_exit_4"
+feature = "api-explorer"
+
+[combination]
+command = "api"
+spec = "graphql"
+openapi = "file"
+source = "token"
+
+[input]
+args = ["api", "linear", "query.issue", "-P", "id=missing-7", "--select", "title"]
+then_run = [
+  ["api", "linear", "query.issue", "-P", "id=missing-8", "--select", "title", "--json"],
+]
+config = """
+[auth.linear]
+kind = "token"
+token = "op://Agent/linear/credential"
+format = "{token}"
+
+[api.linear]
+base_url = "{server}/api"
+graphql = "/graphql"
+graphql_schema = "{fixtures}/graphql-linear.json"
+"""
+
+[fakes]
+api = "graphql"
+op = "enabled"
+
+[expect]
+exit_code = 4
+stdout_json = { "/status" = 200, "/body/data" = "<null>", "/body/errors/0/message" = "Entity not found: missing-8" }
+stderr_json = { "/error/code" = "API_GRAPHQL_ERROR" }
+api_calls = { count = 1, authorization = "{fake_client_secret}" }
+
+[[expect.runs]]
+run = 0
+error = { code = "API_GRAPHQL_ERROR", exit = 4 }
+stderr_contains = ["the GraphQL answer carries errors: Entity not found: missing-7 (at issue); and 1 more"]
+hint = "rerun with --json to see every error and the data that came back with them"
+stdout = "empty"
+api_calls = { count = 1, authorization = "{fake_client_secret}" }

@@ -1,0 +1,36 @@
+# A pipe gets the bytes the server sent and nothing else, not even a final
+# newline; --jq reads the body through a parsed value, so 10.00 comes back
+# as 10.0.
+id = "api_pipe_keeps_the_body_bytes"
+feature = "api-client"
+
+[combination]
+command = "api"
+source = "none"
+output = "body-bytes"
+
+[input]
+args = ["api", "public", "/user"]
+then_run = [["api", "public", "/user", "--jq", ".[0].amount"]]
+config = """
+[api.public]
+base_url = "{server}/api"
+"""
+
+[fakes]
+api = "compact-array"
+
+[expect]
+exit_code = 0
+api_calls = { count = 1 }
+token_grants = []
+stdout = "plain-text"
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+stdout = { equals = "[{\"login\":\"octocat\",\"path\":\"/api/user\",\"amount\":10.00}]" }
+
+[[expect.runs]]
+run = 1
+stdout = { equals = "10.0\n" }

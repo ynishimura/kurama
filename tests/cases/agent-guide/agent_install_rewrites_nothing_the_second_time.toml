@@ -1,0 +1,30 @@
+# A second `agent install` finds every Skill as the first one wrote it and
+# reports each unchanged: the description fetched the first time is read
+# from the cache, and the table names each Skill with its status and path.
+id = "agent_install_rewrites_nothing_the_second_time"
+feature = "agent-guide"
+
+[combination]
+command = "agent-install"
+output = "text"
+
+[input]
+args = ["agent", "install"]
+then_run = [["agent", "install", "--json"]]
+config = """
+[api.remote]
+base_url = "{server}"
+openapi = "{server}/spec/petstore.json"
+"""
+
+[expect]
+exit_code = 0
+stdout_json = { "/dry_run" = false, "/skills" = { length = 2 }, "/skills/0/status" = "unchanged", "/skills/1/skill" = "kurama-api-remote", "/skills/1/status" = "unchanged" }
+spec_calls = { count = 0 }
+files_written = { include = ["*.cache/kurama/openapi/*.body", "*.cache/kurama/openapi/*.json", "home/.claude/skills/kurama-api-remote/SKILL.md", "home/.claude/skills/kurama/SKILL.md"] }
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stdout = { contains = ["status\tskill\tpath\treason\n", "written\tkurama\t", "/.claude/skills/kurama/SKILL.md\t\n", "written\tkurama-api-remote\t"] }
+spec_calls = { count = 1, status = 200 }

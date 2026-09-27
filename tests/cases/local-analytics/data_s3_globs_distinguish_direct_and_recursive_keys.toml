@@ -1,0 +1,44 @@
+# `*` stops at a directory boundary and `**` does not; every selected object
+# is read, after one LIST, with a valid signature on every request.
+id = "data_s3_globs_distinguish_direct_and_recursive_keys"
+feature = "local-analytics"
+
+[combination]
+command = "data"
+source = "aws-profile"
+client = "data"
+data_op = "query"
+data_source = "s3"
+format = "parquet"
+role = "assume-role"
+
+[input]
+args = ["data", "--from", "s3://data-bucket/month/*.parquet", "--aws-profile", "dev", "--query", "SELECT sum(amount) FROM data", "--json"]
+then_run = [["data", "--from", "s3://data-bucket/month/**/*.parquet", "--aws-profile", "dev", "--query", "SELECT sum(amount) FROM data", "--json"]]
+
+[expect]
+exit_code = 0
+sts_actions = ["AssumeRole"]
+op_calls = 0
+no_files_written = true
+stdout_json = { "/rows" = [["18.75"]], "/meta/input_count" = 2 }
+api_signed = { service = "s3", region = "ap-northeast-1" }
+api_requests_matching = [
+  { path_contains = "list-type=2", count = 1 },
+  { method = "GET", path_excludes = "list-type=", count = 2 },
+  { method = "GET", path = "/data-bucket/month/part.parquet", count = 1 },
+  { method = "GET", path = "/data-bucket/month/nested/part.parquet", count = 1 },
+]
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+sts_actions = ["AssumeRole"]
+stdout_json = { "/rows" = [["7.50"]], "/meta/input_count" = 1 }
+api_signed = { service = "s3", region = "ap-northeast-1" }
+api_requests_matching = [
+  { path_contains = "list-type=2", count = 1 },
+  { method = "GET", path_excludes = "list-type=", count = 1 },
+  { method = "GET", path = "/data-bucket/month/part.parquet", count = 1 },
+  { method = "GET", path = "/data-bucket/month/nested/part.parquet", count = 0 },
+]

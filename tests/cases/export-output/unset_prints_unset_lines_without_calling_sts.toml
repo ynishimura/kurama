@@ -1,0 +1,15 @@
+# `unset` prints only unset lines and calls nothing.
+id = "unset_prints_unset_lines_without_calling_sts"
+feature = "export-output"
+
+[combination]
+command = "unset"
+
+[input]
+args = ["unset"]
+
+[expect]
+exit_code = 0
+sts_actions = []
+stdout = { contains = ["unset KURAMA_AWS"], lines_start_with = ["unset "] }
+no_files_written = true

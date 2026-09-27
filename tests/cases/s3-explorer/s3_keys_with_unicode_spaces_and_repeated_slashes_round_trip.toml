@@ -1,0 +1,39 @@
+# A prefix is sent as written: Unicode, a space, +, %, .. and a repeated /
+# are the key, so each level below names exactly the keys S3 holds.
+id = "s3_keys_with_unicode_spaces_and_repeated_slashes_round_trip"
+feature = "s3-explorer"
+
+[combination]
+command = "s3"
+source = "aws-profile"
+role = "assume-role"
+s3_op = "list"
+s3_key = "unnormalized"
+
+[input]
+args = ["s3", "assets", "s3://browse-bucket/reports/日本語 +%/", "--list", "--json"]
+then_run = [
+  ["s3", "assets", "s3://browse-bucket/reports/日本語 +%//", "--list", "--json"],
+  ["s3", "assets", "s3://browse-bucket/reports/a b/../", "--list", "--json"],
+]
+config = """
+[s3.assets]
+aws_profile = "dev"
+"""
+
+[expect]
+exit_code = 0
+op_calls = 0
+no_files_written = true
+stdout_json = { "/prefix" = "reports/a b/../", "/prefixes" = [], "/objects/0/key" = "reports/a b/../c+d%20.csv", "/objects/1" = "<null>" }
+api_calls = { count = 1, sigv4 = { service = "s3", region = "ap-northeast-1" }, calls = [{ path = "/browse-bucket/?list-type=2&delimiter=%2F&max-keys=200&prefix=reports%2Fa%20b%2F..%2F" }] }
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stdout_json = { "/prefixes" = ["reports/日本語 +%//"], "/objects" = [] }
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+stdout_json = { "/prefixes" = [], "/objects/0/key" = "reports/日本語 +%//x.csv", "/objects/1" = "<null>" }

@@ -1,0 +1,23 @@
+# A session cache that cannot be read does not fail status: the MFA profile
+# reports its session as unreadable and needing a person, the profiles with
+# no MFA device are reported as before.
+id = "status_reports_unreadable_cached_mfa_session"
+feature = "status"
+
+[combination]
+command = "status"
+session_cache = "unreadable"
+output = "json"
+
+[input]
+args = ["status", "--only", "aws", "--json"]
+
+[fakes]
+op = "disabled"
+corrupt_session_cache = true
+
+[expect]
+exit_code = 0
+sts_actions = []
+op_calls = 0
+stdout_json = { "/0/name" = "default", "/0/session" = "not_required", "/1/name" = "dev", "/1/session" = "not_required", "/2/name" = "ops-mfa", "/2/session" = "unreadable", "/2/logged_in" = false, "/2/needs_human" = true, "/3" = "<null>" }

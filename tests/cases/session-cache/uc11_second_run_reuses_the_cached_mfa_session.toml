@@ -1,0 +1,41 @@
+# The first run gets an MFA session (serial and TOTP, signed with the
+# long-term key) and assumes the role with it; the second run assumes the
+# role with the cached session and asks 1Password for nothing.
+id = "uc11_second_run_reuses_the_cached_mfa_session"
+feature = "session-cache"
+
+[combination]
+command = "env"
+source = "aws-profile"
+mfa = "onepassword"
+session_cache = "reused"
+
+[input]
+args = ["env", "ops-mfa"]
+then_run = [["env", "ops-mfa"]]
+
+[fakes]
+op = "enabled"
+session_cache = true
+
+[expect]
+exit_code = 0
+stdout = "export-script"
+stderr_contains = ["# Using cached MFA session"]
+files_written = ["session-cache.json"]
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+sts_actions = ["GetSessionToken", "AssumeRole"]
+sts_calls = [
+  { action = "GetSessionToken", serial_number = "arn:aws:iam::123456789012:mfa/agent", token_code = "{op_totp}", signing_access_key = "{op_access_key}" },
+  { action = "AssumeRole", token_code = "<none>", signing_access_key = "{session_access_key}" },
+]
+stdout = { kind = "export-script", contains = ["export AWS_ACCESS_KEY_ID="] }
+
+[[expect.runs]]
+run = 1
+sts_actions = ["AssumeRole"]
+sts_calls = [{ action = "AssumeRole", token_code = "<none>", signing_access_key = "{session_access_key}" }]
+op_calls_containing = { "item get" = 0 }

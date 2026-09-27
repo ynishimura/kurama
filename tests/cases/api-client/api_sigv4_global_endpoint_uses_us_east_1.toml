@@ -1,0 +1,25 @@
+# A global endpoint (iam.amazonaws.com) is signed for us-east-1.
+id = "api_sigv4_global_endpoint_uses_us_east_1"
+feature = "api-client"
+
+[combination]
+command = "api"
+auth = "aws-profile"
+service = "host"
+region = "global"
+mode = "dry-run"
+
+[input]
+args = ["api", "iam", "/", "--dry-run"]
+config = """
+[api.iam]
+base_url = "https://iam.amazonaws.com"
+aws_profile = "dev"
+"""
+
+[expect]
+exit_code = 0
+stderr_contains = ["/us-east-1/iam/aws4_request"]
+sts_actions = []
+api_calls = { count = 0 }
+op_calls = 0

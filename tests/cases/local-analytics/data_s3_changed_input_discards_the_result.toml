@@ -1,0 +1,21 @@
+# An input whose ETag changed between the plan and the read is not answered.
+id = "data_s3_changed_input_discards_the_result"
+feature = "local-analytics"
+
+[combination]
+command = "data"
+source = "aws-profile"
+data_op = "query"
+data_source = "s3"
+format = "csv"
+role = "assume-role"
+s3_response = "changed"
+
+[input]
+args = ["data", "--from", "s3://data-bucket/changed.csv", "--aws-profile", "dev", "--query", "SELECT count(*) FROM data"]
+
+[expect]
+error = { code = "DATA_FAILED", exit = 1 }
+stderr_contains = ["an input changed"]
+sts_actions = ["AssumeRole"]
+no_files_written = true

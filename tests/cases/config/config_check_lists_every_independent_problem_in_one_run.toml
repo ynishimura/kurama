@@ -1,0 +1,52 @@
+# Four sections, four problems, in one run: an unknown key, a reference to
+# nothing, an exclusive pair and a value out of range, each with its code,
+# its section and its line. The run fails as a configuration error does.
+id = "config_check_lists_every_independent_problem_in_one_run"
+feature = "config"
+
+[combination]
+command = "config-check"
+output = "json"
+config = "rejected"
+
+[input]
+args = ["config", "check", "--json"]
+then_run = [["config", "check"]]
+replace_config = """
+[aws.session_cache]
+duration = 1
+
+[api.a]
+base_url = "https://a.example.com"
+base_urll = "https://a.example.com"
+
+[api.b]
+base_url = "https://b.example.com"
+auth = "nope"
+
+[api.c]
+base_url = "https://c.example.com"
+auth = "b"
+aws_profile = "dev"
+"""
+
+[expect]
+error = { code = "CONFIG_INVALID", exit = 2 }
+stderr_contains = ["has 4 errors; stdout lists each"]
+stdout = { contains = [
+  "error[CONFIG_INVALID] line 1: ",
+  "error[CONFIG_INVALID]: Configuration error: config.toml line 6: unknown field `base_urll`",
+  "error[CONFIG_INVALID] line 8: ",
+  "error[CONFIG_INVALID] line 12: ",
+  "4 errors, 0 warnings",
+] }
+sts_actions = []
+op_calls = 0
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+json_error = { code = "CONFIG_INVALID", exit = 2 }
+stderr_lines = 1
+stderr_json = { "/error/message" = { contains = "has 4 errors; stdout lists each" } }
+stdout_json = { "/valid" = false, "/diagnostics" = { length = 4 }, "/diagnostics/0/section" = "aws.session_cache", "/diagnostics/0/code" = "CONFIG_INVALID", "/diagnostics/0/line" = 1, "/diagnostics/1/section" = "api.a", "/diagnostics/1/line" = 6, "/diagnostics/1/message" = { contains = "unknown field `base_urll`" }, "/diagnostics/2/section" = "api.b", "/diagnostics/2/message" = { contains = "names no [auth.nope] section" }, "/diagnostics/3/section" = "api.c", "/diagnostics/3/message" = { contains = "auth and aws_profile are exclusive" }, "/diagnostics/3/hint" = { contains = "kurama agent" } }

@@ -1,0 +1,25 @@
+# --skill on an API without a description is refused like --schema, with
+# the line to add, before any request and with nothing on stdout.
+id = "api_skill_without_openapi_exits_2_with_hint"
+feature = "api-explorer"
+
+[combination]
+command = "api"
+openapi = "none"
+output = "skill"
+
+[input]
+args = ["api", "public", "--skill"]
+config = """
+[api.public]
+base_url = "{server}/api"
+"""
+
+[expect]
+error = { code = "API_SPEC_REQUIRED", exit = 2 }
+stderr_contains = ["[api.public] has no openapi description; --skill needs one"]
+hint = "add openapi = \"<URL or file>\" under [api.public] in config.toml"
+stdout = "empty"
+api_calls = { count = 0 }
+spec_calls = { count = 0 }
+no_files_written = true

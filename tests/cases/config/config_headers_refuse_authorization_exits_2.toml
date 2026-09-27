@@ -1,0 +1,29 @@
+# `Authorization` is where kurama puts the API's credential: a value for it in
+# the file would be a secret on disk, or one that silently loses to the
+# source's. It is refused with its line before anything is read or sent, and
+# the value is not echoed back.
+id = "config_headers_refuse_authorization_exits_2"
+feature = "config"
+
+[combination]
+command = "api"
+headers = "configured"
+config = "rejected"
+
+[input]
+args = ["api", "svc", "/items"]
+replace_config = """
+[api.svc]
+base_url = "{server}/api"
+headers = { Accept = "application/json", Authorization = "Bearer pasted" }
+"""
+
+[expect]
+error = { code = "CONFIG_INVALID", exit = 2 }
+stderr_contains = ["config.toml line 3: headers cannot set Authorization"]
+stderr_excludes = ["Bearer pasted"]
+hint = "fix /"
+sts_actions = []
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true

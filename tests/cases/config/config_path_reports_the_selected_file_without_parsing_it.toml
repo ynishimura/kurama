@@ -1,0 +1,32 @@
+# `config path` answers which file kurama uses without reading it, so a file
+# that is not even TOML still gets an answer: the path, what chose it and
+# whether it exists. Nothing is written and nothing is contacted.
+id = "config_path_reports_the_selected_file_without_parsing_it"
+feature = "config"
+
+[combination]
+command = "config-path"
+output = "json"
+config = "broken"
+
+[input]
+args = ["config", "path"]
+then_run = [["config", "path", "--json"]]
+replace_config = """
+[auth.broken
+this is not TOML =
+"""
+
+[expect]
+exit_code = 0
+stderr_empty = true
+stdout_json = { "/path" = { contains = "/kurama-config.toml" }, "/source" = "KURAMA_CONFIG_PATH", "/exists" = true }
+sts_actions = []
+op_calls = 0
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stderr_empty = true
+stdout = { line_count = 1, contains = ["/kurama-config.toml"] }

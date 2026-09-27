@@ -1,0 +1,21 @@
+# A whole-input aggregate keeps decimal precision and is not truncated by a
+# row limit larger than its one row.
+id = "data_local_query_preserves_decimal_and_scans_all_rows"
+feature = "local-analytics"
+
+[combination]
+command = "data"
+client = "data"
+data_op = "query"
+data_source = "local"
+format = "csv"
+
+[input]
+args = ["data", "--from", "{repo}/tests/fixtures/data/orders.csv", "--type", "amount=DECIMAL(18,2)", "--query", "SELECT sum(amount) AS total FROM data", "--max-rows", "1", "--json"]
+
+[expect]
+exit_code = 0
+stdout_json = { "/rows/0/0" = "33.00", "/truncated" = false, "/schema_version" = 1 }
+sts_actions = []
+op_calls = 0
+no_files_written = true

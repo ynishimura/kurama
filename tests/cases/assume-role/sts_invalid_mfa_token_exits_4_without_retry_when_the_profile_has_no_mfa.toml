@@ -1,0 +1,22 @@
+# An invalid TOTP on a profile without mfa_serial is exit 4 with no wait for the next window.
+id = "sts_invalid_mfa_token_exits_4_without_retry_when_the_profile_has_no_mfa"
+feature = "assume-role"
+
+[combination]
+command = "env"
+source = "aws-profile"
+role = "assume-role"
+sts_response = "invalid-mfa-token"
+
+[input]
+args = ["env", "dev"]
+
+[fakes]
+sts = { error = { code = "AccessDenied", message = "MultiFactorAuthentication failed with invalid MFA one time pass code." } }
+
+[expect]
+error = { code = "STS_INVALID_MFA_TOKEN", exit = 4 }
+sts_actions = ["AssumeRole"]
+no_files_written = true
+# Only a profile with `mfa_serial` waits for the next TOTP window and retries.
+stderr_excludes = ["waiting"]

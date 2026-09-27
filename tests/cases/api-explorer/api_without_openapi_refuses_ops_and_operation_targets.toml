@@ -1,0 +1,49 @@
+# --ops, an operationId target, --refresh-spec and --describe are refused
+# the same way on an API without a description, without a request.
+id = "api_without_openapi_refuses_ops_and_operation_targets"
+feature = "api-explorer"
+
+[combination]
+command = "api"
+openapi = "none"
+
+[input]
+args = ["api", "public", "--ops"]
+then_run = [
+  ["api", "public", "pets/list"],
+  ["api", "public", "--refresh-spec"],
+  ["api", "public", "--describe", "pets/list"],
+]
+config = """
+[api.public]
+base_url = "{server}/api"
+"""
+
+[expect]
+error = { code = "API_SPEC_REQUIRED", exit = 2 }
+stderr_contains = ["[api.public] has no openapi description; --describe needs one"]
+hint = "add openapi = \"<URL or file>\" under [api.public] in config.toml"
+api_calls = { count = 0 }
+spec_calls = { count = 0 }
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+error = { code = "API_SPEC_REQUIRED", exit = 2 }
+stderr_contains = ["--ops needs one"]
+api_calls = { count = 0 }
+spec_calls = { count = 0 }
+
+[[expect.runs]]
+run = 1
+error = { code = "API_ARGUMENT_INVALID", exit = 2 }
+stderr_contains = ["an operationId needs openapi under [api.public]; got \"pets/list\""]
+api_calls = { count = 0 }
+spec_calls = { count = 0 }
+
+[[expect.runs]]
+run = 2
+error = { code = "API_SPEC_REQUIRED", exit = 2 }
+stderr_contains = ["--refresh-spec needs one"]
+api_calls = { count = 0 }
+spec_calls = { count = 0 }

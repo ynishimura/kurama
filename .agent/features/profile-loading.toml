@@ -1,0 +1,13 @@
+[profile-loading]
+summary = "Parse ~/.aws/config into profiles and select one by name"
+entry = "src/adapters/profile/manager.rs"
+files = [
+  "src/domain/types/profile.rs",
+  "src/adapters/profile/",
+]
+tests = ["profile"]
+scenarios = []
+depends_on = ["assume-role", "config"]
+
+[profile-loading.real]
+not_applicable = "reads local AWS configuration files the scenarios write for real"

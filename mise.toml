@@ -1,0 +1,23 @@
+[tools]
+lefthook = "2.1.14"
+"cargo:cargo-machete" = "0.9.2"
+"cargo:cargo-sweep" = "0.8.0"
+"cargo:cargo-nextest" = "0.9.145"
+# `dist` generates and runs the release workflow (.github/workflows/release.yml).
+"aqua:axodotdev/cargo-dist" = "0.33.0"
+# `cargo about` writes THIRD-PARTY-NOTICES for a release (about.toml).
+"github:EmbarkStudios/cargo-about" = "0.9.2"
+
+[tasks.setup]
+description = "Install Git hooks, and build the xtask the agent workflow starts with"
+# `cargo xtask map <feature>` is the first thing AGENTS.md asks for, and on a
+# cold target/ it spends two minutes compiling xtask before printing anything.
+# Paying that here means the instruction is cheap when it is followed.
+run = ["lefthook install", "cargo build --quiet --package xtask"]
+
+[tasks.sweep]
+description = "Drop the cheapest target/ artifacts until the folder is under 12GB"
+# The xtask command is the one implementation: it drops the incremental caches
+# first, because cargo-sweep's size cap evicts in modification order and the
+# oldest files are the C++ crates nothing changes (DuckDB, aws-lc-sys).
+run = "cargo xtask sweep"

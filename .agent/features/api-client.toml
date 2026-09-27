@@ -1,0 +1,39 @@
+[api-client]
+summary = "`kurama api <API> [TARGET]`: one HTTP request to an [api.*] profile with its source's bearer token, the credential of a kind = \"token\" source in the header it names, or, with aws_profile, a SigV4 signature from the profile's role credentials; --json envelope, --jq through jaq, --output PATH (a 2xx body renamed into place), --pages N (one line per page, following Link rel=\"next\" or a --cursor PATH=PARAM, with a stop report on stderr), --shape / --sample N (the printed body cut to its types or its first N array elements), --dry-run (with --json, a plan document that starts no credential source), -v, -k, --timeout, --service / --region, one retry after a 401 on an OAuth token and none on the other two"
+entry = "src/shell/cli/commands/api.rs"
+files = [
+  "src/shell/cli/commands/api.rs",
+  "src/shell/cli/commands/api_plan.rs",
+  "src/shell/cli/commands/api_pages.rs",
+  "src/domain/functions/api_body_fit.rs",
+  "src/domain/functions/api_pages.rs",
+  "src/domain/functions/api_request.rs",
+  "src/domain/functions/signing_target.rs",
+  "src/domain/types/http.rs",
+  "src/ports/http.rs",
+  "src/ports/aws_credentials.rs",
+  "src/adapters/http.rs",
+  "src/adapters/jq.rs",
+  "src/adapters/sigv4.rs",
+  "src/shell/aws_profile_credentials.rs",
+  "src/shell/api_runtime_tests.rs",
+  "tests/api/",
+]
+tests = ["commands::api", "jq", "sigv4", "signing_target"]
+scenarios = [
+  "api_verbose_reports_each_secret_read",
+  "api_terminal_lays_out_the_json_body",
+  "api_non_interactive_on_a_pty_prints_the_same_bytes_as_a_pipe",
+  "api_terminal_json_envelope_stays_one_line",
+  "config_api_auth_and_aws_profile_are_exclusive_exits_2",
+  "config_headers_refuse_authorization_exits_2",
+  "config_headers_refuse_a_newline_in_a_value_exits_2",
+  "api_dry_run_json_names_every_call_the_run_makes",
+  "api_output_writes_the_body_bytes_to_the_path",
+  "api_output_refuses_a_read_only_directory_or_file_untouched",
+]
+depends_on = ["oauth", "assume-role", "profile-loading", "cli-entry", "config", "errors", "api-explorer", "secrets", "agent-policy", "audit"]
+notes = "TARGET without a value opens the explorer on a terminal and exits 2 (API_TARGET_REQUIRED) when stdin or stdout is not one; operationId / METHOD-path targets, -P, --ops and --describe live in api-explorer (src/shell/cli/commands/api_spec.rs), dispatched from commands/api.rs. Redirects are not followed so the credential never leaves the API's host. SigV4: the harness recomputes every signature from the request the fake API received with the fake AssumeRole credentials (tests/support/mod.rs decode_sigv4), and src/adapters/sigv4.rs carries AWS test-suite vectors; the host inference of Lambda function URLs, OpenSearch and AppSync is unit-tested only (the fake API is 127.0.0.1) and no real AWS API has been called yet"
+
+[api-client.real]
+cases = "GitHub REST (public), STS GetCallerIdentity through the kurama-real and kurama-sandbox profiles"

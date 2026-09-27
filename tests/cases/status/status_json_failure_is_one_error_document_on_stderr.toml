@@ -1,0 +1,30 @@
+# status --json on an invalid configuration, and with an argument it does not
+# take, is one JSON error document each, exit 2.
+id = "status_json_failure_is_one_error_document_on_stderr"
+feature = "status"
+
+[combination]
+command = "status"
+output = "json"
+config = "api-auth-names-no-source"
+
+[input]
+args = ["status", "--json"]
+then_run = [["status", "--json", "--no-such-flag"]]
+config = """
+[api.svc]
+base_url = "https://api.example.com"
+auth = "nope"
+"""
+
+[expect]
+json_error = { code = "ARGUMENT_INVALID", exit = 2 }
+stderr_lines = 1
+stderr_json = { "/error/category" = "usage", "/error/message" = "unknown argument --no-such-flag; consult kurama status --help", "/error/hint" = "run `kurama status --help` to see the arguments it takes" }
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+json_error = { code = "CONFIG_INVALID", exit = 2 }
+stderr_lines = 1
+stderr_json = { "/error/message" = { contains = "[api.svc] auth = \"nope\" names no [auth.nope] section" }, "/error/hint" = { contains = "kurama agent" } }

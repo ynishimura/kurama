@@ -1,0 +1,24 @@
+ 鞍馬 kurama api  pets  Petstore 1.2.0                          bearer   sigv4
+┏ pets/get┏ jq filter ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓━━━━━━━━━┓
+┃ {       ┃                                                          ┃         ┃
+┃   "id": ┃  Filter  .tags[]▏                                        ┃         ┃
+┃   "name"┃                                                          ┃         ┃
+┃   "tags"┃  Examples (1/8)                                          ┃         ┃
+┃     "dog┃  ▸ .tags | length  Count items                           ┃         ┃
+┃     "fri┃    .tags[]  Show each item                               ┃         ┃
+┃   ],    ┃    .  Show the complete value                            ┃         ┃
+┃   "owner┃    type  Show the JSON type                              ┃         ┃
+┃     "log┃    [.]  Wrap the value in an array                       ┃         ┃
+┃   }     ┃    {value: .}  Wrap the value in an object               ┃         ┃
+┃ }       ┃    tostring  Convert the value to text                   ┃         ┃
+┃         ┃    . == null  Check whether the value is null            ┃         ┃
+┃         ┃                                                          ┃         ┃
+┃         ┃  preview (2 shown)                                       ┃         ┃
+┃         ┃  dog                                                     ┃         ┃
+┃         ┃  friendly                                                ┃         ┃
+┃         ┃                                                          ┃         ┃
+┃         ┃  Empty filter restores the response body.                ┃         ┃
+┃         ┃                                                          ┃         ┃
+┃         ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛         ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+ ↑↓ select  Enter insert  Esc back  Tab complete

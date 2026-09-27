@@ -1,0 +1,25 @@
+# `console` assumes the role, trades its credentials for a signin token at
+# the federation endpoint once, and opens the browser once on the login URL.
+id = "uc07_console_fetches_signin_token_and_opens_login_url"
+feature = "console-federation"
+
+[combination]
+command = "console"
+source = "aws-profile"
+role = "assume-role"
+federation = "ok"
+
+[input]
+args = ["console", "dev"]
+
+[fakes]
+browser = true
+
+[expect]
+exit_code = 0
+sts_actions = ["AssumeRole"]
+federation_calls = [{ action = "getSigninToken", session_access_key = "{result_access_key}" }]
+open_calls_containing = [["Action=login", "SigninToken={signin_token}"]]
+stdout = "empty"
+stderr_contains = ["# Console URL:"]
+no_files_written = true

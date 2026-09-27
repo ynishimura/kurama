@@ -1,0 +1,19 @@
+# A profile ~/.aws/config does not hold is exit 2 with the command that
+# lists the ones it does.
+id = "profile_loading_unknown_profile_exits_2_with_hint"
+feature = "profile-loading"
+
+[combination]
+command = "env"
+source = "aws-profile"
+profile = "missing"
+
+[input]
+args = ["env", "missing"]
+
+[expect]
+error = { code = "PROFILE_NOT_FOUND", exit = 2 }
+sts_actions = []
+stderr_contains = ["Profile not found: missing"]
+hint = "run `kurama status`"
+no_files_written = true
