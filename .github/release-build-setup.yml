@@ -1,9 +1,9 @@
 # Steps `dist` runs in every release build job before building
 # (dist-workspace.toml: github-build-setup). They write THIRD-PARTY-NOTICES,
 # which dist puts in every archive (`include`).
+# Built from source: cargo-about publishes no binary for x86_64-apple-darwin,
+# and a fallback install without `--features cli` installs no executable.
 - name: Install cargo-about
-  uses: taiki-e/install-action@v2
-  with:
-    tool: cargo-about@0.9.2
+  run: cargo install --locked cargo-about@0.9.2 --features cli
 - name: Write THIRD-PARTY-NOTICES
   run: cargo about generate --locked about.hbs -o THIRD-PARTY-NOTICES

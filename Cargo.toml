@@ -136,3 +136,7 @@ debug = "line-tables-only"
 # C++ objects are 90% DWARF. The same is true of every other dependency.
 [profile.dev.package."*"]
 debug = false
+
+# The profile `dist` builds release archives with (dist-workspace.toml).
+[profile.dist]
+inherits = "release"

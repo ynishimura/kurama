@@ -127,9 +127,7 @@ jobs:
             echo "$HOME/.cargo/bin" >> $GITHUB_PATH
           fi
       - name: "Install cargo-about"
-        uses: "taiki-e/install-action@v2"
-        with:
-          "tool": "cargo-about@0.9.2"
+        run: "cargo install --locked cargo-about@0.9.2 --features cli"
       - name: "Write THIRD-PARTY-NOTICES"
         run: "cargo about generate --locked about.hbs -o THIRD-PARTY-NOTICES"
       - name: Install dist
