@@ -42,12 +42,12 @@ jobs:
       matrix:
         os: ${{ fromJSON(inputs.platform == 'all' && '["ubuntu-24.04", "macos-latest"]' || inputs.platform == 'macos' && '["macos-latest"]' || '["ubuntu-24.04"]') }}
     steps:
-    - uses: actions/checkout@v7
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         persist-credentials: false
 
     - name: Install Rust
-      uses: dtolnay/rust-toolchain@stable
+      uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de # master
       with:
         # The toolchain developers run locally, so clippy -D warnings reads
         # the same lints here; the msrv job holds the minimum.
@@ -55,11 +55,15 @@ jobs:
         components: rustfmt, clippy
 
     - name: Cache cargo dependencies
-      uses: actions/cache@v6
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: |
           ~/.cargo/registry/index/
           ~/.cargo/registry/cache/
+          # The unpacked sources too: libduckdb-sys reruns its build (the
+          # whole C++ engine) when duckdb.tar.gz there has a new mtime, which
+          # every fresh unpack gives it.
+          ~/.cargo/registry/src/
           ~/.cargo/git/db/
           target/
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
@@ -86,7 +90,7 @@ jobs:
 
     - name: Upload verification report
       if: always()
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
         name: verification-report-${{ matrix.os }}
         path: |
@@ -101,12 +105,12 @@ jobs:
     name: Rust 1.95.0 builds
     runs-on: ubuntu-24.04
     steps:
-    - uses: actions/checkout@v7
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         persist-credentials: false
 
     - name: Install Rust
-      uses: dtolnay/rust-toolchain@stable
+      uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de # master
       with:
         toolchain: "1.95.0"
 
@@ -118,12 +122,12 @@ jobs:
     if: ${{ inputs.coverage }}
     runs-on: ubuntu-24.04
     steps:
-    - uses: actions/checkout@v7
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         persist-credentials: false
 
     - name: Install Rust
-      uses: dtolnay/rust-toolchain@stable
+      uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de # master
       with:
         toolchain: stable
         components: llvm-tools-preview
@@ -136,7 +140,7 @@ jobs:
 
     # Kept as a run artifact: no third-party upload and no token to hold.
     - name: Upload coverage report
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
         name: coverage-lcov
         path: lcov.info

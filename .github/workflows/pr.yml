@@ -28,12 +28,12 @@ jobs:
     name: rustfmt
     runs-on: ubuntu-24.04
     steps:
-    - uses: actions/checkout@v7
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         persist-credentials: false
 
     - name: Install Rust
-      uses: dtolnay/rust-toolchain@stable
+      uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de # master
       with:
         toolchain: stable
         components: rustfmt
@@ -45,12 +45,12 @@ jobs:
     name: clippy and unit tests
     runs-on: ubuntu-24.04
     steps:
-    - uses: actions/checkout@v7
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         persist-credentials: false
 
     - name: Install Rust
-      uses: dtolnay/rust-toolchain@stable
+      uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de # master
       with:
         toolchain: stable
         components: clippy
@@ -58,14 +58,21 @@ jobs:
     # Its own key: ci.yml's cache holds the whole gate's target/, this one
     # only what clippy and the unit tests build.
     - name: Cache cargo dependencies
-      uses: actions/cache@v6
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: |
           ~/.cargo/registry/index/
           ~/.cargo/registry/cache/
+          # The unpacked sources too: libduckdb-sys reruns its build (the
+          # whole C++ engine) when duckdb.tar.gz there has a new mtime, which
+          # every fresh unpack gives it.
+          ~/.cargo/registry/src/
           ~/.cargo/git/db/
           target/
         key: pr-${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        # A Cargo.lock change keeps the build of everything it did not touch
+        # (DuckDB above all) instead of starting from nothing.
+        restore-keys: pr-${{ runner.os }}-cargo-
 
     - name: Clippy
       run: cargo clippy --locked --workspace --all-targets --features test-fakes -- -D warnings
