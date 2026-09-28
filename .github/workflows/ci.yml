@@ -60,6 +60,10 @@ jobs:
         path: |
           ~/.cargo/registry/index/
           ~/.cargo/registry/cache/
+          # The unpacked sources too: libduckdb-sys reruns its build (the
+          # whole C++ engine) when duckdb.tar.gz there has a new mtime, which
+          # every fresh unpack gives it.
+          ~/.cargo/registry/src/
           ~/.cargo/git/db/
           target/
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
