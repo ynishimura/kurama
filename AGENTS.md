@@ -72,8 +72,10 @@ nothing changes, and evicting those made the next gate spend five minutes
 rebuilding DuckDB. `cargo xtask sweep` is the same cap for a manual run.
 Push from the
 branch's own worktree after committing: the gate checks the current working
-tree. GitHub Actions is manual only (`workflow_dispatch`), with a platform
-choice and optional coverage. See `docs/development/setup.md` for setup and
+tree. On GitHub, `pr.yml` runs rustfmt, clippy and the unit tests on every
+pull request (both jobs required by the `main` ruleset); the full gate,
+`ci.yml`, is manual only (`workflow_dispatch`), with a platform choice and
+optional coverage. See `docs/development/setup.md` for setup and
 manual CI commands.
 
 ## Layout

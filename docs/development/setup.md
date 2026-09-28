@@ -90,7 +90,9 @@ mise exec -- lefthook run pre-push
 
 ### Manual GitHub Actions
 
-Pushes and pull requests do not start GitHub Actions. For another OS, the minimum
+Every pull request and every push to `main` runs `.github/workflows/pr.yml`
+(rustfmt, clippy and the unit tests on Ubuntu; the `main` ruleset requires
+both jobs). The full gate below is manual. For another OS, the minimum
 Rust version, or coverage, open **Actions > CI > Run workflow**, select the branch,
 and choose `ubuntu`, `macos`, or `all`. Ubuntu alone is the default. Enable the
 coverage checkbox only when needed; it runs an additional Ubuntu job.
@@ -121,9 +123,10 @@ into `target/`, so a run that restores no cache is the plain online build.
 
 #### Manual CI record
 
-Automatic runs on push or pull request are a separate decision, taken after
-the repository is public. These runs are what it is taken on; fill a row in
-when the run is made.
+The full gate stays manual; the light checks of `pr.yml` are what runs on
+every pull request (decided 2026-09-29, after the repository went public).
+These runs are what moving more of the gate onto pull requests would be
+decided on; fill a row in when the run is made.
 
 | Run | Date | Commit | Result | Duration |
 | --- | --- | --- | --- | --- |

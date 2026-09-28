@@ -1,6 +1,6 @@
 # Manual dispatch only: pushes and pull requests never start this workflow,
-# on this repository or from a fork. The first line of verification is the
-# local gate (`cargo xtask check`, run by the Lefthook pre-push hook); this
+# on this repository or from a fork (they run the light checks of pr.yml).
+# The first line of verification is the local gate (`cargo xtask check`, run by the Lefthook pre-push hook); this
 # re-runs the same gate on a chosen platform, not a different standard. A
 # maintainer dispatches it on a pull request's branch after reading the diff; a
 # fork's branch is pushed to `ci/pr-<N>` first, because a dispatch runs only a

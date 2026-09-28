@@ -449,16 +449,15 @@ mod denial_tests {
 #[cfg(all(test, not(target_os = "macos")))]
 mod tests {
     use super::*;
+    use crate::adapters::utils::test_env;
 
     #[test]
     #[serial_test::serial]
     fn native_keychain_reads_report_the_platform_limit() {
         let fake_dir = std::env::var_os("KURAMA_TEST_KEYCHAIN_SECRET_DIR");
-        std::env::remove_var("KURAMA_TEST_KEYCHAIN_SECRET_DIR");
+        test_env::remove("KURAMA_TEST_KEYCHAIN_SECRET_DIR");
         let result = load_secret("kurama-unused", "unused");
-        if let Some(dir) = fake_dir {
-            std::env::set_var("KURAMA_TEST_KEYCHAIN_SECRET_DIR", dir);
-        }
+        test_env::set_or_remove("KURAMA_TEST_KEYCHAIN_SECRET_DIR", fake_dir);
         let Err(KeychainError::Backend(message)) = result else {
             panic!("native keychain reads must report the unsupported platform");
         };

@@ -105,13 +105,18 @@ fail is in [docs/development/prevention-layers.md](docs/development/prevention-l
 
 ## CI
 
-This repository has CI, and it is manual: GitHub Actions runs **only on
-manual dispatch** (`workflow_dispatch`). Pushes and pull requests, including
-pull requests from forks, do not start it, so no check appears on a pull
-request by itself. The first line of verification is the local gate above:
-the `verification-report.md` you paste is what a reviewer reads first.
+CI runs in two parts. Every pull request, forks included, and every push to
+`main` runs `.github/workflows/pr.yml`: `cargo fmt --check`, clippy with
+`-D warnings` and the unit tests (the library and xtask), on Ubuntu. The
+`main` ruleset requires both of its jobs, so they have to pass before a
+merge. They are a subset of the local gate, not a replacement: the scenarios,
+the TUI checks and the architecture rules run only there and in the full
+gate, and the `verification-report.md` you paste is still what a reviewer
+reads first.
 
-After review, a maintainer re-runs the same gate on GitHub before merging.
+The full gate (`.github/workflows/ci.yml`) runs **only on manual dispatch**
+(`workflow_dispatch`). After review, a maintainer re-runs it on GitHub before
+merging.
 A dispatch can only run a branch of this repository, so a pull request from a
 fork is copied to a `ci/pr-<N>` branch first, once the maintainer has read
 the diff (the workflow runs the pull request's code, `build.rs` included):

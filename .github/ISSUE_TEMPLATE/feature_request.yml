@@ -1,0 +1,48 @@
+name: Feature request
+description: A command, an option, a configuration key or a provider kurama should have
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A question about using kurama goes to [Discussions](https://github.com/ynishimura/kurama/discussions) first.
+  - type: input
+    id: affects
+    attributes:
+      label: Affected features
+      description: The features whose files the change touches, as `cargo xtask map` names them. Leave `<feature>` if you do not know.
+      value: "Affects: <feature>"
+    validations:
+      required: true
+  - type: textarea
+    id: background
+    attributes:
+      label: Background
+      description: What you are trying to do, and what gets in the way today.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: What kurama should do. Commands and configuration as you would type them are the clearest way to say it.
+    validations:
+      required: true
+  - type: textarea
+    id: boundaries
+    attributes:
+      label: Side-effect boundaries
+      description: "What must not change: output other commands produce, files written, calls made to AWS, 1Password or an API."
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+  - type: textarea
+    id: scenarios
+    attributes:
+      label: Scenarios
+      description: The runtime scenarios this is done by, one `- [ ] <feature>_<behavior>` per line; `cargo xtask issue-check` checks their shape.
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: Out of scope

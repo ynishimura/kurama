@@ -1,0 +1,76 @@
+# The light checks every pull request and every push to main runs: formatting,
+# clippy and the unit tests, on Ubuntu. The main ruleset requires both jobs, so
+# a pull request shows them before anyone reads it. The full gate (scenarios,
+# TUI, architecture rules, other platforms) stays in ci.yml, dispatched by a
+# maintainer, and in the local pre-push hook. Like ci.yml it uses no secrets
+# and a read-only token; a pull request from a fork gets no more than that.
+name: PR checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+  RUST_BACKTRACE: 1
+
+jobs:
+  fmt:
+    name: rustfmt
+    runs-on: ubuntu-24.04
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        toolchain: stable
+        components: rustfmt
+
+    - name: Check formatting
+      run: cargo fmt --all --check
+
+  lint-and-test:
+    name: clippy and unit tests
+    runs-on: ubuntu-24.04
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        toolchain: stable
+        components: clippy
+
+    # Its own key: ci.yml's cache holds the whole gate's target/, this one
+    # only what clippy and the unit tests build.
+    - name: Cache cargo dependencies
+      uses: actions/cache@v6
+      with:
+        path: |
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+          target/
+        key: pr-${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Clippy
+      run: cargo clippy --locked --workspace --all-targets --features test-fakes -- -D warnings
+
+    - name: Unit tests
+      run: |
+        cargo test --locked --features test-fakes --lib
+        cargo test --locked -p xtask --bin xtask
