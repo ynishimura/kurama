@@ -1,4 +1,4 @@
-<!-- en: b3b04ecbc95e -->
+<!-- en: af93c18e224b -->
 <p align="center">
   <img src="docs/assets/kurama-banner.svg" alt="鞍馬 Kurama: 夜の山の稜線に立つ鳥居と、その向こうの満月。下には青海波の帯" width="100%">
 </p>
@@ -13,7 +13,8 @@
 </p>
 
 <p align="center">
-  <a href="CONTRIBUTING.md#ci"><img src="https://img.shields.io/badge/CI-manual_dispatch-1c1c1c?style=for-the-badge&amp;logo=githubactions&amp;logoColor=38a1db&amp;labelColor=1e50a2" alt="CI: 手動実行"></a>
+  <a href="https://github.com/ynishimura/kurama/actions/workflows/pr.yml"><img src="https://img.shields.io/github/actions/workflow/status/ynishimura/kurama/pr.yml?branch=main&amp;label=PR%20checks&amp;style=for-the-badge&amp;logo=githubactions&amp;logoColor=38a1db&amp;labelColor=1e50a2&amp;color=1c1c1c" alt="main の PR チェック"></a>
+  <a href="https://scorecard.dev/viewer/?uri=github.com/ynishimura/kurama"><img src="https://img.shields.io/ossf-scorecard/github.com/ynishimura/kurama?label=OpenSSF%20Scorecard&amp;style=for-the-badge&amp;labelColor=1e50a2&amp;color=1c1c1c" alt="OpenSSF Scorecard"></a>
   <a href="Cargo.toml"><img src="https://img.shields.io/badge/Rust-1.95.0%2B-1c1c1c?style=for-the-badge&amp;logo=rust&amp;logoColor=38a1db&amp;labelColor=1e50a2" alt="Rust 1.95.0 以降"></a>
   <a href="#動作環境"><img src="https://img.shields.io/badge/macOS-zsh-1c1c1c?style=for-the-badge&amp;logo=apple&amp;logoColor=38a1db&amp;labelColor=1e50a2" alt="対応環境: macOS と zsh"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-1c1c1c?style=for-the-badge&amp;labelColor=1e50a2" alt="ライセンス: MIT"></a>
@@ -907,13 +908,13 @@ macOS は、あるバイナリが初めてエントリを読むときにキー�
 | AWS のロール切り替え、MFA セッション、コンソールへのアクセス、OAuth 2.0 / OIDC と API キーのソース、ベアラートークン・ヘッダー・HTTP Basic・クエリパラメーター・SigV4 署名を使う `kurama api`、OpenAPI エクスプローラー、プリセット、`kurama data`、エクスプローラー付きの `kurama db`、macOS と zsh 向けの CLI/TUI | 対応するプロバイダーと API 定義の拡充、データ用の TUI |
 
 ## 開発
-<!-- en: f7b3d565a730 -->
+<!-- en: fe1733cc6843 -->
 
 コントリビューションを歓迎します。クローンからプルリクエストまでの流れは [CONTRIBUTING.md](CONTRIBUTING.md) に、脆弱性を非公開で報告する方法は [SECURITY.md](SECURITY.md) にあります。ユーザーから見える変更は [CHANGELOG.md](CHANGELOG.md) にまとめています。ビルドに何が含まれ、どのライセンスのもとにあるかは [docs/development/licenses.md](docs/development/licenses.md) に、リリースのビルド・署名・公開の手順は [docs/development/releasing.md](docs/development/releasing.md) にあります。
 
 開発の流れ（ビルド、テスト、開発版ビルドを自分のシェルで試す方法、キーチェーンのプロンプト）は [docs/development/setup.md](docs/development/setup.md) で説明しています。アーキテクチャのメモは [docs/development/fp-architecture.md](docs/development/fp-architecture.md) にあります。
 
-クローンしたら、一度だけ `mise trust` と `mise run setup` を実行して、開発ツールと Git フックをインストールします。push のたびに Lefthook が `cargo xtask branch-check`（`main` では `cargo xtask check`）を実行し、チェックが失敗すると push を止めます。GitHub Actions は手動実行のときだけ動き、push やプルリクエストでは動きません。実行時に Ubuntu、macOS、またはその両方を選び、必要ならカバレッジも選べます。詳しくは [セットアップガイド](docs/development/setup.md#local-checks-before-push) を参照してください。
+クローンしたら、一度だけ `mise trust` と `mise run setup` を実行して、開発ツールと Git フックをインストールします。push のたびに Lefthook が `cargo xtask branch-check`（`main` では `cargo xtask check`）を実行し、チェックが失敗すると push を止めます。GitHub では、すべてのプルリクエストで Ubuntu 上のフォーマット、clippy、ユニットテストが動き、どちらもマージの必須条件です。ゲート全体は手動実行で動き、実行時に Ubuntu、macOS、またはその両方を選び、必要ならカバレッジも選べます。詳しくは [セットアップガイド](docs/development/setup.md#local-checks-before-push) を参照してください。
 
 ```bash
 cargo xtask doctor          # toolchain and fake environment are ready

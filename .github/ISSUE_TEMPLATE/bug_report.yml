@@ -1,0 +1,56 @@
+name: Bug report
+description: kurama did something other than what its documentation or `kurama agent` says
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A vulnerability (a credential written, printed, logged or sent somewhere it should not be) goes to [SECURITY.md](https://github.com/ynishimura/kurama/security/policy), not here. Never paste a real credential: replace it with `<redacted>`.
+  - type: input
+    id: affects
+    attributes:
+      label: Affected features
+      description: The features whose files the fix touches, as `cargo xtask map` names them (for example `Affects: api-client, oauth`). Leave `<feature>` if you do not know; a maintainer fills it in.
+      value: "Affects: <feature>"
+    validations:
+      required: true
+  - type: textarea
+    id: happened
+    attributes:
+      label: What happened
+      description: The command, the output (stderr included), and the exit code.
+      render: console
+      placeholder: $ kurama ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What was expected
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: kurama version
+      description: The output of `kurama --version`.
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: OS and shell
+      placeholder: macOS 26.0, zsh 5.9
+    validations:
+      required: true
+  - type: textarea
+    id: config
+    attributes:
+      label: Relevant configuration
+      description: The sections of config.toml involved, with secrets replaced. `kurama config check --json` output helps too.
+      render: toml
+  - type: textarea
+    id: scenarios
+    attributes:
+      label: Scenarios
+      description: Optional. The runtime scenario that should fail now and pass after the fix, one `- [ ] <feature>_<behavior>` per line.

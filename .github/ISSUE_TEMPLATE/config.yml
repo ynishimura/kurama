@@ -3,3 +3,6 @@ contact_links:
   - name: Security vulnerability
     url: https://github.com/ynishimura/kurama/security/advisories/new
     about: Report a vulnerability privately; see SECURITY.md.
+  - name: Question or idea
+    url: https://github.com/ynishimura/kurama/discussions
+    about: Ask how to do something, or float an idea before it is a feature request.

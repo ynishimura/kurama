@@ -12,7 +12,8 @@
 </p>
 
 <p align="center">
-  <a href="CONTRIBUTING.md#ci"><img src="https://img.shields.io/badge/CI-manual_dispatch-1c1c1c?style=for-the-badge&amp;logo=githubactions&amp;logoColor=38a1db&amp;labelColor=1e50a2" alt="CI: manual dispatch"></a>
+  <a href="https://github.com/ynishimura/kurama/actions/workflows/pr.yml"><img src="https://img.shields.io/github/actions/workflow/status/ynishimura/kurama/pr.yml?branch=main&amp;label=PR%20checks&amp;style=for-the-badge&amp;logo=githubactions&amp;logoColor=38a1db&amp;labelColor=1e50a2&amp;color=1c1c1c" alt="PR checks on main"></a>
+  <a href="https://scorecard.dev/viewer/?uri=github.com/ynishimura/kurama"><img src="https://img.shields.io/ossf-scorecard/github.com/ynishimura/kurama?label=OpenSSF%20Scorecard&amp;style=for-the-badge&amp;labelColor=1e50a2&amp;color=1c1c1c" alt="OpenSSF Scorecard"></a>
   <a href="Cargo.toml"><img src="https://img.shields.io/badge/Rust-1.95.0%2B-1c1c1c?style=for-the-badge&amp;logo=rust&amp;logoColor=38a1db&amp;labelColor=1e50a2" alt="Rust 1.95.0 or newer"></a>
   <a href="#requirements"><img src="https://img.shields.io/badge/macOS-zsh-1c1c1c?style=for-the-badge&amp;logo=apple&amp;logoColor=38a1db&amp;labelColor=1e50a2" alt="Platform: macOS and zsh"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-1c1c1c?style=for-the-badge&amp;labelColor=1e50a2" alt="License: MIT"></a>
@@ -1336,9 +1337,10 @@ shell, and keychain prompts. Architecture notes are in
 After cloning, run `mise trust` and `mise run setup` once to install the
 development tools and Git hooks. Before each push, Lefthook runs
 `cargo xtask branch-check` (`cargo xtask check` on `main`) and
-blocks the push if a check fails. GitHub Actions runs only on manual
-dispatch, never on a push or a pull request; you choose Ubuntu, macOS or
-both, and optionally coverage. See the
+blocks the push if a check fails. On GitHub, every pull request runs
+formatting, clippy and the unit tests on Ubuntu, and both are required
+before a merge; the full gate runs on manual dispatch, where you choose
+Ubuntu, macOS or both, and optionally coverage. See the
 [setup guide](docs/development/setup.md#local-checks-before-push) for
 details.
 
