@@ -533,10 +533,17 @@ Before starting, when another branch is already running:
    caller to update.
 5. `cargo test --locked --features test-fakes -- <filters>`, then
    `cargo xtask verify affected`. On a feature branch the three steps of
-   `cargo xtask branch-check` are the gate; `cargo xtask check` runs on `main`.
+   `cargo xtask branch-check` are the gate; `cargo xtask check` runs on `main`
+   when a release tag is pushed from it.
 6. Update `.agent/features/` when you add files, tests, scenarios or a
    dependency on another feature's code (`depends_on`); the architecture test
    and `doctor` name the missing entries.
+7. Land it through a pull request: `main` takes no direct push (a ruleset
+   refuses it). Push the branch (the pre-push hook runs `branch-check`),
+   `gh pr create --base main` with `Closes #N` in the body, then
+   `gh pr merge --merge` and `git switch main && git pull`. `main` takes merge
+   commits only: a squash or a rebase would leave the branch's own commits
+   out of `main`, and `worktree remove` could no longer tell it was merged.
 
 ### Fix a bug or investigate an error
 
@@ -591,7 +598,8 @@ buys instead is that the second agent, and a person, can see the first.
 5. Do not refactor a hub file while others are running. A refactor goes on its
    own, checked by the report diff of `cargo xtask verify all`.
 6. The gate on a branch is `cargo xtask branch-check`. `cargo xtask check` is
-   the integration-side one and runs once, on `main`.
+   the integration-side one and runs on `main`, before a release tag is
+   pushed from it.
 7. Turn a review finding into a rule in `tests/architecture/` (with an id in
    its `rules.toml` and its `main.rs` list) or a check in xtask before
    closing it; `docs/development/prevention-layers.md` lists the layers
@@ -601,7 +609,8 @@ buys instead is that the second agent, and a person, can see the first.
    changes what a user sees, and `blocked_by` links for what has to land
    first. A parent issue is labelled `tracker`, and one only a person can
    close is labelled `needs-human`.
-9. `cargo xtask worktree remove <ISSUE>` gives the issue back. An
+9. `cargo xtask worktree remove <ISSUE>` gives the issue back; run it after
+   the pull request is merged and `main` pulled, so it sees the merge. An
    `In progress` that has not moved for a day is what `ready` warns about; a
    person decides whether that worktree was abandoned.
 10. Small issues of one feature go to one worktree: the `batch` lines of

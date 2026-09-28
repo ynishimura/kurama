@@ -65,8 +65,10 @@ The gate has two stages. A `git push` from `main` runs
 instead -- the static checks, the tests of the affected features,
 `cargo xtask verify affected`, then `cargo xtask mutate` on the lines it changed
 under `src/` and `xtask/src/` -- so parallel branches do
-not each pay for the full gate; what lands on `main` still passes `check` once,
-on the push that puts it there. Two `check` runs queue on one lock rather than
+not each pay for the full gate. `main` takes changes only through a pull
+request (a ruleset refuses a direct push, and a merge commit is the only merge
+method), and it passes `check` on the push of a release tag from `main`. Two
+`check` runs queue on one lock rather than
 compiling at the same time. A failure stops the push.
 Every xtask command that builds or runs the tree (`check`, `branch-check`,
 `verify`, `tui-check`, `mutate`) runs the same static checks
