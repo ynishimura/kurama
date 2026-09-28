@@ -26,7 +26,7 @@ Every crate is under a permissive license; none is copyleft-only.
 | Component | How it arrives | License |
 | --- | --- | --- |
 | DuckDB | `libduckdb-sys` with the `bundled` feature, compiled from source | MIT |
-| DuckDB httpfs extension 1.5.3 | `build.rs` downloads it from `extensions.duckdb.org`, checks its SHA-256 and embeds it (`include_bytes!`) | MIT |
+| DuckDB httpfs extension 1.5.5 | `build.rs` downloads it from `extensions.duckdb.org`, checks its SHA-256 and embeds it (`include_bytes!`) | MIT |
 | SQLite | `libsqlite3-sys` with the `bundled` feature | public domain |
 | AWS-LC | `aws-lc-sys`, compiled from source | ISC, Apache-2.0, MIT and BSD-3-Clause, as declared |
 

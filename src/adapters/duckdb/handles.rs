@@ -144,7 +144,7 @@ fn annotate_unsigned(field: &Field, ty: &LogicalType) -> Result<Field, DataError
     // SAFETY: logical types are owned until recursion returns.
     if unsafe { ffi::duckdb_get_type_id(ty.0) } == ffi::DUCKDB_TYPE_DUCKDB_TYPE_UHUGEINT {
         let mut metadata = field.metadata().clone();
-        metadata.insert(UNSIGNED_HUGEINT.into(), "true".into());
+        metadata.insert(UNSIGNED_HUGEINT, "true");
         return Ok(field.with_metadata(metadata));
     }
     let child = |field: &Field, index| {
