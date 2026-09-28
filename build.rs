@@ -9,7 +9,7 @@ use std::{
     process::Command,
 };
 
-const HTTPFS_VERSION: &str = "1.5.3";
+const HTTPFS_VERSION: &str = "1.5.5";
 
 fn main() {
     println!("cargo:rerun-if-changed=build.rs");
@@ -28,19 +28,19 @@ fn main() {
     let (platform, hash) = match env::var("TARGET").unwrap().as_str() {
         "aarch64-apple-darwin" => (
             "osx_arm64",
-            "d328b23388b9e74081a751c52a43430df83a9fba9fc2dd76db6a4a7c98430486",
+            "758acc0b0c4fbf09506f387ff6f52826b1038b7b6849ded39928d2f992945230",
         ),
         "x86_64-apple-darwin" => (
             "osx_amd64",
-            "f10c3394cfc0ee3712104e366a4c748d5f0f79222f34478e0028187d6fa95e58",
+            "f445c2692f863bff82609c7061e6e273a4d9fd3b6695e56a6ebc18bd502ed464",
         ),
         "x86_64-unknown-linux-gnu" => (
             "linux_amd64",
-            "e33a4085f04b84bcbb25c27dec3a821731e4d2476b93cfc84aa46c963098b882",
+            "7cdd52a3135388718884a9b71e3987ba723002121e8e9de399c4ed619d824a05",
         ),
         "aarch64-unknown-linux-gnu" => (
             "linux_arm64",
-            "bde75aadc4ebf9edb4b9fecf4aac6025f35fdae56116b2673b0b4990242c3a02",
+            "0820e0b5b74efaa23608c239df8e744a68943318d530b483a529eace19cb5475",
         ),
         target => panic!("httpfs is not packaged for {target}"),
     };

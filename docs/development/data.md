@@ -1,7 +1,7 @@
 # Embedded file analysis
 
 `kurama data` reads local and S3 CSV, JSONL/NDJSON (including gzip) and
-Parquet through DuckDB 1.5.3, without importing them into a persistent database
+Parquet through DuckDB 1.5.5, without importing them into a persistent database
 or requiring the DuckDB CLI. From `[s3.<name>]` it takes only the credential
 reference and bounded S3 input enumeration; browsing a bucket is `kurama s3`.
 `kurama data` has no screen of its own.
@@ -276,7 +276,7 @@ measurements are null because they are not measured by the production adapter.
 
 ## Building and updating DuckDB/httpfs
 
-`libduckdb-sys = 1.10503.0` bundles DuckDB 1.5.3 with CSV, Parquet and JSON.
+`libduckdb-sys = 1.10505.0` bundles DuckDB 1.5.5 with CSV, Parquet and JSON.
 `build.rs` fetches the official signed httpfs archive for that exact engine ABI
 and target, verifies the pinned SHA-256, and embeds the archive in the binary.
 Supported build targets are macOS arm64/x86_64 and Linux arm64/x86_64 GNU. Building
