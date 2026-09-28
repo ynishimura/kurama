@@ -660,6 +660,7 @@ mod tests {
             title: format!("issue {number}"),
             body: format!("Affects: {affects}\n\n## 背景\n"),
             labels: labels.iter().map(|label| label.to_string()).collect(),
+            sub_issues: 0,
             blockers: blockers
                 .iter()
                 .map(|(number, open)| board::Blocker {

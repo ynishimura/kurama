@@ -28,7 +28,8 @@ const TAKEN: [&str; 3] = [IN_PROGRESS, IN_REVIEW, DONE];
 const STARTABLE: [&str; 2] = [READY, IN_PROGRESS];
 
 /// A parent issue: the work is in its children, so an agent never implements
-/// it directly.
+/// it directly. An issue with GitHub sub-issues is one without the label; the
+/// label marks a parent whose children are not written yet.
 pub(crate) const TRACKER: &str = "tracker";
 
 /// Only a person can close it: real hardware, real credentials, a legal or
@@ -44,6 +45,8 @@ pub(crate) struct IssueState {
     /// candidate costs no request of its own.
     pub(crate) body: String,
     pub(crate) labels: Vec<String>,
+    /// How many sub-issues GitHub lists under it, open or closed.
+    pub(crate) sub_issues: u64,
     pub(crate) blockers: Vec<Blocker>,
     /// `None` when the issue is not an item of the project.
     pub(crate) status: Option<String>,
@@ -125,7 +128,7 @@ pub(crate) fn standing(issue: &IssueState) -> Standing {
             by: open,
         };
     }
-    if issue.labels.iter().any(|label| label == TRACKER) {
+    if issue.sub_issues > 0 || issue.labels.iter().any(|label| label == TRACKER) {
         return Standing::Tracker;
     }
     if issue.labels.iter().any(|label| label == NEEDS_HUMAN) {
@@ -211,6 +214,7 @@ query($owner: String!, $name: String!, $first: Int!, $after: String) {
         title
         body
         labels(first: 20) { nodes { name } }
+        subIssuesSummary { total }
         blockedBy(first: 20) { nodes { number state } }
         projectItems(first: 10) {
           nodes {
@@ -258,6 +262,7 @@ fn parse_issues(value: &serde_json::Value, project: u64) -> Vec<IssueState> {
                 title: node["title"].as_str().unwrap_or_default().to_string(),
                 body: node["body"].as_str().unwrap_or_default().to_string(),
                 labels: names(&node["labels"]["nodes"]),
+                sub_issues: node["subIssuesSummary"]["total"].as_u64().unwrap_or(0),
                 blockers: node["blockedBy"]["nodes"]
                     .as_array()
                     .map(|nodes| {
@@ -603,6 +608,7 @@ mod tests {
             title: "a title".into(),
             body: "Affects: verification-harness".into(),
             labels: vec!["enhancement".into()],
+            sub_issues: 0,
             blockers: vec![],
             status: status.map(str::to_string),
             status_updated: None,
@@ -646,6 +652,11 @@ mod tests {
         let mut human = issue(Some(READY));
         human.labels.push(NEEDS_HUMAN.into());
         assert_eq!(standing(&human), Standing::NeedsHuman);
+
+        // GitHub's own sub-issues make a parent a tracker without the label.
+        let mut parent = issue(Some(BACKLOG));
+        parent.sub_issues = 2;
+        assert_eq!(standing(&parent), Standing::Tracker);
 
         // Neither is a problem to fix; both are simply not agent work.
         assert!(!standing(&tracker).is_problem());
@@ -724,6 +735,7 @@ mod tests {
                  {"project":{"number":9},"status":{"name":"Done","updatedAt":"2026-01-01T00:00:00Z"}},
                  {"project":{"number":3},"status":{"name":"In progress","updatedAt":"2026-09-22T15:13:23Z"}}]}},
               {"number":76,"title":"add","labels":{"nodes":[{"name":"enhancement"},{"name":"tracker"}]},
+               "subIssuesSummary":{"total":3},
                "blockedBy":{"nodes":[{"number":75,"state":"OPEN"},{"number":74,"state":"CLOSED"}]},
                "projectItems":{"nodes":[]}}
             ]}}}}"#,
@@ -740,6 +752,7 @@ mod tests {
                     title: "claim".into(),
                     body: "Affects: verification-harness".into(),
                     labels: vec!["enhancement".into()],
+                    sub_issues: 0,
                     blockers: vec![],
                     status: Some(IN_PROGRESS.into()),
                     status_updated: Some("2026-09-22T15:13:23Z".into()),
@@ -751,6 +764,7 @@ mod tests {
                     title: "add".into(),
                     body: String::new(),
                     labels: vec!["enhancement".into(), "tracker".into()],
+                    sub_issues: 3,
                     blockers: vec![
                         Blocker {
                             number: 75,

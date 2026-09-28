@@ -1004,6 +1004,7 @@ mod tests {
             title: "claim".into(),
             body: "Affects: verification-harness".into(),
             labels: vec![],
+            sub_issues: 0,
             blockers: vec![],
             status: status.map(str::to_string),
             status_updated: Some("2026-09-22T15:13:23Z".into()),
