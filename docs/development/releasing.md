@@ -69,12 +69,12 @@ These happen once, when the repository is public:
 
 ## Cutting a release
 
-1. On `dev`: `cargo xtask check` passes, and `cargo xtask verify-real --check`
+1. On `main`: `cargo xtask check` passes, and `cargo xtask verify-real --check`
    says every feature's evidence is fresh.
 2. Set `version` in `Cargo.toml`, run `cargo check` so `Cargo.lock` follows,
    and rename `## Unreleased` in `CHANGELOG.md` to `## <version> - <date>`;
    dist takes the release notes from that section.
-3. Merge `dev` into `main`, then tag `main`: `git tag v<version>` and
+3. Tag `main`: `git tag v<version>` and
    `git push origin v<version>`.
 4. Check the release page, run the installer on a clean machine, and start a
    new `## Unreleased` section.

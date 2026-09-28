@@ -36,8 +36,7 @@ pub(crate) fn impact_command(args: &[String]) -> Result<(), String> {
     Ok(())
 }
 
-/// Feature work branches from `dev` and merges back there; `dev` merges to
-/// `main`.
+/// Feature work branches from `main` and merges back there.
 pub(crate) fn default_base() -> String {
     let branch = git(&["rev-parse", "--abbrev-ref", "HEAD"]).unwrap_or_default();
     for candidate in base_candidates(branch.trim()) {
@@ -50,19 +49,18 @@ pub(crate) fn default_base() -> String {
 
 /// The refs to measure a branch against, best first.
 ///
-/// An integration branch answers for everything it has not pushed yet, so it
+/// The integration branch answers for everything it has not pushed yet, so it
 /// measures against the remote. A feature branch answers for what *it* added
-/// to the branch it grew from, so it measures against the local one: `dev` is
-/// regularly ahead of `origin/dev`, and a worktree branched from it inherits
+/// to the branch it grew from, so it measures against the local one: `main` is
+/// regularly ahead of `origin/main`, and a worktree branched from it inherits
 /// those commits. Measuring a feature branch against the remote makes it
-/// verify `dev`'s backlog as its own work -- 50 minutes of mutants on 23 files
+/// verify `main`'s backlog as its own work -- 50 minutes of mutants on 23 files
 /// a branch never touched, and a surviving mutant in someone else's code
 /// failing a branch that cannot fix it.
 fn base_candidates(branch: &str) -> &'static [&'static str] {
     match branch {
         "main" => &["origin/main", "main"],
-        "dev" => &["origin/dev", "dev", "origin/main", "main"],
-        _ => &["dev", "origin/dev", "main", "origin/main"],
+        _ => &["main", "origin/main"],
     }
 }
 
@@ -481,21 +479,20 @@ mod tests {
     use crate::rust_files;
 
     /// A feature branch measures against the branch it grew from, not against
-    /// the remote: `dev` is regularly ahead of `origin/dev`, and measuring
+    /// the remote: `main` is regularly ahead of `origin/main`, and measuring
     /// there made a branch with no `src/` change run mutants on 23 files it
     /// never touched.
     #[test]
-    fn a_feature_branch_measures_against_local_dev() {
+    fn a_feature_branch_measures_against_local_main() {
         assert_eq!(
             super::base_candidates("feat/95-gate-base")[0],
-            "dev",
-            "a feature branch must not inherit dev's unpushed work"
+            "main",
+            "a feature branch must not inherit main's unpushed work"
         );
-        // An integration branch answers for what it has not pushed yet.
-        assert_eq!(super::base_candidates("dev")[0], "origin/dev");
+        // The integration branch answers for what it has not pushed yet.
         assert_eq!(super::base_candidates("main")[0], "origin/main");
         // Every list ends somewhere that exists in a fresh clone.
-        for branch in ["feat/1", "dev", "main"] {
+        for branch in ["feat/1", "main"] {
             assert!(super::base_candidates(branch).contains(&"main"), "{branch}");
         }
     }

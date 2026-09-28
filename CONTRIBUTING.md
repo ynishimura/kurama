@@ -133,7 +133,7 @@ reaches AWS, a real database or a real keychain: those checks
 
 ## Pull requests
 
-- Target `dev`.
+- Target `main`.
 - Keep one concern per pull request; a refactor goes on its own.
 - Fill in the template: what changed, the impact from
   `cargo xtask impact`, the verification report, and what the fakes could not

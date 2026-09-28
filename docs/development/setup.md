@@ -58,14 +58,14 @@ The setup task installs Lefthook's `pre-push` hook in this clone. Git hooks are
 not copied by `git clone`, so each contributor runs setup once. The hook uses
 `mise exec` to make the pinned tools available even without mise shell activation.
 
-The gate has two stages. A `git push` from `dev` or `main` runs
+The gate has two stages. A `git push` from `main` runs
 `cargo xtask check` and then `mise run sweep`: formatting, clippy, all tests
 (including runtime and TUI scenarios), unused dependencies, and the 12GB
 `target/` cap. A push from a feature branch runs `cargo xtask branch-check`
 instead -- the static checks, the tests of the affected features,
 `cargo xtask verify affected`, then `cargo xtask mutate` on the lines it changed
 under `src/` and `xtask/src/` -- so parallel branches do
-not each pay for the full gate; what lands on `dev` still passes `check` once,
+not each pay for the full gate; what lands on `main` still passes `check` once,
 on the push that puts it there. Two `check` runs queue on one lock rather than
 compiling at the same time. A failure stops the push.
 Every xtask command that builds or runs the tree (`check`, `branch-check`,
@@ -96,8 +96,8 @@ coverage checkbox only when needed; it runs an additional Ubuntu job.
 The same operation is available through the GitHub CLI:
 
 ```bash
-gh workflow run ci.yml --ref dev -f platform=ubuntu
-gh workflow run ci.yml --ref dev -f platform=all -f coverage=true
+gh workflow run ci.yml --ref main -f platform=ubuntu
+gh workflow run ci.yml --ref main -f platform=all -f coverage=true
 ```
 
 Run the relevant OS checks before a release or after changing
@@ -113,7 +113,7 @@ has the steps.
 The cache is keyed on `Cargo.lock` alone and holds `target/` after
 `cargo xtask check` has capped it at 12GB; `CARGO_INCREMENTAL=0` keeps the
 incremental caches out of it. A cache saved by a run on `ci/pr-<N>` is visible
-only to that branch, so a pull request's build never seeds the one `dev`
+only to that branch, so a pull request's build never seeds the one `main`
 restores. CI never sets `KURAMA_HTTPFS_ARCHIVE`: `build.rs` downloads httpfs
 into `target/`, so a run that restores no cache is the plain online build.
 
@@ -459,8 +459,8 @@ they stay approved across rebuilds from then on.
 
 ## Branches and releases
 
-Feature work branches from `dev` and merges back via PR; `dev` is merged to
-`main` when a state is worth installing. A `v*` tag on `main` builds the
+Feature work branches from `main` and merges back via PR. A `v*` tag on
+`main`, put on a state worth installing, builds the
 prebuilt archives, the shell installer and the Homebrew formula
 ([releasing.md](releasing.md)). Installing from source means building `main`
 (or whatever is checked out) with `cargo xtask install-signed`.

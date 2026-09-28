@@ -3,7 +3,7 @@
 //! Parallel work means one checkout per branch, and a checkout of this
 //! repository carries its own `target/`, which DuckDB fills with gigabytes.
 //! The three subcommands make the cost visible and reversible: `add` creates
-//! the worktree and its branch from `dev`, `list` prints what every worktree
+//! the worktree and its branch from `main`, `list` prints what every worktree
 //! spends on `target/` and what they spend together, and `remove` deletes both
 //! -- unless the worktree still holds commits that no remote and no other
 //! branch has, or changes that were never committed.
@@ -42,7 +42,7 @@ usage: cargo xtask worktree <add|list|remove> [ISSUE]... [SLUG]
 
   add <ISSUE>... [SLUG] [--install]
                       create ../<repo>-<ISSUE> on a new branch feat/<ISSUE>-<SLUG>,
-                      branched from dev, and move the issues to In progress;
+                      branched from main, and move the issues to In progress;
                       refused when the board or the dependencies say one of them
                       is not an issue to start, and then nothing is made. Several
                       issues share one worktree named after the first. target/ is
@@ -59,8 +59,8 @@ usage: cargo xtask worktree <add|list|remove> [ISSUE]... [SLUG]
                       no other branch has
 ";
 
-/// Feature work branches from `dev` and merges back there (AGENTS.md).
-const BASE_BRANCH: &str = "dev";
+/// Feature work branches from `main` and merges back there (AGENTS.md).
+const BASE_BRANCH: &str = "main";
 
 /// What the listing calls a worktree that is on no branch.
 const DETACHED: &str = "(detached)";
@@ -610,7 +610,7 @@ fn remove(issue: u64) -> Result<(), String> {
 }
 
 /// The commits this worktree's branch holds alone: on no remote, and on no
-/// other branch either. `dev` itself is usually ahead of `origin/dev`, and a
+/// other branch either. `main` itself is usually ahead of `origin/main`, and a
 /// worktree branched from it inherits those commits; counting them would make
 /// every worktree unremovable while saying nothing about this one's work.
 ///
@@ -954,7 +954,7 @@ mod tests {
         );
     }
 
-    /// `dev` is regularly ahead of `origin/dev`, and every worktree branched
+    /// `main` is regularly ahead of `origin/main`, and every worktree branched
     /// from it carries those commits. Counting them would refuse every removal
     /// while saying nothing about the work done in this worktree.
     #[test]
@@ -1109,6 +1109,6 @@ mod tests {
     fn only_a_branch_that_moved_and_reached_the_base_is_merged() {
         assert!(was_merged("aaa", "bbb", true));
         assert!(!was_merged("aaa", "aaa", true), "an untouched branch");
-        assert!(!was_merged("aaa", "bbb", false), "work not in dev yet");
+        assert!(!was_merged("aaa", "bbb", false), "work not in main yet");
     }
 }

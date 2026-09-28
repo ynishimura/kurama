@@ -45,7 +45,7 @@ fn git(repo: &Path, args: &[&str]) -> String {
     String::from_utf8_lossy(&output.stdout).into_owned()
 }
 
-/// A repository with one commit on `dev`, and a board holding `issues`.
+/// A repository with one commit on `main`, and a board holding `issues`.
 fn sandbox(issues: Value) -> Sandbox {
     let dir = std::env::temp_dir().join(format!(
         "xtask-github-{}-{}",
@@ -55,7 +55,7 @@ fn sandbox(issues: Value) -> Sandbox {
     let _ = std::fs::remove_dir_all(&dir);
     let repo = dir.join("repo");
     std::fs::create_dir_all(&repo).unwrap();
-    git(&repo, &["init", "-q", "-b", "dev"]);
+    git(&repo, &["init", "-q", "-b", "main"]);
     std::fs::write(repo.join("README.md"), "scratch\n").unwrap();
     // As in this repository: the configuration a worktree gets is ignored.
     std::fs::write(repo.join(".gitignore"), "/.kurama/\n/target/\n").unwrap();
@@ -626,7 +626,7 @@ fn github_board_set_status_writes_every_issue_in_one_request() {
     assert_eq!(sandbox.writes(), [(84, "Done".to_string())]);
 }
 
-/// A finished branch merged into dev is not work to give back.
+/// A finished branch merged into main is not work to give back.
 #[test]
 fn github_worktree_remove_leaves_the_board_alone_for_a_merged_branch() {
     let sandbox = sandbox(json!([issue(84, Some("Backlog"), &[], &[])]));
@@ -660,7 +660,7 @@ fn github_worktree_remove_leaves_the_board_alone_for_a_merged_branch() {
 
     assert!(output.status.success(), "{}", stderr(&output));
     assert!(
-        stderr(&output).contains("is merged into dev"),
+        stderr(&output).contains("is merged into main"),
         "{}",
         stderr(&output)
     );

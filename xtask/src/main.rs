@@ -108,7 +108,7 @@ cargo xtask <command>
                         (default 2) run at once, the others wait for a slot
                         [--base REF]
   worktree <SUB>        add <ISSUE>... [SLUG] | list | remove <ISSUE>: one worktree per
-                        issue, or per batch of issues, branched from dev, its target/
+                        issue, or per batch of issues, branched from main, its target/
                         cloned from the main checkout's, with the size of every target/
   ready                 the issues an agent may start now: open, unblocked, nobody
                         on them, not a tracker, not a job for a person, and not

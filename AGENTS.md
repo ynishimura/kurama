@@ -29,9 +29,9 @@ whole tree.
 | `cargo xtask sweep` | Bring `target/` under 12GB: the incremental caches first, the oldest artifacts only if that is not enough (`target/agent` stays). `mise run sweep` runs this |
 | `cargo xtask install-signed` | Build, code sign with a stable identity and install `~/.cargo/bin/kurama`, add its `cdhash` to the partition list of every keychain entry kurama reads (asking for the login keychain password once), so no build asks again; `--as NAME` installs the same signed build as `~/.cargo/bin/NAME` and leaves `kurama` alone |
 | `cargo xtask scenarios-check <ISSUE>` | After implementing: whether the scenarios the issue declares under its `## Scenarios` checklist exist, which ones this branch adds without declaring them, and which no feature claims (`--base REF`, `--json`) |
-| `cargo xtask branch-check` | The branch-side gate: the static checks, the tests of the affected features, `verify affected`, then `mutate` on the lines it changed under `src/` and `xtask/src/`. `pre-push` runs this from a feature branch and `check` from `dev` / `main`. At most `KURAMA_XTASK_GATE_SLOTS` (default 2) run at once across the clone's worktrees, static checks included; another waits for a slot and names the processes and worktrees holding them |
+| `cargo xtask branch-check` | The branch-side gate: the static checks, the tests of the affected features, `verify affected`, then `mutate` on the lines it changed under `src/` and `xtask/src/`. `pre-push` runs this from a feature branch and `check` from `main`. At most `KURAMA_XTASK_GATE_SLOTS` (default 2) run at once across the clone's worktrees, static checks included; another waits for a slot and names the processes and worktrees holding them |
 | `cargo xtask ready` | The issues an agent may start now: open, unblocked, nobody on them, not a `tracker`, not `needs-human`, and not editing what a running branch edits. Each offer names the other offers it cannot run beside, and `--agents N` picks N that can all run at once; a blocked issue is listed with each open blocker and where it stands, tracker or not; `batch` lists the serial offers closed over one feature, with the `worktree add` that takes them together (`--all`, `--json`) |
-| `cargo xtask worktree add <ISSUE>... [SLUG] [--install]` / `list` / `remove <ISSUE>` | One worktree per issue, or per batch of issues named after the first (refused whole, naming each refusal, when one is refused), branched from `dev`, and the issues move to `In progress`; `add` clones the main checkout's `target/` with `cp -c` (APFS blocks shared until rewritten, so DuckDB is not rebuilt; without one it says so and starts empty) less `target/agent/`, whose reports are the main checkout's, copies the daily config to `.kurama/config.toml` in the worktree and, with `--install`, installs its signed build as `kurama-<ISSUE>`, and prints how to use both; `list` prints every `target/` and their total (which counts a clone's shared blocks in each), `remove <FIRST>` deletes the worktree with its `target/` unless it holds unpushed commits, and puts every `In progress` issue it was added for back to `Backlog` unless the branch was merged into `dev` |
+| `cargo xtask worktree add <ISSUE>... [SLUG] [--install]` / `list` / `remove <ISSUE>` | One worktree per issue, or per batch of issues named after the first (refused whole, naming each refusal, when one is refused), branched from `main`, and the issues move to `In progress`; `add` clones the main checkout's `target/` with `cp -c` (APFS blocks shared until rewritten, so DuckDB is not rebuilt; without one it says so and starts empty) less `target/agent/`, whose reports are the main checkout's, copies the daily config to `.kurama/config.toml` in the worktree and, with `--install`, installs its signed build as `kurama-<ISSUE>`, and prints how to use both; `list` prints every `target/` and their total (which counts a clone's shared blocks in each), `remove <FIRST>` deletes the worktree with its `target/` unless it holds unpushed commits, and puts every `In progress` issue it was added for back to `Backlog` unless the branch was merged into `main` |
 | `cargo xtask issue-check <FILE\|-\|ISSUE>` | Before posting: whether an issue body's `Affects:` line resolves and every `## Scenarios` item is shaped like a scenario name; a file or stdin reads nothing from GitHub, and labels and `blocked_by` are not checked |
 | `cargo xtask claim <ISSUE>` / `claim --release <ISSUE>` | Say on the board that an issue is taken without making a worktree (one agent working issues one after another in the main checkout), refused for the reasons `worktree add` refuses; `--release` puts an `In progress` issue back |
 | `cargo xtask board set-status <STATUS> <ISSUE>...` | Move many issues to one status in one request, for a stocktaking; it writes what it is told and names each issue it could not write |
@@ -62,7 +62,7 @@ build `xtask` itself: on a cold `target/` the first `cargo xtask map` spends
 about two minutes compiling before it prints a thing, which is long enough
 that the instruction above gets skipped. The hook
 runs `cargo xtask branch-check` for a push from a feature branch and
-`cargo xtask check` for one from `dev` or `main`, then `mise run sweep`, and
+`cargo xtask check` for one from `main`, then `mise run sweep`, and
 stops a failing push. Two `check` runs queue on one lock in the clone's common
 git directory instead of compiling at the same time.
 `check` also caps `target/` at 12GB on its own: DuckDB is compiled from source
@@ -533,7 +533,7 @@ Before starting, when another branch is already running:
    caller to update.
 5. `cargo test --locked --features test-fakes -- <filters>`, then
    `cargo xtask verify affected`. On a feature branch the three steps of
-   `cargo xtask branch-check` are the gate; `cargo xtask check` runs on `dev`.
+   `cargo xtask branch-check` are the gate; `cargo xtask check` runs on `main`.
 6. Update `.agent/features/` when you add files, tests, scenarios or a
    dependency on another feature's code (`depends_on`); the architecture test
    and `doctor` name the missing entries.
@@ -580,7 +580,7 @@ buys instead is that the second agent, and a person, can see the first.
    the board answers -- the worktree is gone either way -- and says so when
    the issue was left `In progress`.
 3. Work in that worktree only. Never touch another branch's files from it.
-   The base is `dev`.
+   The base is `main`.
    To run the branch against real services, use the `KURAMA_CONFIG_PATH` and
    the `kurama-<ISSUE>` that `add` printed, never the daily `kurama` and its
    config: a key one branch adds makes every other binary refuse the file.
@@ -591,7 +591,7 @@ buys instead is that the second agent, and a person, can see the first.
 5. Do not refactor a hub file while others are running. A refactor goes on its
    own, checked by the report diff of `cargo xtask verify all`.
 6. The gate on a branch is `cargo xtask branch-check`. `cargo xtask check` is
-   the integration-side one and runs once, on `dev`.
+   the integration-side one and runs once, on `main`.
 7. Turn a review finding into a rule in `tests/architecture/` (with an id in
    its `rules.toml` and its `main.rs` list) or a check in xtask before
    closing it; `docs/development/prevention-layers.md` lists the layers

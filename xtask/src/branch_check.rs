@@ -8,8 +8,8 @@
 //! `impact` selects, and mutation testing of the `src/` and `xtask/src/`
 //! files it edited. That
 //! is `branch-check`, and `lefthook.yml` runs it for a push from any branch but
-//! `dev` and `main`. The full gate still runs once, on the push that puts the
-//! work on `dev`; `wait_for_gate_lock` is what makes two of those queue instead
+//! `main`. The full gate still runs once, on the push that puts the work on
+//! `main`; `wait_for_gate_lock` is what makes two of those queue instead
 //! of competing. `wait_for_branch_slot` does the same for `branch-check` with
 //! N slots rather than one: four gates at once pushed a 12-core machine to a
 //! load of 40-50 and PTY scenarios past their deadline.
@@ -37,7 +37,7 @@ The gate a feature branch runs, in this order, stopping at the first failure:
 The filters and the mutated files come from `cargo xtask impact --base REF`, so
 what runs is what this branch changed. `cargo xtask check` -- every test and the
 scenario coverage -- stays on the integration side: `lefthook.yml` runs it for
-a push from `dev` or `main`, and this for a push from anywhere else.
+a push from `main`, and this for a push from anywhere else.
 
 At most KURAMA_XTASK_GATE_SLOTS (default 2) branch-checks of this clone run at
 once, the static checks included; another one waits for a slot and says which
@@ -693,19 +693,23 @@ mod tests {
     }
 
     #[test]
-    fn a_push_from_an_integration_branch_runs_the_full_gate() {
-        for branch in ["dev", "main"] {
-            let gate = gate_for_branch(branch);
-            assert!(gate.contains("cargo xtask check"), "{branch}: {gate}");
-            assert!(!gate.contains("branch-check"), "{branch}: {gate}");
-        }
+    fn a_push_from_the_integration_branch_runs_the_full_gate() {
+        let gate = gate_for_branch("main");
+        assert!(gate.contains("cargo xtask check"), "{gate}");
+        assert!(!gate.contains("branch-check"), "{gate}");
     }
 
+    /// `dev` is no longer an integration branch: a push from it is a feature
+    /// branch's.
     #[test]
     fn a_push_from_a_feature_branch_runs_the_branch_gate() {
-        let gate = gate_for_branch("feat/53-two-stage-gate");
-
-        assert!(gate.contains("cargo xtask branch-check"), "{gate}");
+        for branch in ["feat/53-two-stage-gate", "dev"] {
+            let gate = gate_for_branch(branch);
+            assert!(
+                gate.contains("cargo xtask branch-check"),
+                "{branch}: {gate}"
+            );
+        }
     }
 
     #[test]

@@ -907,13 +907,13 @@ macOS は、あるバイナリが初めてエントリを読むときにキー�
 | AWS のロール切り替え、MFA セッション、コンソールへのアクセス、OAuth 2.0 / OIDC と API キーのソース、ベアラートークン・ヘッダー・HTTP Basic・クエリパラメーター・SigV4 署名を使う `kurama api`、OpenAPI エクスプローラー、プリセット、`kurama data`、エクスプローラー付きの `kurama db`、macOS と zsh 向けの CLI/TUI | 対応するプロバイダーと API 定義の拡充、データ用の TUI |
 
 ## 開発
-<!-- en: d88f8912347c -->
+<!-- en: f7b3d565a730 -->
 
 コントリビューションを歓迎します。クローンからプルリクエストまでの流れは [CONTRIBUTING.md](CONTRIBUTING.md) に、脆弱性を非公開で報告する方法は [SECURITY.md](SECURITY.md) にあります。ユーザーから見える変更は [CHANGELOG.md](CHANGELOG.md) にまとめています。ビルドに何が含まれ、どのライセンスのもとにあるかは [docs/development/licenses.md](docs/development/licenses.md) に、リリースのビルド・署名・公開の手順は [docs/development/releasing.md](docs/development/releasing.md) にあります。
 
 開発の流れ（ビルド、テスト、開発版ビルドを自分のシェルで試す方法、キーチェーンのプロンプト）は [docs/development/setup.md](docs/development/setup.md) で説明しています。アーキテクチャのメモは [docs/development/fp-architecture.md](docs/development/fp-architecture.md) にあります。
 
-クローンしたら、一度だけ `mise trust` と `mise run setup` を実行して、開発ツールと Git フックをインストールします。push のたびに Lefthook が `cargo xtask branch-check`（`dev` と `main` では `cargo xtask check`）を実行し、チェックが失敗すると push を止めます。GitHub Actions は手動実行のときだけ動き、push やプルリクエストでは動きません。実行時に Ubuntu、macOS、またはその両方を選び、必要ならカバレッジも選べます。詳しくは [セットアップガイド](docs/development/setup.md#local-checks-before-push) を参照してください。
+クローンしたら、一度だけ `mise trust` と `mise run setup` を実行して、開発ツールと Git フックをインストールします。push のたびに Lefthook が `cargo xtask branch-check`（`main` では `cargo xtask check`）を実行し、チェックが失敗すると push を止めます。GitHub Actions は手動実行のときだけ動き、push やプルリクエストでは動きません。実行時に Ubuntu、macOS、またはその両方を選び、必要ならカバレッジも選べます。詳しくは [セットアップガイド](docs/development/setup.md#local-checks-before-push) を参照してください。
 
 ```bash
 cargo xtask doctor          # toolchain and fake environment are ready

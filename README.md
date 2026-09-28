@@ -1335,7 +1335,7 @@ shell, and keychain prompts. Architecture notes are in
 
 After cloning, run `mise trust` and `mise run setup` once to install the
 development tools and Git hooks. Before each push, Lefthook runs
-`cargo xtask branch-check` (`cargo xtask check` on `dev` and `main`) and
+`cargo xtask branch-check` (`cargo xtask check` on `main`) and
 blocks the push if a check fails. GitHub Actions runs only on manual
 dispatch, never on a push or a pull request; you choose Ubuntu, macOS or
 both, and optionally coverage. See the
