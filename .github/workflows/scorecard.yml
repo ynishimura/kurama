@@ -1,0 +1,42 @@
+# OpenSSF Scorecard: how this repository's supply-chain practices score
+# (branch protection, pinned dependencies, token permissions, signed releases).
+# The findings go to the Security tab, and the published score backs the badge
+# in README.md. It reads the repository and writes nothing to it.
+name: Scorecard
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '17 3 * * 1'
+  # Branch protection is read through the rulesets API, which a push to main
+  # does not re-run when only a setting changed.
+  workflow_dispatch:
+
+permissions: read-all
+
+jobs:
+  analysis:
+    name: Scorecard analysis
+    runs-on: ubuntu-24.04
+    permissions:
+      # The SARIF upload to the Security tab.
+      security-events: write
+      # Publishing the score to the OpenSSF API for the badge.
+      id-token: write
+    steps:
+    - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
+
+    - name: Run analysis
+      uses: ossf/scorecard-action@v2.4.4
+      with:
+        results_file: results.sarif
+        results_format: sarif
+        publish_results: true
+
+    - name: Upload to code scanning
+      uses: github/codeql-action/upload-sarif@v4
+      with:
+        sarif_file: results.sarif

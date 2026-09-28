@@ -10,6 +10,8 @@ files = [
   ".agent/features/",
   ".agent/real/",
   ".github/workflows/ci.yml",
+  ".github/workflows/pr.yml",
+  ".github/workflows/scorecard.yml",
   "lefthook.yml",
   "mise.toml",
 ]

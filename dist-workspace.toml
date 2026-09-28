@@ -20,7 +20,7 @@ targets = [
   "x86_64-unknown-linux-gnu",
 ]
 # Only a pushed `v*` tag starts the release workflow: a pull request does not
-# (CI is manual dispatch only; see .github/workflows/ci.yml).
+# (pull requests run .github/workflows/pr.yml, not a release build).
 pr-run-mode = "skip"
 install-path = "CARGO_HOME"
 install-updater = false
