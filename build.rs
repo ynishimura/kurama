@@ -74,7 +74,6 @@ fn main() {
                     "=https",
                     "--proto-redir",
                     "=https",
-                    "--remove-on-error",
                     "--max-time",
                     "120",
                     "--output",
