@@ -35,9 +35,9 @@ jobs:
         cp site/*.html site/*.css site/*.js site/*.json _site/
         cp docs/assets/*.svg docs/assets/*.png docs/assets/*.gif _site/assets/
 
-    - uses: actions/upload-pages-artifact@v4
+    - uses: actions/upload-pages-artifact@v5
       with:
         path: _site
 
     - id: deployment
-      uses: actions/deploy-pages@v4
+      uses: actions/deploy-pages@v5
