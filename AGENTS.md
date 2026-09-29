@@ -542,13 +542,14 @@ Before starting, when another branch is already running:
    and `doctor` name the missing entries.
 7. Land it through a pull request: `main` takes no direct push (a ruleset
    refuses it). Push the branch (the pre-push hook runs `branch-check`),
-   `gh pr create --base main` with `Closes #N` in the body, then
-   `gh pr merge --merge --admin` and `git switch main && git pull`. `main`
-   takes merge commits only: a squash or a rebase would leave the branch's
-   own commits out of `main`, and `worktree remove` could no longer tell it
-   was merged. `--admin` bypasses only the ruleset that asks for an approval
-   (the maintainer is the only reviewer); the PR checks must still pass, and
-   a branch behind `main` is updated first (`gh pr update-branch`).
+   `gh pr create --base main` with `Closes #N` in the body, and stop there:
+   a person merges it. `main` asks for an approval, the PR checks and a
+   branch up to date with `main` (`gh pr update-branch`); an agent does not
+   bypass the approval unless its maintainer allowed
+   `gh pr merge --merge --admin` in their own `.claude/settings.local.json`.
+   After the merge, `git switch main && git pull`. `main` takes merge
+   commits only: a squash or a rebase would leave the branch's own commits
+   out of `main`, and `worktree remove` could no longer tell it was merged.
 
 ### Fix a bug or investigate an error
 
