@@ -21,7 +21,7 @@ targets = [
 ]
 # Only a pushed `v*` tag starts the release workflow: a pull request does not
 # (pull requests run .github/workflows/pr.yml, not a release build).
-pr-run-mode = "skip"
+pr-run-mode = "upload"
 install-path = "CARGO_HOME"
 install-updater = false
 # The license texts of every crate and native component a binary carries,
