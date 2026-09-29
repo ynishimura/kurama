@@ -12,6 +12,7 @@ starts that workflow, and pull requests do not (`pr-run-mode = "skip"`).
 | `kurama-installer.sh` | `curl ... \| sh`: installs the matching archive into `~/.cargo/bin` |
 | `kurama.rb` in the tap `ynishimura/homebrew-tap` | `brew install ynishimura/tap/kurama` |
 | `source.tar.gz`, `sha256.sum`, one `.sha256` per archive | verification |
+| `kurama-<target>.sigstore.json` per build | the signed build provenance of that target's archives, for `gh attestation verify <archive> --repo ynishimura/kurama --bundle <file>` without asking GitHub |
 
 Each target is built on its own native GitHub runner (`dist plan` names
 them), because `build.rs` compiles DuckDB and embeds the httpfs extension of
@@ -85,3 +86,20 @@ Edit `dist-workspace.toml` (or `.github/release-build-setup.yml`), then run
 `dist generate` and commit the regenerated `release.yml` with it; `dist` is
 pinned in `mise.toml`, and so is `cargo-about`. `dist plan` prints what a
 release would contain without building anything.
+
+`release.yml` also carries edits dist has no setting for, which
+`allow-dirty = ["ci"]` in `dist-workspace.toml` lets it keep and which
+`dist generate` overwrites. They are what OpenSSF Scorecard's
+Token-Permissions, Pinned-Dependencies and Signed-Releases checks read, so
+re-apply them after every `dist generate` (`git diff` shows each one going):
+
+| Edit | Where |
+| --- | --- |
+| Top-level `permissions` is `contents: read`; only `host` gets `contents: write` | top of the file, the `host` job |
+| `Install dist` runs `.github/install-dist.sh` (a hash-checked archive) instead of the installer piped into `sh` | `plan`, `build-local-artifacts` |
+| The `Install Rust non-interactively` step is removed: no target builds in a container | `build-local-artifacts` |
+| `Attest` has `id: attest`, and `Keep the attestation bundle` copies its bundle to `target/distrib/kurama-<targets>.sigstore.json`, which `Upload artifacts` lists | `build-local-artifacts` |
+
+On a cargo-dist upgrade, also update `version` and the four SHA-256 values in
+`.github/install-dist.sh` (each archive's `.sha256` on the cargo-dist release)
+and the commits in `github-action-commits`.

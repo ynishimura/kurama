@@ -3,6 +3,8 @@ lefthook = "2.1.14"
 "cargo:cargo-machete" = "0.9.2"
 "cargo:cargo-sweep" = "0.8.0"
 "cargo:cargo-nextest" = "0.9.145"
+# `cargo +nightly fuzz` runs the targets under fuzz/ (docs/development/fuzzing.md).
+"cargo:cargo-fuzz" = "0.13.2"
 # `dist` generates and runs the release workflow (.github/workflows/release.yml).
 "aqua:axodotdev/cargo-dist" = "0.33.0"
 # `cargo about` writes THIRD-PARTY-NOTICES for a release (about.toml).

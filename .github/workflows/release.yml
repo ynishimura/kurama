@@ -14,8 +14,13 @@
 # title/body based on your changelogs.
 
 name: Release
+# Hand-edited after `dist generate` (dist-workspace.toml allow-dirty = ["ci"]);
+# docs/development/releasing.md lists the edits to re-apply on a dist upgrade:
+# read-only by default with `contents: write` on host alone, dist installed
+# from a hash-checked archive, and each attestation bundle shipped as a
+# release asset.
 permissions:
-  "contents": "write"
+  "contents": "read"
 
 # This task will run whenever you push a git tag that looks like a version
 # like "1.0.0", "v0.1.0-prerelease.1", "my-app/0.1.0", "releases/v1.0.0", etc.
@@ -60,10 +65,7 @@ jobs:
           persist-credentials: false
           submodules: recursive
       - name: Install dist
-        # we specify bash to get pipefail; it guards against the `curl` command
-        # failing. otherwise `sh` won't catch that `curl` returned non-0
-        shell: bash
-        run: "curl --proto '=https' --tlsv1.2 -LsSf https://github.com/axodotdev/cargo-dist/releases/download/v0.33.0/cargo-dist-installer.sh | sh"
+        run: .github/install-dist.sh
       - name: Cache dist
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
@@ -123,19 +125,12 @@ jobs:
         with:
           persist-credentials: false
           submodules: recursive
-      - name: Install Rust non-interactively if not already installed
-        if: ${{ matrix.container }}
-        run: |
-          if ! command -v cargo > /dev/null 2>&1; then
-            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-            echo "$HOME/.cargo/bin" >> $GITHUB_PATH
-          fi
       - name: "Install cargo-about"
         run: "cargo install --locked cargo-about@0.9.2 --features cli"
       - name: "Write THIRD-PARTY-NOTICES"
         run: "cargo about generate --locked about.hbs -o THIRD-PARTY-NOTICES"
       - name: Install dist
-        run: ${{ matrix.install_dist.run }}
+        run: .github/install-dist.sh
       # Get the dist-manifest
       - name: Fetch local artifacts
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
@@ -152,9 +147,15 @@ jobs:
           dist build ${{ needs.plan.outputs.tag-flag }} --print=linkage --output-format=json ${{ matrix.dist_args }} > dist-manifest.json
           echo "dist ran successfully"
       - name: Attest
+        id: attest
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
         with:
           subject-path: "target/distrib/*${{ join(matrix.targets, ', ') }}*"
+      # The signed provenance next to the archives it covers, so a download
+      # can be verified offline (`gh attestation verify --bundle`).
+      - name: Keep the attestation bundle
+        shell: bash
+        run: cp "${{ steps.attest.outputs.bundle-path }}" "target/distrib/kurama-${{ join(matrix.targets, '-') }}.sigstore.json"
       - id: cargo-dist
         name: Post-build
         # We force bash here just because github makes it really hard to get values up
@@ -175,6 +176,7 @@ jobs:
           path: |
             ${{ steps.cargo-dist.outputs.paths }}
             ${{ env.BUILD_MANIFEST_NAME }}
+            target/distrib/kurama-${{ join(matrix.targets, '-') }}.sigstore.json
 
   # Build and package all the platform-agnostic(ish) things
   build-global-artifacts:
@@ -233,6 +235,9 @@ jobs:
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     runs-on: "ubuntu-22.04"
+    # The one job that writes: it creates the GitHub Release.
+    permissions:
+      "contents": "write"
     outputs:
       val: ${{ steps.host.outputs.manifest }}
     steps:

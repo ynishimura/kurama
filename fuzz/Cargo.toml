@@ -1,0 +1,47 @@
+# The cargo-fuzz targets (docs/development/fuzzing.md). A crate of its own,
+# outside the workspace, because it builds only on nightly with a sanitizer;
+# `cargo +nightly fuzz run <target>` from the repository root runs one.
+[package]
+name = "kurama-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2024"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+chrono = "0.4"
+kurama = { path = ".." }
+
+[workspace]
+members = ["."]
+
+[[bin]]
+name = "openapi_spec"
+path = "fuzz_targets/openapi_spec.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "oauth_answers"
+path = "fuzz_targets/oauth_answers.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "aws_config"
+path = "fuzz_targets/aws_config.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "secret_ref"
+path = "fuzz_targets/secret_ref.rs"
+test = false
+doc = false
+bench = false
