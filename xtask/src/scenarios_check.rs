@@ -122,17 +122,24 @@ fn declared_scenarios(issue: u64) -> Result<Option<Vec<String>>, String> {
 /// The checklist under the `## Scenarios` (or `## シナリオ`) heading, up to
 /// the next heading.
 /// Prose in the section is ignored; only checklist items declare a scenario.
+/// A section holding only `_No response_`, what an issue form writes for a
+/// field left blank, is no section at all.
 pub(crate) fn parse_section(body: &str) -> Option<Vec<String>> {
     let mut lines = outside_code_fences(body)
         .skip_while(|line| !matches!(heading(line), Some(SECTION | SECTION_JA)));
     lines.next()?;
-    Some(
-        lines
-            .take_while(|line| heading(line).is_none())
-            .filter_map(checklist_name)
-            .collect(),
-    )
+    let section: Vec<&str> = lines
+        .take_while(|line| heading(line).is_none())
+        .filter(|line| !line.trim().is_empty())
+        .collect();
+    if section == [BLANK_FORM_FIELD] {
+        return None;
+    }
+    Some(section.into_iter().filter_map(checklist_name).collect())
 }
+
+/// What GitHub writes under an issue form field left blank.
+const BLANK_FORM_FIELD: &str = "_No response_";
 
 /// The body without its fenced code blocks. An issue that shows what the
 /// section looks like carries the example in a fence, and this command's own
@@ -463,6 +470,14 @@ mod tests {
 
     /// The section is what the issue declares; an empty one is a mistake the
     /// caller has to see, not a satisfied issue.
+    /// An issue form writes `_No response_` under an optional field left
+    /// blank: nothing was declared, which is not a section with no item.
+    #[test]
+    fn a_blank_issue_form_field_is_no_section() {
+        let body = "### Affected features\n\nAffects: oauth\n\n### Scenarios\n\n_No response_\n\n### Out of scope\n\n_No response_\n";
+        assert_eq!(parse_section(body), None);
+    }
+
     #[test]
     fn a_scenario_section_without_an_item_is_empty_not_absent() {
         assert_eq!(
