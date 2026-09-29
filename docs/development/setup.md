@@ -67,7 +67,9 @@ instead -- the static checks, the tests of the affected features,
 under `src/` and `xtask/src/` -- so parallel branches do
 not each pay for the full gate. `main` takes changes only through a pull
 request (a ruleset refuses a direct push, and a merge commit is the only merge
-method), and it passes `check` on the push of a release tag from `main`. Two
+method; the branch must be up to date with `main` and pass the PR checks, and
+a second ruleset asks for an approval that a repository admin may bypass with
+`gh pr merge --admin`), and it passes `check` on the push of a release tag from `main`. Two
 `check` runs queue on one lock rather than
 compiling at the same time. A failure stops the push.
 Every xtask command that builds or runs the tree (`check`, `branch-check`,

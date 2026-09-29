@@ -543,9 +543,12 @@ Before starting, when another branch is already running:
 7. Land it through a pull request: `main` takes no direct push (a ruleset
    refuses it). Push the branch (the pre-push hook runs `branch-check`),
    `gh pr create --base main` with `Closes #N` in the body, then
-   `gh pr merge --merge` and `git switch main && git pull`. `main` takes merge
-   commits only: a squash or a rebase would leave the branch's own commits
-   out of `main`, and `worktree remove` could no longer tell it was merged.
+   `gh pr merge --merge --admin` and `git switch main && git pull`. `main`
+   takes merge commits only: a squash or a rebase would leave the branch's
+   own commits out of `main`, and `worktree remove` could no longer tell it
+   was merged. `--admin` bypasses only the ruleset that asks for an approval
+   (the maintainer is the only reviewer); the PR checks must still pass, and
+   a branch behind `main` is updated first (`gh pr update-branch`).
 
 ### Fix a bug or investigate an error
 
