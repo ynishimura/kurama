@@ -6,7 +6,9 @@ A flaw that exposes one of them is the kind of report this policy is for.
 ## Reporting a vulnerability
 
 Report it privately through GitHub: **Security > Report a vulnerability** on
-this repository. Do not open a public issue, and do not include a real
+this repository, or directly at
+<https://github.com/ynishimura/kurama/security/advisories/new>. Do not open
+a public issue, and do not include a real
 credential in the report; a redacted value or a description of where it
 appeared is enough.
 
