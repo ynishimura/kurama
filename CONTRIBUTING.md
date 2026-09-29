@@ -140,7 +140,8 @@ reaches AWS, a real database or a real keychain: those checks
 
 - Target `main`. It takes changes only through a pull request, merged with a
   merge commit: squash and rebase merges are off, so the branch's own commits
-  stay in `main`'s history.
+  stay in `main`'s history. A pull request needs a maintainer's approval, the
+  PR checks, and a branch up to date with `main`.
 - Keep one concern per pull request; a refactor goes on its own.
 - Fill in the template: what changed, the impact from
   `cargo xtask impact`, the verification report, and what the fakes could not
