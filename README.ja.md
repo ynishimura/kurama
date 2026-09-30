@@ -1,4 +1,4 @@
-<!-- en: af93c18e224b -->
+<!-- en: 6781d60ef51f -->
 <p align="center">
   <img src="docs/assets/kurama-banner.svg" alt="鞍馬 Kurama: 夜の山の稜線に立つ鳥居と、その向こうの満月。下には青海波の帯" width="100%">
 </p>
@@ -15,6 +15,7 @@
 <p align="center">
   <a href="https://github.com/ynishimura/kurama/actions/workflows/pr.yml"><img src="https://img.shields.io/github/actions/workflow/status/ynishimura/kurama/pr.yml?branch=main&amp;label=PR%20checks&amp;style=for-the-badge&amp;logo=githubactions&amp;logoColor=38a1db&amp;labelColor=1e50a2&amp;color=1c1c1c" alt="main の PR チェック"></a>
   <a href="https://scorecard.dev/viewer/?uri=github.com/ynishimura/kurama"><img src="https://img.shields.io/ossf-scorecard/github.com/ynishimura/kurama?label=OpenSSF%20Scorecard&amp;style=for-the-badge&amp;labelColor=1e50a2&amp;color=1c1c1c" alt="OpenSSF Scorecard"></a>
+  <a href="https://www.bestpractices.dev/projects/15111"><img src="https://img.shields.io/cii/level/15111?style=for-the-badge&amp;label=OpenSSF%20Best%20Practices&amp;labelColor=1e50a2&amp;color=1c1c1c" alt="OpenSSF Best Practices: passing"></a>
   <a href="Cargo.toml"><img src="https://img.shields.io/badge/Rust-1.95.0%2B-1c1c1c?style=for-the-badge&amp;logo=rust&amp;logoColor=38a1db&amp;labelColor=1e50a2" alt="Rust 1.95.0 以降"></a>
   <a href="#動作環境"><img src="https://img.shields.io/badge/macOS-zsh-1c1c1c?style=for-the-badge&amp;logo=apple&amp;logoColor=38a1db&amp;labelColor=1e50a2" alt="対応環境: macOS と zsh"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-1c1c1c?style=for-the-badge&amp;labelColor=1e50a2" alt="ライセンス: MIT"></a>
