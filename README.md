@@ -14,6 +14,7 @@
 <p align="center">
   <a href="https://github.com/ynishimura/kurama/actions/workflows/pr.yml"><img src="https://img.shields.io/github/actions/workflow/status/ynishimura/kurama/pr.yml?branch=main&amp;label=PR%20checks&amp;style=for-the-badge&amp;logo=githubactions&amp;logoColor=38a1db&amp;labelColor=1e50a2&amp;color=1c1c1c" alt="PR checks on main"></a>
   <a href="https://scorecard.dev/viewer/?uri=github.com/ynishimura/kurama"><img src="https://img.shields.io/ossf-scorecard/github.com/ynishimura/kurama?label=OpenSSF%20Scorecard&amp;style=for-the-badge&amp;labelColor=1e50a2&amp;color=1c1c1c" alt="OpenSSF Scorecard"></a>
+  <a href="https://www.bestpractices.dev/projects/15111"><img src="https://img.shields.io/cii/level/15111?style=for-the-badge&amp;label=OpenSSF%20Best%20Practices&amp;labelColor=1e50a2&amp;color=1c1c1c" alt="OpenSSF Best Practices: passing"></a>
   <a href="Cargo.toml"><img src="https://img.shields.io/badge/Rust-1.95.0%2B-1c1c1c?style=for-the-badge&amp;logo=rust&amp;logoColor=38a1db&amp;labelColor=1e50a2" alt="Rust 1.95.0 or newer"></a>
   <a href="#requirements"><img src="https://img.shields.io/badge/macOS-zsh-1c1c1c?style=for-the-badge&amp;logo=apple&amp;logoColor=38a1db&amp;labelColor=1e50a2" alt="Platform: macOS and zsh"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-1c1c1c?style=for-the-badge&amp;labelColor=1e50a2" alt="License: MIT"></a>
