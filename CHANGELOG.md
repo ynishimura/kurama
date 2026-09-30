@@ -11,6 +11,8 @@ format. Internal changes need none.
 
 ## Unreleased
 
+## 0.1.1 - 2026-10-01
+
 ### Security
 
 - rustls 0.23.45 fixes RUSTSEC-2026-0285 (TLS 1.3 handshake messages were
@@ -23,6 +25,11 @@ format. Internal changes need none.
   `kurama-<target>.sigstore.json` next to it, so
   `gh attestation verify <archive> --repo ynishimura/kurama --bundle <file>`
   checks a download without asking GitHub.
+
+### Changed
+
+- `kurama data` embeds DuckDB 1.5.5 (was 1.5.3), with its matching httpfs
+  extension for S3 reads.
 
 ## 0.1.0 - 2026-09-28
 
