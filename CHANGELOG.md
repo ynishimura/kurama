@@ -11,6 +11,19 @@ format. Internal changes need none.
 
 ## Unreleased
 
+### Security
+
+- rustls 0.23.45 fixes RUSTSEC-2026-0285 (TLS 1.3 handshake messages were
+  accepted across encryption level boundaries), which affected every HTTPS
+  connection kurama makes.
+
+### Added
+
+- Each release archive's build provenance ships as
+  `kurama-<target>.sigstore.json` next to it, so
+  `gh attestation verify <archive> --repo ynishimura/kurama --bundle <file>`
+  checks a download without asking GitHub.
+
 ## 0.1.0 - 2026-09-28
 
 The first public version. What it covers:
