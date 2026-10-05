@@ -9,7 +9,7 @@
 //! timeout = 20                       # seconds per CLI call
 //! ```
 
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::domain::functions::obsidian::allowed_folder;
 
@@ -18,7 +18,9 @@ use crate::domain::functions::obsidian::allowed_folder;
 pub struct ObsidianConfig {
     /// The vault the CLI targets, by name or id.
     pub vault: String,
-    /// Folders relative to the vault root that may be searched and read.
+    /// Folders relative to the vault root that may be searched and read,
+    /// each normalized when the file is read and ending in `/`.
+    #[serde(deserialize_with = "allowed_folders")]
     pub allow_paths: Vec<String>,
     /// The CLI; a LaunchAgent's PATH has no `/Applications/Obsidian.app/Contents/MacOS`.
     #[serde(default = "default_cli_path")]
@@ -29,6 +31,26 @@ pub struct ObsidianConfig {
     /// Seconds before a CLI call is killed.
     #[serde(default = "default_timeout")]
     pub timeout: u64,
+}
+
+/// `allow_paths` as kurama checks against it: at least one entry, each a
+/// folder relative to the vault root without `..`.
+fn allowed_folders<'de, D: Deserializer<'de>>(deserializer: D) -> Result<Vec<String>, D::Error> {
+    let entries = Vec::<String>::deserialize(deserializer)?;
+    if entries.is_empty() {
+        return Err(serde::de::Error::custom(
+            "allow_paths must name at least one folder",
+        ));
+    }
+    let mut folders = Vec::new();
+    for entry in &entries {
+        let folder = allowed_folder(entry).map_err(serde::de::Error::custom)?;
+        // `Wiki` and `Wiki/` are one folder, read once.
+        if !folders.contains(&folder) {
+            folders.push(folder);
+        }
+    }
+    Ok(folders)
 }
 
 fn default_cli_path() -> String {
@@ -48,12 +70,6 @@ impl ObsidianConfig {
         if self.vault.is_empty() {
             return Err("vault must name a vault".to_owned());
         }
-        if self.allow_paths.is_empty() {
-            return Err("allow_paths must name at least one folder".to_owned());
-        }
-        for entry in &self.allow_paths {
-            allowed_folder(entry)?;
-        }
         if self.max_read_bytes == 0 {
             return Err("max_read_bytes must be at least 1".to_owned());
         }
@@ -61,15 +77,6 @@ impl ObsidianConfig {
             return Err("timeout must be at least 1 second".to_owned());
         }
         Ok(())
-    }
-
-    /// The allowed folders, each ending in `/`. Only called on a validated
-    /// section, so every entry is one.
-    pub fn allowed_folders(&self) -> Vec<String> {
-        self.allow_paths
-            .iter()
-            .filter_map(|entry| allowed_folder(entry).ok())
-            .collect()
     }
 }
 
@@ -79,11 +86,12 @@ mod tests {
 
     #[test]
     fn a_section_with_vault_and_folders_takes_the_defaults() {
-        let config =
-            Config::parse("[obsidian]\nvault = \"brain\"\nallow_paths = [\"Wiki\", \"Daily/\"]\n")
-                .unwrap();
+        let config = Config::parse(
+            "[obsidian]\nvault = \"brain\"\nallow_paths = [\"Wiki\", \"Daily/\", \"Wiki/\"]\n",
+        )
+        .unwrap();
         let obsidian = config.obsidian.unwrap();
-        assert_eq!(obsidian.allowed_folders(), ["Wiki/", "Daily/"]);
+        assert_eq!(obsidian.allow_paths, ["Wiki/", "Daily/"]);
         assert_eq!(obsidian.cli_path, "obsidian");
         assert_eq!(obsidian.max_read_bytes, 65536);
         assert_eq!(obsidian.timeout, 20);

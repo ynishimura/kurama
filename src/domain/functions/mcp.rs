@@ -340,11 +340,11 @@ pub fn tool_run(name: &str, arguments: &Value) -> Result<ToolRun, String> {
             if let Some(path) = optional("path") {
                 args.push(format!("--path={path}"));
             }
-            if let Some(limit) = arguments.get("limit") {
+            // Absent and null alike; the range is the command line's.
+            if let Some(limit) = arguments.get("limit").filter(|limit| !limit.is_null()) {
                 let limit = limit
                     .as_u64()
-                    .filter(|limit| *limit > 0)
-                    .ok_or_else(|| format!("{name}: `limit` is a positive integer"))?;
+                    .ok_or_else(|| format!("{name}: `limit` is a non-negative integer"))?;
                 args.push(format!("--limit={limit}"));
             }
             args.extend(["--".into(), text("query")?]);
@@ -630,9 +630,11 @@ mod tests {
         let run = tool_run("obsidian_files", &json!({"folder": "Wiki"})).unwrap();
         assert_eq!(args(&run), ["obsidian", "files", "--json", "--", "Wiki"]);
         assert_eq!(
-            tool_run("obsidian_search", &json!({"query": "q", "limit": 0})),
-            Err("obsidian_search: `limit` is a positive integer".into())
+            tool_run("obsidian_search", &json!({"query": "q", "limit": "3"})),
+            Err("obsidian_search: `limit` is a non-negative integer".into())
         );
+        let run = tool_run("obsidian_search", &json!({"query": "q", "limit": null})).unwrap();
+        assert_eq!(args(&run), ["obsidian", "search", "--json", "--", "q"]);
     }
 
     #[test]

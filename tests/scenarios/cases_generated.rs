@@ -2219,6 +2219,14 @@ fn mcp_obsidian_cuts_a_long_note_at_max_read_bytes() {
 }
 #[test]
 #[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn mcp_obsidian_files_lists_one_folder() {
+    crate::support::cases::run_case(
+        include_str!("../cases/mcp/mcp_obsidian_files_lists_one_folder.toml"),
+        "tests/cases/mcp/mcp_obsidian_files_lists_one_folder.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
 fn mcp_obsidian_files_reports_an_obsidian_that_is_not_running() {
     crate::support::cases::run_case(
         include_str!("../cases/mcp/mcp_obsidian_files_reports_an_obsidian_that_is_not_running.toml"),
@@ -2271,6 +2279,14 @@ fn mcp_obsidian_read_returns_a_note_and_records_the_audit_entry() {
     crate::support::cases::run_case(
         include_str!("../cases/mcp/mcp_obsidian_read_returns_a_note_and_records_the_audit_entry.toml"),
         "tests/cases/mcp/mcp_obsidian_read_returns_a_note_and_records_the_audit_entry.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn mcp_obsidian_reports_an_obsidian_that_does_not_answer() {
+    crate::support::cases::run_case(
+        include_str!("../cases/mcp/mcp_obsidian_reports_an_obsidian_that_does_not_answer.toml"),
+        "tests/cases/mcp/mcp_obsidian_reports_an_obsidian_that_does_not_answer.toml",
     );
 }
 #[test]

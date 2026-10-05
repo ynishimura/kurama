@@ -12,9 +12,10 @@
 #
 # KURAMA_FAKE_OBSIDIAN_MODE=hang blocks the way the CLI does while Obsidian
 # does not answer. KURAMA_FAKE_OBSIDIAN_MODE=not-running fails the way the CLI
-# does when no Obsidian listens on $HOME/.obsidian-cli.sock. KURAMA_FAKE_OBSIDIAN_MODE=whole-vault makes `search:context`
-# ignore `path=`, so a scenario can show that kurama drops what the CLI
-# returns outside the allowed folders.
+# does when no Obsidian listens on $HOME/.obsidian-cli.sock.
+# KURAMA_FAKE_OBSIDIAN_MODE=whole-vault makes `search:context` ignore `path=`
+# and `files` ignore `folder=`, so a scenario can show that kurama drops what
+# the CLI returns outside the allowed folders.
 use strict;
 use warnings;
 use File::Basename qw(dirname);
@@ -91,7 +92,7 @@ if ($command eq 'search:context') {
         print <$fh>;
     }
 } elsif ($command eq 'files') {
-    my $folder = $value{folder} // '';
+    my $folder = $mode eq 'whole-vault' ? '' : ($value{folder} // '');
     $folder =~ s{/$}{};
     print "$_\n" for notes_under($folder);
 } else {

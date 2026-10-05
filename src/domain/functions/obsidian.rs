@@ -6,8 +6,7 @@
 //! ever the value of one `key=value` element, so a query such as
 //! `x eval code=...` stays the value of `query=`.
 
-use serde::Serialize;
-use serde_json::Value;
+use serde::{Deserialize, Serialize};
 
 /// The read-only subcommands kurama runs, and the only ones.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -114,7 +113,8 @@ pub fn allowed_subfolder(folder: &str, allowed: &[String]) -> Result<String, Pat
 }
 
 /// The folders a run reads: the one asked for, checked, or every allowed
-/// folder.
+/// folder that no other allowed folder holds, since the CLI reads a folder
+/// with everything under it.
 pub fn folders_to_read(
     folder: Option<&str>,
     allowed: &[String],
@@ -123,6 +123,11 @@ pub fn folders_to_read(
         Some(folder) => Ok(vec![allowed_subfolder(folder, allowed)?]),
         None => Ok(allowed
             .iter()
+            .filter(|folder| {
+                !allowed
+                    .iter()
+                    .any(|outer| outer != *folder && folder.starts_with(outer.as_str()))
+            })
             .map(|folder| folder.trim_end_matches('/').to_owned())
             .collect()),
     }
@@ -160,11 +165,17 @@ pub fn files_argv(vault: &str, folder: &str) -> Vec<String> {
 }
 
 /// The CLI's own failure, when its output is one: it exits 0 and prints
-/// `Error: ...` or `Vault not found.` on stdout instead of the answer.
-pub fn cli_failure(stdout: &str) -> Option<&str> {
+/// `Vault not found.`, or `Error: ...`, on stdout instead of the answer. A
+/// `read` names the note it asked for, and only `Error: File "<note>" not
+/// found.` fails it: a one-line note that starts with `Error: ` is a note.
+pub fn cli_failure<'a>(stdout: &'a str, read: Option<&str>) -> Option<&'a str> {
     let text = stdout.trim_end();
-    (!text.contains('\n') && (text.starts_with("Error: ") || text == "Vault not found."))
-        .then_some(text)
+    let failed = text == "Vault not found."
+        || match read {
+            Some(note) => text == format!("Error: File \"{note}\" not found."),
+            None => !text.contains('\n') && text.starts_with("Error: "),
+        };
+    failed.then_some(text)
 }
 
 /// One line of a note that matched.
@@ -175,29 +186,39 @@ pub struct Match {
     pub text: String,
 }
 
+/// One note of a `search:context ... format=json` answer, as the CLI
+/// documents it.
+#[derive(Deserialize)]
+struct FileHits {
+    file: String,
+    matches: Vec<LineHit>,
+}
+
+#[derive(Deserialize)]
+struct LineHit {
+    line: u64,
+    text: String,
+}
+
 /// The matches of one `search:context ... format=json` answer that lie
 /// inside an allowed folder; `No matches found.` is none.
-pub fn search_matches(stdout: &str, allowed: &[String]) -> Result<Vec<Match>, String> {
+pub fn search_matches(stdout: &str, allowed: &[String]) -> Result<Vec<Match>, serde_json::Error> {
     if stdout.trim() == "No matches found." {
         return Ok(Vec::new());
     }
-    let files: Vec<Value> = serde_json::from_str(stdout).map_err(|error| {
-        format!("the CLI's search answer is not the JSON it documents: {error}")
-    })?;
-    let mut matches = Vec::new();
-    for file in &files {
-        let Some(path) = file["file"].as_str().filter(|path| inside(path, allowed)) else {
-            continue;
-        };
-        for found in file["matches"].as_array().into_iter().flatten() {
-            matches.push(Match {
-                path: path.to_owned(),
-                line: found["line"].as_u64().unwrap_or(0),
-                text: found["text"].as_str().unwrap_or("").to_owned(),
-            });
-        }
-    }
-    Ok(matches)
+    let files: Vec<FileHits> = serde_json::from_str(stdout)?;
+    Ok(files
+        .into_iter()
+        .filter(|hits| inside(&hits.file, allowed))
+        .flat_map(|hits| {
+            let path = hits.file;
+            hits.matches.into_iter().map(move |hit| Match {
+                path: path.clone(),
+                line: hit.line,
+                text: hit.text,
+            })
+        })
+        .collect())
 }
 
 /// The paths of one `files` answer that lie inside an allowed folder.
@@ -290,6 +311,12 @@ mod tests {
             folders_to_read(Some("Wiki/sub"), &allowed()).unwrap(),
             ["Wiki/sub"]
         );
+        let nested = [
+            "Wiki/".to_owned(),
+            "Daily/".to_owned(),
+            "Wiki/sub/".to_owned(),
+        ];
+        assert_eq!(folders_to_read(None, &nested).unwrap(), ["Wiki", "Daily"]);
     }
 
     #[test]
@@ -318,12 +345,28 @@ mod tests {
     #[test]
     fn the_cli_reports_its_failures_on_stdout() {
         assert_eq!(
-            cli_failure("Error: File \"Wiki/x.md\" not found.\n"),
+            cli_failure("Error: File \"Wiki/x.md\" not found.\n", Some("Wiki/x.md")),
             Some("Error: File \"Wiki/x.md\" not found.")
         );
-        assert_eq!(cli_failure("Vault not found.\n"), Some("Vault not found."));
-        assert_eq!(cli_failure("Error: in a note\nsecond line\n"), None);
-        assert_eq!(cli_failure("# a note\n"), None);
+        assert_eq!(
+            cli_failure("Vault not found.\n", Some("Wiki/x.md")),
+            Some("Vault not found.")
+        );
+        assert_eq!(
+            cli_failure("Vault not found.\n", None),
+            Some("Vault not found.")
+        );
+        assert_eq!(
+            cli_failure("Error: Command \"x\" not found.\n", None),
+            Some("Error: Command \"x\" not found.")
+        );
+        // A one-line note that starts like an error is still the note.
+        assert_eq!(
+            cli_failure("Error: the build broke\n", Some("Wiki/err.md")),
+            None
+        );
+        assert_eq!(cli_failure("Error: in a note\nsecond line\n", None), None);
+        assert_eq!(cli_failure("# a note\n", Some("Wiki/a.md")), None);
     }
 
     #[test]
@@ -352,6 +395,14 @@ mod tests {
             []
         );
         assert!(search_matches("not json", &allowed()).is_err());
+        // A hit without the line it is on is not the documented answer.
+        assert!(
+            search_matches(
+                r#"[{"file":"Wiki/a.md","matches":[{"text":"x"}]}]"#,
+                &allowed()
+            )
+            .is_err()
+        );
         assert_eq!(
             listed_files("Wiki/a.md\nPrivate/b.md\nDaily/2026/c.md\n", &allowed()),
             ["Wiki/a.md", "Daily/2026/c.md"]

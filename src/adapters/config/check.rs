@@ -176,6 +176,7 @@ fn follows_an_unread_section(config: &Config, section: &str, unread: &BTreeSet<S
             .data
             .get(name)
             .is_some_and(|workspace| named("s3", workspace.s3_source.as_ref())),
+        Some(("mcp", "tools")) => unread.contains("obsidian"),
         _ => false,
     }
 }
@@ -190,6 +191,23 @@ mod tests {
             .into_iter()
             .map(|problem| (problem.section, problem.line, problem.error.to_string()))
             .collect()
+    }
+
+    /// `[mcp] tools` naming an obsidian tool is a problem of its own only
+    /// when there is no `[obsidian]`, not when the section is there and did
+    /// not read.
+    #[test]
+    fn an_obsidian_tool_is_not_reported_for_an_obsidian_section_that_did_not_read() {
+        let mcp = "[mcp]\ntools = [\"obsidian_read\"]\n";
+        let problems = found(&format!(
+            "{mcp}\n[obsidian]\nvault = \"b\"\nallow_paths = []\n"
+        ));
+        assert_eq!(problems.len(), 1, "{problems:?}");
+        assert_eq!(problems[0].0.as_deref(), Some("obsidian"));
+        let problems = found(mcp);
+        assert_eq!(problems.len(), 1, "{problems:?}");
+        assert_eq!(problems[0].0.as_deref(), Some("mcp.tools"));
+        assert_eq!(problems[0].1, Some(1));
     }
 
     #[test]

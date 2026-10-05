@@ -6,6 +6,7 @@
 //! document: `{"matches": [...]}`, `{"path", "content", "truncated"}` or
 //! `{"files": [...]}`.
 
+use std::io::Write;
 use std::time::Duration;
 
 use anyhow::Result;
@@ -57,9 +58,8 @@ impl ObsidianCommand {
                 query: text("query").expect("clap requires QUERY"),
                 folder: text("path"),
                 limit: sub
-                    .get_one::<usize>("limit")
-                    .copied()
-                    .unwrap_or(DEFAULT_LIMIT),
+                    .get_one::<u64>("limit")
+                    .map_or(DEFAULT_LIMIT, |limit| *limit as usize),
             },
             "read" => ObsidianAction::Read {
                 path: text("path").expect("clap requires PATH"),
@@ -127,7 +127,7 @@ pub fn command() -> Command {
                         .long("limit")
                         .value_name("N")
                         .value_hint(ValueHint::Other)
-                        .value_parser(clap::value_parser!(usize))
+                        .value_parser(clap::value_parser!(u64).range(1..))
                         .help("Notes per folder searched (default 20)"),
                 )
                 .arg(json_arg()),
@@ -161,7 +161,7 @@ pub async fn run(command: ObsidianCommand, config: &Config) -> Result<()> {
     let obsidian = config.obsidian.as_ref().ok_or_else(|| {
         CoreError::config("[obsidian] is not configured: add vault and allow_paths")
     })?;
-    let allowed = obsidian.allowed_folders();
+    let allowed = &obsidian.allow_paths;
     match command.action {
         ObsidianAction::Search {
             query,
@@ -169,15 +169,16 @@ pub async fn run(command: ObsidianCommand, config: &Config) -> Result<()> {
             limit,
         } => {
             let mut matches: Vec<Match> = Vec::new();
-            for folder in folders_to_read(folder.as_deref(), &allowed)? {
+            for folder in folders_to_read(folder.as_deref(), allowed)? {
                 let answer = call(
                     obsidian,
                     search_argv(&obsidian.vault, &query, &folder, limit),
+                    None,
                 )
                 .await?;
                 matches.extend(
-                    search_matches(&answer, &allowed)
-                        .map_err(|message| ObsidianCliError::Failed { message })?,
+                    search_matches(&answer, allowed)
+                        .map_err(|source| ObsidianCliError::NotJson { source })?,
                 );
             }
             if command.json {
@@ -189,8 +190,8 @@ pub async fn run(command: ObsidianCommand, config: &Config) -> Result<()> {
             }
         }
         ObsidianAction::Read { path } => {
-            let path = allowed_note(&path, &allowed)?;
-            let answer = call(obsidian, read_argv(&obsidian.vault, &path)).await?;
+            let path = allowed_note(&path, allowed)?;
+            let answer = call(obsidian, read_argv(&obsidian.vault, &path), Some(&path)).await?;
             let (content, truncated) = cut_note(&answer, obsidian.max_read_bytes);
             if command.json {
                 println!(
@@ -200,8 +201,12 @@ pub async fn run(command: ObsidianCommand, config: &Config) -> Result<()> {
             } else {
                 print!("{content}");
                 if truncated {
+                    // The cut ends mid-line: flushed first, and the note
+                    // starts a line of its own, so it follows the text.
+                    std::io::stdout().flush()?;
+                    let newline = if content.ends_with('\n') { "" } else { "\n" };
                     crate::console::write_line(&format!(
-                        "# cut at {} bytes ([obsidian] max_read_bytes)",
+                        "{newline}# cut at {} bytes ([obsidian] max_read_bytes)",
                         obsidian.max_read_bytes
                     ));
                 }
@@ -209,9 +214,9 @@ pub async fn run(command: ObsidianCommand, config: &Config) -> Result<()> {
         }
         ObsidianAction::Files { folder } => {
             let mut files = Vec::new();
-            for folder in folders_to_read(folder.as_deref(), &allowed)? {
-                let answer = call(obsidian, files_argv(&obsidian.vault, &folder)).await?;
-                files.extend(listed_files(&answer, &allowed));
+            for folder in folders_to_read(folder.as_deref(), allowed)? {
+                let answer = call(obsidian, files_argv(&obsidian.vault, &folder), None).await?;
+                files.extend(listed_files(&answer, allowed));
             }
             if command.json {
                 println!("{}", json!({ "files": files }));
@@ -225,10 +230,11 @@ pub async fn run(command: ObsidianCommand, config: &Config) -> Result<()> {
     Ok(())
 }
 
-async fn call(obsidian: &ObsidianConfig, argv: Vec<String>) -> Result<String> {
+async fn call(obsidian: &ObsidianConfig, argv: Vec<String>, read: Option<&str>) -> Result<String> {
     Ok(run_obsidian_cli(
         &obsidian.cli_path,
         &argv,
+        read,
         Duration::from_secs(obsidian.timeout),
     )
     .await?)

@@ -1,7 +1,8 @@
 # Without a path, obsidian_search runs search:context once per allowed folder.
 # The fake CLI here ignores path= and answers from the whole vault, the way a
 # CLI that misreads the folder would: the match in Private/ is dropped, and
-# only the notes of Wiki/ and Daily/ reach the agent.
+# only the notes of Wiki/ and Daily/ reach the agent. `files` is filtered
+# the same way when the CLI answers beyond the folder it was asked for.
 id = "mcp_obsidian_search_returns_matches_from_allowed_folders_only"
 feature = "mcp"
 
@@ -17,6 +18,7 @@ stdin = """
 {"jsonrpc":"2.0","id":1,"method":"tools/list"}
 {"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"obsidian_search","arguments":{"query":"kurama"}}}
 """
+then_run = [["obsidian", "files", "--json"]]
 config = """
 [obsidian]
 vault = "brain"
@@ -26,6 +28,10 @@ cli_path = "{repo}/tests/fakes/obsidian"
 
 [expect]
 exit_code = 0
+files_written = ["home/.local/state/kurama/audit.jsonl"]
+
+[[expect.runs]]
+run = 0
 stderr_empty = true
 obsidian_calls = [
   "vault=brain\tsearch:context\tquery=kurama\tpath=Wiki\tlimit=20\tformat=json",
@@ -36,4 +42,10 @@ stdout = { line_count = 2, line_containing = [
   ["\"id\":2", "\"isError\":false", "\"path\":\"Wiki/kurama.md\"", "\"line\":3", "kurama reads the vault through the Obsidian CLI.", "\"path\":\"Daily/2026-10-05.md\""],
 ] }
 stdout_excludes = ["Private/", "never show this line"]
-files_written = ["home/.local/state/kurama/audit.jsonl"]
+
+[[expect.runs]]
+run = 1
+stderr_empty = true
+obsidian_calls = ["vault=brain\tfiles\tfolder=Wiki", "vault=brain\tfiles\tfolder=Daily"]
+stdout = { contains = ["\"Wiki/kurama.md\"", "\"Daily/2026-10-05.md\""] }
+stdout_excludes = ["Private/"]

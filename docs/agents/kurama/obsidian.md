@@ -23,10 +23,13 @@ timeout = 20                        # seconds per CLI call
 A path is relative to the vault root. An absolute one, one with `..` or a
 backslash, or one outside every `allow_paths` entry is
 `OBSIDIAN_PATH_REFUSED` (exit 2) before the CLI runs, and an answer is
-filtered to the allowed folders again. A CLI that cannot be run or an
-Obsidian that does not answer within `timeout` is `OBSIDIAN_UNAVAILABLE`
-(exit 3); a failure the CLI reports itself (a note that does not exist,
-`Vault not found.`) is `OBSIDIAN_FAILED` (exit 1). Only the CLI's
+filtered to the allowed folders again. A CLI that cannot be run, an
+Obsidian that is not running or has its CLI disabled (`Unable to connect to
+main process`), or one that does not answer within `timeout` is
+`OBSIDIAN_UNAVAILABLE` (exit 3); a failure the CLI reports itself (a note that does not exist,
+`Vault not found.`) is `OBSIDIAN_FAILED` (exit 1). The CLI prints its
+failures where the answer goes, so `read` fails only on those two: any other
+answer, including a one-line note that starts with `Error: `, is the note. Only the CLI's
 `search:context`, `read` and `files` run, and a value given to kurama is
 only ever the value of one `key=value` argument. A run is an audit entry
 (`command = "obsidian"`, `target` the note, the folder, or `*` for every

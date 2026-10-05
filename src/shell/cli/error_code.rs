@@ -699,7 +699,9 @@ impl ErrorCode {
                     ObsidianCliError::NotRunnable { .. }
                     | ObsidianCliError::NoAnswer { .. }
                     | ObsidianCliError::NotConnected { .. } => Self::ObsidianUnavailable,
-                    ObsidianCliError::Failed { .. } => Self::ObsidianFailed,
+                    ObsidianCliError::Failed { .. } | ObsidianCliError::NotJson { .. } => {
+                        Self::ObsidianFailed
+                    }
                 };
             }
             if let Some(error) = cause.downcast_ref::<ApiError>() {

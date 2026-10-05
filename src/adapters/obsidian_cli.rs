@@ -33,15 +33,23 @@ pub enum ObsidianCliError {
     /// The CLI answered with a failure of its own.
     #[error("the Obsidian CLI failed: {message}")]
     Failed { message: String },
+    /// The CLI's search answer is not the JSON it documents.
+    #[error("the Obsidian CLI's search answer is not the JSON it documents")]
+    NotJson {
+        #[source]
+        source: serde_json::Error,
+    },
 }
 
 /// What the CLI prints when no Obsidian listens on its socket.
 const NOT_CONNECTED: &str = "Unable to connect to main process";
 
-/// Run `cli argv` and return what it printed.
+/// Run `cli argv` and return what it printed. `read` is the note a `read`
+/// asked for, which tells its not-found answer apart from a note.
 pub async fn run_obsidian_cli(
     cli: &str,
     argv: &[String],
+    read: Option<&str>,
     timeout: Duration,
 ) -> Result<String, ObsidianCliError> {
     let output = run_own_command(Path::new(cli), argv, &[], None, timeout)
@@ -66,7 +74,7 @@ pub async fn run_obsidian_cli(
         }
         return Err(ObsidianCliError::Failed { message });
     }
-    if let Some(message) = cli_failure(&output.stdout) {
+    if let Some(message) = cli_failure(&output.stdout, read) {
         return Err(ObsidianCliError::Failed {
             message: message.to_owned(),
         });
@@ -79,7 +87,7 @@ mod tests {
     use super::*;
 
     async fn sh(script: &str, timeout: Duration) -> Result<String, ObsidianCliError> {
-        run_obsidian_cli("/bin/sh", &["-c".into(), script.into()], timeout).await
+        run_obsidian_cli("/bin/sh", &["-c".into(), script.into()], None, timeout).await
     }
 
     #[tokio::test]
@@ -101,7 +109,7 @@ mod tests {
 
     #[tokio::test]
     async fn a_missing_cli_and_a_silent_obsidian_are_told_apart() {
-        let missing = run_obsidian_cli("/nonexistent/obsidian", &[], Duration::from_secs(5))
+        let missing = run_obsidian_cli("/nonexistent/obsidian", &[], None, Duration::from_secs(5))
             .await
             .unwrap_err();
         assert!(

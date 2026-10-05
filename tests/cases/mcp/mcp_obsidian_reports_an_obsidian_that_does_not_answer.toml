@@ -1,0 +1,25 @@
+# An Obsidian that does not answer is killed at [obsidian] timeout:
+# OBSIDIAN_UNAVAILABLE (exit 3) after one second, not the CLI's own wait.
+id = "mcp_obsidian_reports_an_obsidian_that_does_not_answer"
+feature = "mcp"
+
+[combination]
+command = "obsidian-files"
+obsidian_app = "silent"
+
+[input]
+args = ["obsidian", "files"]
+env = { KURAMA_FAKE_OBSIDIAN_MODE = "hang" }
+config = """
+[obsidian]
+vault = "brain"
+allow_paths = ["Wiki/"]
+cli_path = "{repo}/tests/fakes/obsidian"
+timeout = 1
+"""
+
+[expect]
+exit_code = 3
+error = { code = "OBSIDIAN_UNAVAILABLE", exit = 3, message = "the Obsidian CLI did not answer within 1 seconds" }
+stdout_lines = 0
+obsidian_calls = ["vault=brain\tfiles\tfolder=Wiki"]

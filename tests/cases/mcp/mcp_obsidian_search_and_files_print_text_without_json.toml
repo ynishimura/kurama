@@ -1,5 +1,8 @@
 # Without --json, a search prints one `path:line: text` line per match and
-# files one path per line, both held to allow_paths.
+# files one path per line, both held to allow_paths. Their audit entries name
+# the folder searched and `*` for every allowed folder, never the query, and
+# a --limit of 0 (which the CLI reads as no limit) is refused before anything
+# runs.
 id = "mcp_obsidian_search_and_files_print_text_without_json"
 feature = "mcp"
 
@@ -9,16 +12,24 @@ output = "text"
 
 [input]
 args = ["obsidian", "search", "kurama", "--path", "Wiki", "--limit", "5"]
-then_run = [["obsidian", "files"]]
+then_run = [
+  ["obsidian", "files"],
+  ["obsidian", "search", "kurama", "--limit", "0", "--json"],
+  ["audit", "--json"],
+]
 config = """
 [obsidian]
 vault = "brain"
 allow_paths = ["Wiki/", "Daily/"]
 cli_path = "{repo}/tests/fakes/obsidian"
+
+[audit]
+enabled = true
 """
 
 [expect]
 exit_code = 0
+files_written = ["home/.local/state/kurama/audit.jsonl"]
 
 [[expect.runs]]
 run = 0
@@ -31,3 +42,13 @@ run = 1
 stderr_empty = true
 obsidian_calls = ["vault=brain\tfiles\tfolder=Wiki", "vault=brain\tfiles\tfolder=Daily"]
 stdout = { equals = "Wiki/kurama.md\nDaily/2026-10-05.md\n" }
+
+[[expect.runs]]
+run = 2
+obsidian_calls = []
+json_error = { code = "ARGUMENT_INVALID", exit = 2 }
+
+[[expect.runs]]
+run = 3
+stdout_json = { "/entries" = { length = 2 }, "/entries/0/command" = "obsidian", "/entries/0/target" = "Wiki", "/entries/1/target" = "*" }
+stdout_excludes = ["kurama\"", "query"]

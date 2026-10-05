@@ -241,7 +241,9 @@ impl Config {
             .obsidian_tool_without_a_vault(self.obsidian.is_some())
         {
             problems.push((
-                "mcp".to_owned(),
+                // Its own section name: `config check` drops it when it is
+                // only there because `[obsidian]` did not read.
+                "mcp.tools".to_owned(),
                 CoreError::config(format!(
                     "[mcp] tools names {tool:?}, which reads the vault an [obsidian] section names, and there is none"
                 )),
