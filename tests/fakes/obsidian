@@ -11,7 +11,8 @@
 # `Error: Command "X" not found.`.
 #
 # KURAMA_FAKE_OBSIDIAN_MODE=hang blocks the way the CLI does while Obsidian
-# does not answer. KURAMA_FAKE_OBSIDIAN_MODE=whole-vault makes `search:context`
+# does not answer. KURAMA_FAKE_OBSIDIAN_MODE=not-running fails the way the CLI
+# does when no Obsidian listens on $HOME/.obsidian-cli.sock. KURAMA_FAKE_OBSIDIAN_MODE=whole-vault makes `search:context`
 # ignore `path=`, so a scenario can show that kurama drops what the CLI
 # returns outside the allowed folders.
 use strict;
@@ -28,6 +29,10 @@ if (my $log = $ENV{KURAMA_FAKE_OBSIDIAN_LOG}) {
 my $mode = $ENV{KURAMA_FAKE_OBSIDIAN_MODE} // '';
 # `exec` so the caller's deadline kills the sleep itself.
 exec 'sleep', '30' if $mode eq 'hang';
+if ($mode eq 'not-running') {
+    print STDERR "Unable to connect to main process\n";
+    exit 1;
+}
 
 my $root = dirname(__FILE__) . '/../fixtures/obsidian-vault';
 my ($vault, $command, @rest) = @ARGV;

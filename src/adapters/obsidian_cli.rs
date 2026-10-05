@@ -1,8 +1,10 @@
 //! The official Obsidian CLI, run once per call with no stdin and a deadline; its stdout, or why it gave none.
 //!
-//! The CLI exits 0 whatever happened and reports its own failures on stdout
+//! The CLI exits 0 for its own failures and reports them on stdout
 //! (`Error: ...`, `Vault not found.`), so the answer is read for one before
-//! it is used. The argv comes from `domain::functions::obsidian`, the only
+//! it is used. It reaches Obsidian through `$HOME/.obsidian-cli.sock`, and
+//! says `Unable to connect to main process` (exit 1) when nothing listens
+//! there. The argv comes from `domain::functions::obsidian`, the only
 //! place that builds one.
 
 use std::io::ErrorKind;
@@ -21,13 +23,20 @@ pub enum ObsidianCliError {
         #[source]
         source: std::io::Error,
     },
-    /// Obsidian did not answer in time: not running, or the CLI not enabled.
+    /// Obsidian did not answer in time.
     #[error("the Obsidian CLI did not answer within {seconds} seconds")]
     NoAnswer { seconds: u64 },
+    /// Nothing answered the CLI: Obsidian is not running, or its CLI is not
+    /// enabled.
+    #[error("the Obsidian CLI cannot reach Obsidian: {message}")]
+    NotConnected { message: String },
     /// The CLI answered with a failure of its own.
     #[error("the Obsidian CLI failed: {message}")]
     Failed { message: String },
 }
+
+/// What the CLI prints when no Obsidian listens on its socket.
+const NOT_CONNECTED: &str = "Unable to connect to main process";
 
 /// Run `cli argv` and return what it printed.
 pub async fn run_obsidian_cli(
@@ -51,9 +60,11 @@ pub async fn run_obsidian_cli(
             "" => output.stdout.trim(),
             stderr => stderr,
         };
-        return Err(ObsidianCliError::Failed {
-            message: message.replace(['\r', '\n'], " "),
-        });
+        let message = message.replace(['\r', '\n'], " ");
+        if message == NOT_CONNECTED {
+            return Err(ObsidianCliError::NotConnected { message });
+        }
+        return Err(ObsidianCliError::Failed { message });
     }
     if let Some(message) = cli_failure(&output.stdout) {
         return Err(ObsidianCliError::Failed {
@@ -96,6 +107,16 @@ mod tests {
         assert!(
             matches!(missing, ObsidianCliError::NotRunnable { .. }),
             "{missing:?}"
+        );
+        let not_running = sh(
+            "echo 'Unable to connect to main process' >&2; exit 1",
+            Duration::from_secs(5),
+        )
+        .await
+        .unwrap_err();
+        assert!(
+            matches!(not_running, ObsidianCliError::NotConnected { .. }),
+            "{not_running:?}"
         );
         let silent = sh("sleep 30", Duration::from_secs(1)).await.unwrap_err();
         assert!(

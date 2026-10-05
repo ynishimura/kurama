@@ -696,9 +696,9 @@ impl ErrorCode {
             {
                 use crate::adapters::obsidian_cli::ObsidianCliError;
                 return match error {
-                    ObsidianCliError::NotRunnable { .. } | ObsidianCliError::NoAnswer { .. } => {
-                        Self::ObsidianUnavailable
-                    }
+                    ObsidianCliError::NotRunnable { .. }
+                    | ObsidianCliError::NoAnswer { .. }
+                    | ObsidianCliError::NotConnected { .. } => Self::ObsidianUnavailable,
                     ObsidianCliError::Failed { .. } => Self::ObsidianFailed,
                 };
             }

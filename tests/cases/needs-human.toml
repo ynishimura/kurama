@@ -47,3 +47,9 @@ reason = "no credential exists yet for the services the preset catalogue names (
 prepare = "issue an API key or OAuth client for the service and put it in the 1Password Agent vault as the preset documents"
 [needs_human.combination]
 preset = "linear"
+
+[[needs_human]]
+reason = "the Obsidian CLI reaches the running Obsidian app through $HOME/.obsidian-cli.sock, and every layer runs kurama under a sandbox HOME, where the CLI answers `Unable to connect to main process`; the fakes play the CLI from tests/fixtures/obsidian-vault"
+prepare = "start Obsidian with Settings > General > Command line interface enabled, add [obsidian] (vault, allow_paths with one folder, cli_path = \"/Applications/Obsidian.app/Contents/MacOS/obsidian\") to a config named by KURAMA_CONFIG_PATH, then run `kurama obsidian search WORD --json`, `kurama obsidian read <a note in the folder> --json` and `kurama obsidian read <a note outside it> --json` (OBSIDIAN_PATH_REFUSED), and the same three as obsidian_* tool calls through `kurama mcp --listen` from the remote client"
+[needs_human.combination]
+obsidian_app = "running"

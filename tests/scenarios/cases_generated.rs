@@ -2219,10 +2219,10 @@ fn mcp_obsidian_cuts_a_long_note_at_max_read_bytes() {
 }
 #[test]
 #[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
-fn mcp_obsidian_files_reports_a_missing_cli_with_what_to_enable() {
+fn mcp_obsidian_files_reports_an_obsidian_that_is_not_running() {
     crate::support::cases::run_case(
-        include_str!("../cases/mcp/mcp_obsidian_files_reports_a_missing_cli_with_what_to_enable.toml"),
-        "tests/cases/mcp/mcp_obsidian_files_reports_a_missing_cli_with_what_to_enable.toml",
+        include_str!("../cases/mcp/mcp_obsidian_files_reports_an_obsidian_that_is_not_running.toml"),
+        "tests/cases/mcp/mcp_obsidian_files_reports_an_obsidian_that_is_not_running.toml",
     );
 }
 #[test]
