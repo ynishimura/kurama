@@ -1,0 +1,106 @@
+# What a cloud client sees over `kurama mcp --listen`: with the token it
+# initializes, lists the tools `[mcp] tools` offers, gets an API answer
+# through `call_api`, and gets the AGENT_POLICY_DENIED document for a POST;
+# without the token it gets 401 and nothing runs. The audit log holds the two
+# calls, each as an agent's. The server's stdout stays empty.
+id = "mcp_http_serves_an_api_to_a_client_holding_the_token"
+feature = "mcp"
+
+[combination]
+command = "mcp"
+transport = "http"
+
+[input]
+args = ["mcp", "--listen"]
+then_run = [["audit", "--json"]]
+config = """
+[mcp]
+listen = "127.0.0.1:0"
+token = "op://Agent/kurama-mcp-token/credential"
+tools = ["list_operations", "describe_operation", "call_api"]
+
+[api.pets]
+base_url = "{server}/api"
+"""
+
+[[input.http]]
+headers = { Authorization = "Bearer {mcp_token}", Content-Type = "application/json" }
+body = '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"harness","version":"0"}}}'
+
+[[input.http]]
+headers = { Authorization = "{mcp_token}", Content-Type = "application/json", MCP-Protocol-Version = "2025-06-18" }
+body = '{"jsonrpc":"2.0","id":2,"method":"tools/list"}'
+
+[[input.http]]
+headers = { Authorization = "Bearer {mcp_token}", Content-Type = "application/json" }
+body = '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"call_api","arguments":{"api":"pets","target":"/pet/findByStatus?status=available","sample":1}}}'
+
+[[input.http]]
+headers = { Authorization = "Bearer {mcp_token}", Content-Type = "application/json" }
+body = '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"call_api","arguments":{"api":"pets","target":"/pet","body":{"name":"x"}}}}'
+
+[[input.http]]
+headers = { Content-Type = "application/json" }
+body = '{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"call_api","arguments":{"api":"pets","target":"/pet/findByStatus?status=sold"}}}'
+
+[fakes]
+op = "enabled"
+
+[expect]
+files_written = ["home/.local/state/kurama/audit.jsonl"]
+
+[[expect.runs]]
+run = 0
+stdout = "empty"
+op_calls = 1
+api_calls = { count = 1, calls = [{ method = "GET", path = "/api/pet/findByStatus?status=available" }] }
+http = [
+  { status = 200, body_contains = ["\"protocolVersion\":\"2025-06-18\"", "\"serverInfo\":{\"name\":\"kurama\""] },
+  { status = 200, body_contains = ["\"name\":\"list_operations\"", "\"name\":\"describe_operation\"", "\"name\":\"call_api\""] },
+  { status = 200, body_contains = ["\"id\":3", "\"isError\":false", "\"structuredContent\":{\"status\":200"] },
+  { status = 200, body_contains = ["\"id\":4", "\"isError\":true", "\"code\":\"AGENT_POLICY_DENIED\""] },
+  { status = 401, body_empty = true, headers = { www-authenticate = "Bearer" } },
+]
+stderr_lines_containing = { "POST /mcp 200" = 4, "POST /mcp 401" = 1 }
+
+[[expect.runs]]
+run = 1
+stdout_json = { "/entries" = { length = 2 }, "/entries/0/agent" = true, "/entries/0/method" = "GET", "/entries/0/status" = 200, "/entries/1/method" = "POST", "/entries/1/exit_code" = 3 }
+
+# The same session against the public Swagger Petstore v3, the server
+# reading its token through the reference the runner names (an `aws-ssm://`
+# or `op://` the person's environment can read) and the client sending the
+# value: what a cloud client such as ElevenLabs Agents does.
+[real]
+requires = ["env:KURAMA_REAL_MCP_TOKEN", "env:KURAMA_REAL_MCP_TOKEN_REF"]
+config = """
+[mcp]
+listen = "127.0.0.1:0"
+token = "{mcp_token_ref}"
+tools = ["list_operations", "describe_operation", "call_api"]
+
+[api.pets]
+base_url = "https://petstore3.swagger.io/api/v3"
+"""
+
+[real.combination]
+target = "swagger-petstore"
+
+[real.expect]
+files_written = { include = ["home/.local/state/kurama/audit.jsonl"] }
+
+[[real.expect.runs]]
+run = 0
+stdout = "empty"
+http = [
+  { status = 200, body_contains = ["\"protocolVersion\":\"2025-06-18\""] },
+  { status = 200, body_contains = ["\"name\":\"call_api\""] },
+  { status = 200, body_contains = ["\"id\":3", "\"isError\":false", "\"status\":200", "\"omitted\""] },
+  { status = 200, body_contains = ["\"id\":4", "\"isError\":true", "\"code\":\"AGENT_POLICY_DENIED\"", "POST /api/v3/pet"] },
+  { status = 401, body_empty = true, headers = { www-authenticate = "Bearer" } },
+]
+stderr_lines_containing = { "POST /mcp 200" = 4, "POST /mcp 401" = 1 }
+
+[[real.expect.runs]]
+run = 1
+stdout_json = { "/entries" = { length = 2 }, "/entries/0/agent" = true, "/entries/0/path" = "/api/v3/pet/findByStatus", "/entries/0/status" = 200, "/entries/1/method" = "POST", "/entries/1/exit_code" = 3 }

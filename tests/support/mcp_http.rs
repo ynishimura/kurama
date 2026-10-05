@@ -15,7 +15,14 @@ use super::{FAKE_CLIENT_SECRET, OnePassword, Run, Sandbox, Scenario, Verificatio
 /// How long the server may take to print `listening on`.
 const START_TIMEOUT: Duration = Duration::from_secs(30);
 
-/// One request, as it is written on the wire.
+/// What `{mcp_token}` in a header stands for on the real layer: the token
+/// the `[mcp] token` reference of the layer's configuration holds.
+pub const REAL_TOKEN_VARIABLE: &str = "KURAMA_REAL_MCP_TOKEN";
+
+/// One request, as it is written on the wire. `{mcp_token}` in a header
+/// value is the token the server accepts: the fake `op`'s secret, or on a
+/// run against the real services the value of [`REAL_TOKEN_VARIABLE`].
+#[derive(Clone)]
 pub struct HttpRequest {
     pub method: &'static str,
     pub path: &'static str,
@@ -24,6 +31,7 @@ pub struct HttpRequest {
 }
 
 /// What follows the headers.
+#[derive(Clone)]
 pub enum Body {
     /// `Content-Length` and these bytes.
     Bytes(Vec<u8>),
@@ -56,7 +64,7 @@ impl HttpRequest {
 }
 
 /// What the server answered.
-#[derive(Debug)]
+#[derive(Debug, Clone, serde::Serialize)]
 pub struct HttpResponse {
     pub status: u16,
     /// Header names in lowercase.
@@ -124,10 +132,17 @@ impl Sandbox {
                 Err(mpsc::RecvTimeoutError::Timeout) => {}
             }
         };
-        let responses = match port {
+        let token = if self.real_aws {
+            std::env::var(REAL_TOKEN_VARIABLE).unwrap_or_else(|_| {
+                panic!("{REAL_TOKEN_VARIABLE} holds the token the real layer sends")
+            })
+        } else {
+            FAKE_CLIENT_SECRET.to_owned()
+        };
+        let responses: Vec<HttpResponse> = match port {
             Some(port) => requests
                 .into_iter()
-                .map(|request| send(port, &request))
+                .map(|request| send(port, &request, &token))
                 .collect(),
             None => Vec::new(),
         };
@@ -142,13 +157,14 @@ impl Sandbox {
             .chain(args.iter().copied())
             .map(str::to_string)
             .collect();
-        let run = self.record_run(
+        let mut run = self.record_run(
             command,
             status.code(),
             timed_out,
             stdout.join().unwrap(),
             reader.join().unwrap(),
         );
+        run.http_responses = responses.clone();
         (run, responses)
     }
 }
@@ -210,7 +226,7 @@ pub fn serve(
 }
 
 /// Write one request on its own connection and read the whole answer.
-fn send(port: u16, request: &HttpRequest) -> HttpResponse {
+fn send(port: u16, request: &HttpRequest, token: &str) -> HttpResponse {
     let mut stream = TcpStream::connect(("127.0.0.1", port)).expect("connect to kurama");
     stream
         .set_read_timeout(Some(Duration::from_secs(60)))
@@ -220,6 +236,7 @@ fn send(port: u16, request: &HttpRequest) -> HttpResponse {
         request.method, request.path
     );
     for (name, value) in &request.headers {
+        let value = value.replace("{mcp_token}", token);
         head.push_str(&format!("{name}: {value}\r\n"));
     }
     let body = match &request.body {
@@ -278,5 +295,51 @@ fn parse(bytes: &[u8]) -> HttpResponse {
         status,
         headers,
         body: body.to_owned(),
+    }
+}
+
+/// What one response has to be.
+#[derive(Debug, Default, serde::Deserialize)]
+#[serde(deny_unknown_fields, default)]
+pub struct HttpResponseExpect {
+    pub status: u16,
+    /// Texts the body contains.
+    pub body_contains: Vec<String>,
+    /// The body is empty.
+    pub body_empty: bool,
+    /// Headers, by lowercase name, and their exact values.
+    pub headers: std::collections::BTreeMap<String, String>,
+}
+
+impl Verification {
+    /// The focused run, a server, answered exactly `expected.len()`
+    /// requests, each as `expected` says in order.
+    pub fn expect_http_responses(&mut self, expected: &[HttpResponseExpect]) -> &mut Self {
+        let observed = self.observed.runs[self.focused_index()]
+            .http_responses
+            .clone();
+        self.check(
+            &format!("the server answered {} request(s)", expected.len()),
+            observed.len() == expected.len(),
+            format!("observed {:?}", statuses(&observed)),
+        );
+        for (index, (expect, response)) in expected.iter().zip(&observed).enumerate() {
+            let ok = response.status == expect.status
+                && expect
+                    .body_contains
+                    .iter()
+                    .all(|text| response.body.contains(text))
+                && (!expect.body_empty || response.body.is_empty())
+                && expect
+                    .headers
+                    .iter()
+                    .all(|(name, value)| response.header(name) == Some(value.as_str()));
+            self.check(
+                &format!("response {index} is {expect:?}"),
+                ok,
+                format!("observed {response:?}"),
+            );
+        }
+        self
     }
 }

@@ -350,9 +350,16 @@ pub struct Scenario {
     /// stay isolated. What `cargo xtask verify --layer throwaway` sets, and
     /// nothing else: every fake-side expectation on STS or the API is empty.
     pub real_aws: bool,
+    /// Requests sent once the first run, `kurama mcp --listen`, listens; it
+    /// is stopped after the last answer.
+    pub http: Vec<mcp_http::HttpRequest>,
 }
 
 impl Scenario {
+    pub fn serving_http(mut self, requests: Vec<mcp_http::HttpRequest>) -> Self {
+        self.http = requests;
+        self
+    }
     pub fn with_stdin(mut self, input: String) -> Self {
         self.stdin = Some(input);
         self
@@ -396,6 +403,7 @@ impl Scenario {
             service_account_token: None,
             aws_secrets: AwsSecrets::Absent,
             real_aws: false,
+            http: Vec::new(),
         }
     }
 
@@ -872,6 +880,8 @@ pub struct Run {
     pub editor_calls: Vec<String>,
     /// Environment variable names exported on stdout (values are secrets).
     pub exported_variables: Vec<String>,
+    /// What a `kurama mcp --listen` run answered the requests sent to it.
+    pub http_responses: Vec<mcp_http::HttpResponse>,
 }
 
 /// One read of a secret AWS holds: which store, and which secret.
@@ -1688,6 +1698,7 @@ impl Sandbox {
             clipboard_calls,
             editor_calls,
             exported_variables,
+            http_responses: Vec::new(),
         }
     }
 
@@ -2177,7 +2188,13 @@ pub fn run(scenario: Scenario) -> Verification {
     let mut runs: Vec<Run> = scenario
         .runs
         .iter()
-        .map(|args| sandbox.run_cli(args))
+        .enumerate()
+        .map(|(index, args)| match index {
+            0 if !scenario.http.is_empty() => {
+                sandbox.run_cli_serving(args, scenario.http.clone()).0
+            }
+            _ => sandbox.run_cli(args),
+        })
         .collect();
     if let Some((count, args)) = scenario.parallel {
         runs.push(sandbox.run_cli_parallel(args, count));

@@ -2163,6 +2163,14 @@ fn mcp_http_refuses_to_listen_on_a_non_loopback_address() {
 }
 #[test]
 #[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn mcp_http_serves_an_api_to_a_client_holding_the_token() {
+    crate::support::cases::run_case(
+        include_str!("../cases/mcp/mcp_http_serves_an_api_to_a_client_holding_the_token.toml"),
+        "tests/cases/mcp/mcp_http_serves_an_api_to_a_client_holding_the_token.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
 fn mcp_lists_the_tools_and_calls_an_api() {
     crate::support::cases::run_case(
         include_str!("../cases/mcp/mcp_lists_the_tools_and_calls_an_api.toml"),
