@@ -50,7 +50,7 @@ scenarios = [
   "config_check_reports_one_problem_for_invalid_colliding_auth",
   "config_edit_commands_do_not_call_external_services",
 ]
-depends_on = ["cli-entry", "errors", "assume-role", "oauth", "api-explorer", "profile-loading", "secrets", "shell-integration", "s3-explorer"]
+depends_on = ["cli-entry", "errors", "assume-role", "oauth", "api-explorer", "profile-loading", "secrets", "shell-integration", "s3-explorer", "mcp"]
 notes = "Every CLI scenario loads a config file through KURAMA_CONFIG_PATH; [openapi] revalidate_after is validated and converted from integer seconds once during parsing (default 3600, zero means always revalidate)."
 
 [config.real]

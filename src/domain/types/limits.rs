@@ -158,6 +158,28 @@ pub const S3_READ: S3ReadLimits = S3ReadLimits {
     excerpt_chars: 256,
 };
 
+/// What one HTTP request to `kurama mcp --listen` may take.
+///
+/// The endpoint faces the internet through Funnel, so a scanner holding a
+/// connection open or sending a body without end must not hold a task or
+/// memory for long. A tool call itself is bounded by `[mcp] call_timeout`.
+#[derive(Clone, Copy)]
+pub struct McpHttpLimits {
+    /// Bytes of a request body; a longer one is `413`.
+    pub body_bytes: usize,
+    /// Seconds to send the request line and headers, the next request's
+    /// included on a kept-alive connection.
+    pub header_secs: u64,
+    /// Seconds to send the body once the headers are in.
+    pub body_secs: u64,
+}
+
+pub const MCP_HTTP: McpHttpLimits = McpHttpLimits {
+    body_bytes: 1024 * 1024,
+    header_secs: 10,
+    body_secs: 30,
+};
+
 impl InputListLimits {
     /// The prefix reported one by one, and how many were left out.
     ///
@@ -245,6 +267,21 @@ mod tests {
         assert_eq!(description_chars, 800, "the description's paragraph");
         assert_eq!(enum_values, 5, "the values one parameter line names");
         assert!(detailed_operations < listed_operations);
+
+        let McpHttpLimits {
+            body_bytes,
+            header_secs,
+            body_secs,
+        } = MCP_HTTP;
+        // `mcp_http::tests` admits a Content-Length at the bound and refuses
+        // one byte past it; `mcp_http_refuses_a_body_over_the_limit` sends one.
+        assert_eq!(
+            body_bytes,
+            1024 * 1024,
+            "changing this changes the largest tool call over HTTP"
+        );
+        assert_eq!(header_secs, 10, "a client sends its headers at once");
+        assert_eq!(body_secs, 30, "a megabyte arrives well within this");
 
         let S3ReadLimits {
             preview_bytes,

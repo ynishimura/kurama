@@ -1,0 +1,28 @@
+# A token written as the value itself would leak through `config show` and
+# backups: `[mcp] token` takes a reference only, and the refusal never
+# repeats the value.
+id = "mcp_http_refuses_a_literal_token"
+feature = "mcp"
+
+[combination]
+command = "mcp"
+transport = "http"
+
+[input]
+args = ["mcp", "--listen"]
+config = """
+[mcp]
+listen = "127.0.0.1:0"
+token = "plain-mcp-token-value"
+"""
+
+[fakes]
+op = "enabled"
+
+[expect]
+error = { code = "CONFIG_INVALID", exit = 2 }
+stderr_contains = ["[mcp] token is the value itself"]
+stderr_excludes = ["plain-mcp-token-value"]
+stdout = "empty"
+op_calls = 0
+no_files_written = true

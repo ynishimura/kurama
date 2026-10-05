@@ -1,0 +1,26 @@
+# A token reference 1Password cannot answer stops `--listen` with the secret
+# error and its exit code, after the bind and before anything is served: no
+# `listening on` line, nothing on stdout.
+id = "mcp_http_reports_an_unreadable_token"
+feature = "mcp"
+
+[combination]
+command = "mcp"
+transport = "http"
+
+[input]
+args = ["mcp", "--listen"]
+config = """
+[mcp]
+listen = "127.0.0.1:0"
+token = "op://Agent/kurama-mcp-token/credential"
+"""
+
+[fakes]
+op = "not-signed-in"
+
+[expect]
+error = { code = "SECRET_UNAVAILABLE", exit = 3 }
+stderr_excludes = ["listening on"]
+stdout = "empty"
+no_files_written = true

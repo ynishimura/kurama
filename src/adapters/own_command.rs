@@ -50,17 +50,17 @@ pub async fn run_own_command(
     }
     let output = tokio::time::timeout(deadline, child.wait_with_output())
         .await
-        .map_err(|_| {
-            Error::new(
-                ErrorKind::TimedOut,
-                format!("the call did not end within {} seconds", deadline.as_secs()),
-            )
-        })??;
+        .map_err(|_| Error::new(ErrorKind::TimedOut, ended_late(deadline)))??;
     Ok(OwnCommandOutput {
         success: output.status.success(),
         stdout: String::from_utf8_lossy(&output.stdout).into_owned(),
         stderr: String::from_utf8_lossy(&output.stderr).into_owned(),
     })
+}
+
+/// What a call that ran past `deadline` is answered with.
+pub fn ended_late(deadline: Duration) -> String {
+    format!("the call did not end within {} seconds", deadline.as_secs())
 }
 
 #[cfg(test)]

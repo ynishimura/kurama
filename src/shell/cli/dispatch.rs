@@ -130,7 +130,7 @@ pub async fn execute_command(command: CliCommand, config: Config) -> Result<()> 
             crate::shell::tui::activity::watch_audit_log().await
         }
         CliCommand::Audit { since, json, .. } => super::commands::audit::run(since, json),
-        CliCommand::Mcp => super::commands::mcp::run().await,
+        CliCommand::Mcp { listen } => super::commands::mcp::run(listen, &config).await,
         CliCommand::AgentInstall(install) => {
             super::commands::agent_install::run(&install, config).await
         }

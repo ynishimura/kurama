@@ -704,12 +704,58 @@ tools: `ready`, `list_apis`, `list_operations`, `describe_operation`,
 kurama's own JSON commands with `KURAMA_AGENT=1`. So every call is held to the
 `[agent]` policy above and recorded in the audit log. A failure returns the
 same JSON error document, including the `next_actions` for a person to run.
-Nothing prompts, and there is no `--confirm` over MCP. To register it with
-Claude Code:
+Nothing prompts, and there is no `--confirm` over MCP. `[mcp] tools` names
+a subset of the tools and `[mcp] call_timeout` (600 seconds by default)
+bounds each call, over stdio and HTTP alike; the configuration is read at
+start, so an invalid one stops `kurama mcp` with `CONFIG_INVALID`. To
+register it with Claude Code:
 
 ```bash
 claude mcp add kurama -- kurama mcp
 ```
+
+#### Remote MCP clients (`kurama mcp --listen`)
+
+An agent that runs in the cloud cannot start `kurama mcp` on your Mac.
+`kurama mcp --listen` serves the same tools over MCP Streamable HTTP on a
+loopback address, and Tailscale Funnel gives it an HTTPS URL. Every request
+carries a fixed token, kept in a secret store:
+
+```toml
+# ~/.config/kurama/remote.toml, named by KURAMA_CONFIG_PATH
+[mcp]
+listen = "127.0.0.1:8807"
+token = "op://Agent/kurama-mcp-token/credential"
+tools = ["list_operations", "describe_operation", "call_api"]
+call_timeout = 25
+
+[api.example]          # only the APIs the agent may reach
+base_url = "https://api.example.com"
+
+[api.example.agent]
+allow_paths = ["/v1/items*"]
+```
+
+```bash
+KURAMA_CONFIG_PATH=~/.config/kurama/remote.toml kurama mcp --listen
+tailscale funnel --bg 8807     # https://<machine>.<tailnet>.ts.net/mcp
+```
+
+Funnel needs HTTPS certificates enabled for the tailnet and the `funnel`
+nodeAttr in its policy file; it serves on 443 (or 8443 / 10000).
+
+| Client | Works | How the token is passed |
+| --- | --- | --- |
+| ElevenLabs Agents | yes | the MCP server's secret token (a workspace member accepts the MCP Server Terms first) |
+| xAI API (Grok) | yes | `authorization` of Remote MCP Tools |
+| Claude API | yes | `authorization_token` of the MCP connector |
+| OpenAI API | yes | `authorization` of the remote MCP tool |
+| claude.ai | conditionally | a custom connector with "No sign-in" and an `Authorization: Bearer <token>` request header (a beta some organizations see) |
+| ChatGPT | no | it offers OAuth or nothing, no fixed header |
+
+kurama does not tell callers apart: keep the agent to yourself (no phone
+number, widget or sharing), and expose only APIs whose responses may reach
+the service hosting it.
 
 ### Secret references
 

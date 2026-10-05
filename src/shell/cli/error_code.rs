@@ -89,6 +89,7 @@ pub enum ErrorCode {
     ApiIntrospectionRefused,
     ApiGraphqlError,
     AgentInstallFailed,
+    McpListenFailed,
 }
 
 /// A hint and what kind it is. The distinction is the point: text that is the
@@ -189,6 +190,7 @@ impl ErrorCode {
             Self::ApiIntrospectionRefused => "API_INTROSPECTION_REFUSED",
             Self::ApiGraphqlError => "API_GRAPHQL_ERROR",
             Self::AgentInstallFailed => "AGENT_INSTALL_FAILED",
+            Self::McpListenFailed => "MCP_LISTEN_FAILED",
         }
     }
 
@@ -248,6 +250,7 @@ impl ErrorCode {
             | Self::DbFailed
             | Self::ConfigWriteFailed
             | Self::AgentInstallFailed
+            | Self::McpListenFailed
             | Self::BrowserFailed
             | Self::S3Failed => 1,
         }
@@ -587,6 +590,9 @@ impl ErrorCode {
             Self::AgentInstallFailed => {
                 "name a --dir that is a writable directory; the Skills written before this one stay, and a rerun writes only what differs"
             }
+            Self::McpListenFailed => {
+                "choose another [mcp] listen port, or stop the process holding this one (lsof -nP -iTCP -sTCP:LISTEN)"
+            }
             Self::AgentPolicyDenied => {
                 "ask a person whether this call may be made, then rerun it with --confirm; to allow it for every agent run, widen [agent] or [api.<name>.agent] in config.toml"
             }
@@ -652,6 +658,12 @@ impl ErrorCode {
                 .is_some()
             {
                 return Self::AgentInstallFailed;
+            }
+            if cause
+                .downcast_ref::<crate::shell::cli::commands::mcp::McpListenFailed>()
+                .is_some()
+            {
+                return Self::McpListenFailed;
             }
             if let Some(error) = cause.downcast_ref::<ApiError>() {
                 return match error {
@@ -1101,6 +1113,15 @@ mod tests {
                 }
                 .into(),
                 ErrorCode::AgentInstallFailed,
+                1,
+            ),
+            (
+                crate::shell::cli::commands::mcp::McpListenFailed {
+                    address: "127.0.0.1:8807".parse().unwrap(),
+                    source: std::io::ErrorKind::AddrInUse.into(),
+                }
+                .into(),
+                ErrorCode::McpListenFailed,
                 1,
             ),
             (ApiError::Jq("bad".into()).into(), ErrorCode::JqError, 1),

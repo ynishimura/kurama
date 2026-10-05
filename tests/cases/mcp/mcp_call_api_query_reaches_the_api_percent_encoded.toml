@@ -1,0 +1,27 @@
+# A paging marker an API handed back (`+`, `/` and `=` in it) goes into
+# `call_api`'s `query` as it came: kurama percent-encodes it onto the
+# target, so the API receives the marker intact, after the query the target
+# already had.
+id = "mcp_call_api_query_reaches_the_api_percent_encoded"
+feature = "mcp"
+
+[combination]
+command = "mcp"
+transport = "stdio"
+
+[input]
+args = ["mcp"]
+stdin = """
+{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"call_api","arguments":{"api":"pets","target":"/pet/findByStatus?status=available","query":{"Marker":"ab+c/d==","n":2}}}}
+"""
+config = """
+[api.pets]
+base_url = "{server}/api"
+"""
+
+[expect]
+exit_code = 0
+stderr_empty = true
+api_calls = { count = 1, calls = [{ method = "GET", path = "/api/pet/findByStatus?status=available&Marker=ab%2Bc%2Fd%3D%3D&n=2" }] }
+stdout = { line_count = 1, line_containing = [["\"id\":1", "\"isError\":false"]] }
+files_written = ["home/.local/state/kurama/audit.jsonl"]

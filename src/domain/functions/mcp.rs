@@ -30,11 +30,28 @@ pub enum Incoming {
     Call { id: Value, run: ToolRun },
 }
 
-/// Read one line of the stdio transport.
-pub fn read_message(line: &str) -> Incoming {
+/// Every tool this server can offer, in the order `tools/list` lists them;
+/// `[mcp] tools` names a subset.
+pub const TOOL_NAMES: [&str; 7] = [
+    "ready",
+    "list_apis",
+    "list_operations",
+    "describe_operation",
+    "call_api",
+    "query_data",
+    "query_db",
+];
+
+/// Read one line of the stdio transport. `exposed` names the tools offered.
+pub fn read_message(line: &str, exposed: &[String]) -> Incoming {
     let Ok(message) = serde_json::from_str::<Value>(line) else {
         return Incoming::Answer(error(Value::Null, -32700, "the line is not JSON"));
     };
+    read_value(&message, exposed)
+}
+
+/// Read one JSON-RPC message, whichever transport carried it.
+pub fn read_value(message: &Value, exposed: &[String]) -> Incoming {
     let method = message.get("method").and_then(Value::as_str);
     let (Some(id), Some(method)) = (message.get("id").cloned(), method) else {
         return match method {
@@ -47,11 +64,16 @@ pub fn read_message(line: &str) -> Incoming {
     match method {
         "initialize" => Incoming::Answer(result(id, initialize(&params))),
         "ping" => Incoming::Answer(result(id, json!({}))),
-        "tools/list" => Incoming::Answer(result(id, json!({ "tools": tools() }))),
+        "tools/list" => Incoming::Answer(result(id, json!({ "tools": tools(exposed) }))),
         "tools/call" => {
             let name = params.get("name").and_then(Value::as_str).unwrap_or("");
             let arguments = params.get("arguments").cloned().unwrap_or(json!({}));
-            match tool_run(name, &arguments) {
+            let offered = exposed.iter().any(|tool| tool == name);
+            match tool_run(name, &arguments).and_then(|run| {
+                offered
+                    .then_some(run)
+                    .ok_or_else(|| format!("no tool {name}"))
+            }) {
                 Ok(run) => Incoming::Call { id, run },
                 Err(message) => Incoming::Answer(result(id, refused(&message))),
             }
@@ -123,8 +145,17 @@ fn json_object(text: &str) -> Option<Value> {
         .filter(Value::is_object)
 }
 
-/// The tools `tools/list` answers with.
-pub fn tools() -> Value {
+/// The tools `tools/list` answers with: those `exposed` names.
+pub fn tools(exposed: &[String]) -> Value {
+    let Value::Array(all) = every_tool() else {
+        unreachable!("the tools are an array")
+    };
+    all.into_iter()
+        .filter(|tool| exposed.iter().any(|name| tool["name"] == name.as_str()))
+        .collect()
+}
+
+fn every_tool() -> Value {
     let name = |what: &str| json!({ "type": "string", "description": what });
     let object = |properties: Value, required: &[&str]| json!({ "type": "object", "properties": properties, "required": required });
     json!([
@@ -170,6 +201,12 @@ pub fn tools() -> Value {
                 "params": {
                     "type": "object",
                     "description": "operation parameters, name to value (-P name=value)",
+                    "additionalProperties": { "type": ["string", "number", "boolean"] },
+                },
+                "query": {
+                    "type": "object",
+                    "description": "query parameters appended to target, name to value, each \
+                                    percent-encoded by kurama: put a paging marker or cursor here as it came",
                     "additionalProperties": { "type": ["string", "number", "boolean"] },
                 },
                 "body": { "description": "request body: a JSON value, or a string sent as it is" },
@@ -232,7 +269,10 @@ pub fn tool_run(name: &str, arguments: &Value) -> Result<ToolRun, String> {
             "--".into(),
             text("api")?,
         ]),
-        "call_api" => call_api(arguments, text("api")?, text("target")?)?,
+        "call_api" => {
+            let target = with_query(text("target")?, arguments.get("query"))?;
+            call_api(arguments, text("api")?, target)?
+        }
         "query_data" => {
             let request = read_request(name, arguments, "export", |request| {
                 request
@@ -296,6 +336,31 @@ fn call_api(arguments: &Value, api: String, target: String) -> Result<ToolRun, S
     Ok(ToolRun { args, stdin })
 }
 
+/// `target` with the `query` argument appended, each value percent-encoded
+/// the way `-P` encodes a query parameter: a paging marker such as
+/// `ab+c/d==` reaches the API intact, which a model writing it into the
+/// target by hand does not manage.
+fn with_query(target: String, query: Option<&Value>) -> Result<String, String> {
+    let Some(Value::Object(query)) = query else {
+        return Ok(target);
+    };
+    let mut pairs = url::form_urlencoded::Serializer::new(String::new());
+    for (name, value) in query {
+        let value = match value {
+            Value::String(value) => value.clone(),
+            Value::Number(_) | Value::Bool(_) => value.to_string(),
+            _ => return Err("call_api: `query` values are strings, numbers or booleans".into()),
+        };
+        pairs.append_pair(name, &value);
+    }
+    let pairs = pairs.finish();
+    if pairs.is_empty() {
+        return Ok(target);
+    }
+    let joiner = if target.contains('?') { '&' } else { '?' };
+    Ok(format!("{target}{joiner}{pairs}"))
+}
+
 /// The `request` argument as the JSON a `--request -` reads, unless it
 /// asks for the write a read-only tool refuses.
 fn read_request(
@@ -320,6 +385,10 @@ fn read_request(
 mod tests {
     use super::*;
 
+    fn every() -> Vec<String> {
+        TOOL_NAMES.map(str::to_owned).to_vec()
+    }
+
     fn args(run: &ToolRun) -> Vec<&str> {
         run.args.iter().map(String::as_str).collect()
     }
@@ -327,15 +396,19 @@ mod tests {
     #[test]
     fn a_notification_is_not_answered_and_a_bad_line_is_a_parse_error() {
         assert_eq!(
-            read_message(r#"{"jsonrpc":"2.0","method":"notifications/initialized"}"#),
+            read_message(
+                r#"{"jsonrpc":"2.0","method":"notifications/initialized"}"#,
+                &every()
+            ),
             Incoming::Nothing
         );
-        let Incoming::Answer(answer) = read_message("{not json") else {
+        let Incoming::Answer(answer) = read_message("{not json", &every()) else {
             panic!("a parse error is answered");
         };
         assert_eq!(answer["error"]["code"], -32700);
         assert_eq!(answer["id"], Value::Null);
-        let Incoming::Answer(answer) = read_message(r#"{"jsonrpc":"2.0","id":7,"method":"x"}"#)
+        let Incoming::Answer(answer) =
+            read_message(r#"{"jsonrpc":"2.0","id":7,"method":"x"}"#, &every())
         else {
             panic!("an unknown method is answered");
         };
@@ -349,7 +422,7 @@ mod tests {
             let line = format!(
                 r#"{{"jsonrpc":"2.0","id":1,"method":"initialize","params":{{"protocolVersion":"{asked}"}}}}"#
             );
-            match read_message(&line) {
+            match read_message(&line, &every()) {
                 Incoming::Answer(answer) => answer["result"]["protocolVersion"].clone(),
                 other => panic!("{other:?}"),
             }
@@ -360,25 +433,14 @@ mod tests {
 
     #[test]
     fn every_listed_tool_has_a_command_line() {
-        let tools = tools();
+        let tools = tools(&every());
         let names: Vec<&str> = tools
             .as_array()
             .unwrap()
             .iter()
             .map(|tool| tool["name"].as_str().unwrap())
             .collect();
-        assert_eq!(
-            names,
-            [
-                "ready",
-                "list_apis",
-                "list_operations",
-                "describe_operation",
-                "call_api",
-                "query_data",
-                "query_db"
-            ]
-        );
+        assert_eq!(names, TOOL_NAMES);
         let arguments = json!({
             "api": "a", "operation": "o", "target": "/t", "database": "d",
             "request": {"operation": "query", "args": {"sql": "SELECT 1"}}
@@ -387,6 +449,43 @@ mod tests {
             assert!(tool_run(name, &arguments).is_ok(), "{name}");
         }
         assert_eq!(tool_run("exec", &arguments), Err("no tool exec".into()));
+    }
+
+    #[test]
+    fn a_message_reads_the_same_whichever_transport_carried_it() {
+        let ping = json!({"jsonrpc": "2.0", "id": "a", "method": "ping"});
+        assert_eq!(
+            read_value(&ping, &every()),
+            read_message(&ping.to_string(), &every())
+        );
+        assert_eq!(
+            read_value(&json!({"jsonrpc": "2.0", "id": 1, "result": {}}), &every()),
+            Incoming::Nothing
+        );
+    }
+
+    #[test]
+    fn a_tool_left_out_is_neither_listed_nor_run() {
+        let exposed = ["call_api".to_owned(), "list_operations".to_owned()];
+        let listed = tools(&exposed);
+        let names: Vec<&str> = listed
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|tool| tool["name"].as_str().unwrap())
+            .collect();
+        assert_eq!(names, ["list_operations", "call_api"]);
+        let line = r#"{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"ready","arguments":{}}}"#;
+        let Incoming::Answer(answer) = read_message(line, &exposed) else {
+            panic!("refused before running");
+        };
+        assert_eq!(answer["result"]["isError"], true);
+        assert_eq!(answer["result"]["content"][0]["text"], "no tool ready");
+        let line = r#"{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"call_api","arguments":{"api":"a","target":"/t"}}}"#;
+        assert!(matches!(
+            read_message(line, &exposed),
+            Incoming::Call { .. }
+        ));
     }
 
     #[test]
@@ -432,6 +531,41 @@ mod tests {
         .unwrap();
         assert_eq!(args(&run), ["db", "--request", "-", "--json", "--", "-d"]);
         assert_eq!(run.stdin.as_deref(), Some(r#"{"operation":"tables"}"#));
+    }
+
+    #[test]
+    fn query_is_percent_encoded_onto_the_target() {
+        let run = tool_run(
+            "call_api",
+            &json!({
+                "api": "a", "target": "/functions/?MaxItems=50",
+                "query": {"Marker": "ab+c/d==", "n": 2, "-x": "--confirm"}
+            }),
+        )
+        .unwrap();
+        assert_eq!(
+            args(&run),
+            [
+                "api",
+                "--json",
+                "--",
+                "a",
+                "/functions/?MaxItems=50&Marker=ab%2Bc%2Fd%3D%3D&n=2&-x=--confirm"
+            ]
+        );
+        let run = tool_run(
+            "call_api",
+            &json!({"api": "a", "target": "GET /tasks", "query": {"cursor": "x y"}}),
+        )
+        .unwrap();
+        assert_eq!(args(&run)[4], "GET /tasks?cursor=x+y");
+        assert_eq!(
+            tool_run(
+                "call_api",
+                &json!({"api": "a", "target": "/t", "query": {"k": {"nested": 1}}})
+            ),
+            Err("call_api: `query` values are strings, numbers or booleans".into())
+        );
     }
 
     #[test]
@@ -487,7 +621,7 @@ mod tests {
     #[test]
     fn a_refused_call_is_answered_as_a_tool_error_not_a_protocol_error() {
         let line = r#"{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"query_db","arguments":{}}}"#;
-        let Incoming::Answer(answer) = read_message(line) else {
+        let Incoming::Answer(answer) = read_message(line, &every()) else {
             panic!("refused before running");
         };
         assert_eq!(answer["id"], 3);

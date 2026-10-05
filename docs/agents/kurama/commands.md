@@ -38,7 +38,7 @@
 | `kurama agent [--skill]` | this page, or the Agent Skill that points at it | Before configuring kurama, or when a command's behavior is unclear |
 | `kurama agent --json` | one JSON catalog of every subcommand | Build a command line from the binary's own definition instead of from this page |
 | `kurama audit [--since 1h] --json` | `{entries: [{time, command, target, agent, method, path, status, program, sql_sha256, exit_code, error_code, duration_ms}]}` | See the `api`, `exec`, `db` and `data` calls the audit log recorded: a `KURAMA_AGENT` run's by default, every run's with `[audit] enabled = true` |
-| `kurama mcp` | JSON-RPC on stdout, one message per line | Register kurama as an MCP server: its tools run `api`, `data`, `db`, `status` and `agent ready` as an agent (see `kurama mcp` below) |
+| `kurama mcp [--listen]` | JSON-RPC on stdout, one message per line; with `--listen`, MCP Streamable HTTP on `[mcp] listen` and nothing on stdout | Register kurama as an MCP server: its tools run `api`, `data`, `db`, `status` and `agent ready` as an agent (see `kurama mcp` below) |
 
 `kurama agent --json` is read off the binary's argument definition, so it
 cannot drift from what the parser accepts. Like the rest of `agent` it reads

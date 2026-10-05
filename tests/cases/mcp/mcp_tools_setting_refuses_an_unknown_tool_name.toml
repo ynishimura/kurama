@@ -1,0 +1,25 @@
+# A name in `[mcp] tools` that no tool carries is a typo or a tool of
+# another version: the configuration is refused at load, on stdio too.
+id = "mcp_tools_setting_refuses_an_unknown_tool_name"
+feature = "mcp"
+
+[combination]
+command = "mcp"
+transport = "stdio"
+
+[input]
+args = ["mcp"]
+stdin = """
+{"jsonrpc":"2.0","id":1,"method":"tools/list"}
+"""
+config = """
+[mcp]
+tools = ["call_api", "exec"]
+"""
+
+[expect]
+error = { code = "CONFIG_INVALID", exit = 2 }
+stderr_contains = ["[mcp] tools names \"exec\", which is not one of ready, list_apis"]
+stdout = "empty"
+api_calls = { count = 0 }
+no_files_written = true

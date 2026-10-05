@@ -26,6 +26,12 @@ relevant configuration with secrets replaced, and what you observed.
   something other than the export script kurama wrote.
 - A request, AWS call or 1Password read that kurama makes without the
   configuration or the command asking for it.
+- `kurama mcp --listen`, the one mode that serves requests from outside the
+  machine: a request
+  served without the `[mcp] token`, a listener on an address other than
+  loopback, or the token appearing in output, logs or a response. TLS is
+  outside kurama (Tailscale Funnel or another front terminates it), and so is
+  telling callers apart: whoever holds the token acts with your credentials.
 
 The guarantees kurama is built to keep are listed as invariants in
 [AGENTS.md](AGENTS.md#invariants).

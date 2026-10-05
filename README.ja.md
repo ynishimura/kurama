@@ -560,13 +560,51 @@ max_bytes = 1048576    # the default: past it the log moves to audit.jsonl.1
 ```
 
 ### MCP サーバー（`kurama mcp`）
-<!-- en: 3ef189a290ad -->
+<!-- en: e655dc12b824 -->
 
-`kurama mcp` は、stdio 経由で MCP クライアントに kurama を提供します。提供するツールは `ready`、`list_apis`、`list_operations`、`describe_operation`、`call_api`、`query_data`、`query_db`（読み取り専用）です。各ツールは kurama 自身の JSON コマンドの 1 つを `KURAMA_AGENT=1` で実行します。そのため、どの呼び出しにも上記の `[agent]` ポリシーが適用され、監査ログに記録されます。失敗したときは、人が実行すべき `next_actions` を含む同じ JSON エラードキュメントを返します。プロンプトは一切出ず、MCP 経由では `--confirm` もありません。Claude Code に登録するには次のようにします。
+`kurama mcp` は、stdio 経由で MCP クライアントに kurama を提供します。提供するツールは `ready`、`list_apis`、`list_operations`、`describe_operation`、`call_api`、`query_data`、`query_db`（読み取り専用）です。各ツールは kurama 自身の JSON コマンドの 1 つを `KURAMA_AGENT=1` で実行します。そのため、どの呼び出しにも上記の `[agent]` ポリシーが適用され、監査ログに記録されます。失敗したときは、人が実行すべき `next_actions` を含む同じ JSON エラードキュメントを返します。プロンプトは一切出ず、MCP 経由では `--confirm` もありません。`[mcp] tools` で提供するツールを絞り、`[mcp] call_timeout`（既定 600 秒）で 1 回の呼び出しの上限を決めます。stdio でも HTTP でも同じです。設定は起動時に読むので、不正な設定では `kurama mcp` は `CONFIG_INVALID` で止まります。Claude Code に登録するには次のようにします。
 
 ```bash
 claude mcp add kurama -- kurama mcp
 ```
+
+#### リモート MCP クライアント（`kurama mcp --listen`）
+<!-- en: 1ba332d0b8e4 -->
+
+クラウドで動くエージェントは、Mac 上で `kurama mcp` を起動できません。`kurama mcp --listen` は同じツールを MCP Streamable HTTP でループバックアドレスに提供し、Tailscale Funnel がそれに HTTPS の URL を与えます。どのリクエストも、シークレットストアに置いた固定トークンを送ります。
+
+```toml
+# ~/.config/kurama/remote.toml, named by KURAMA_CONFIG_PATH
+[mcp]
+listen = "127.0.0.1:8807"
+token = "op://Agent/kurama-mcp-token/credential"
+tools = ["list_operations", "describe_operation", "call_api"]
+call_timeout = 25
+
+[api.example]          # only the APIs the agent may reach
+base_url = "https://api.example.com"
+
+[api.example.agent]
+allow_paths = ["/v1/items*"]
+```
+
+```bash
+KURAMA_CONFIG_PATH=~/.config/kurama/remote.toml kurama mcp --listen
+tailscale funnel --bg 8807     # https://<machine>.<tailnet>.ts.net/mcp
+```
+
+Funnel を使うには、tailnet で HTTPS 証明書を有効にし、ポリシーファイルで `funnel` nodeAttr を付与しておく必要があります。公開ポートは 443（または 8443 / 10000）です。
+
+| クライアント | 使えるか | トークンの渡し方 |
+| --- | --- | --- |
+| ElevenLabs Agents | はい | MCP サーバーの secret token（先にワークスペースのメンバーが MCP Server Terms に同意する） |
+| xAI API (Grok) | はい | Remote MCP Tools の `authorization` |
+| Claude API | はい | MCP connector の `authorization_token` |
+| OpenAI API | はい | remote MCP tool の `authorization` |
+| claude.ai | 条件付き | "No sign-in" のカスタムコネクタと `Authorization: Bearer <token>` のリクエストヘッダー（一部の組織にだけ見えるベータ） |
+| ChatGPT | いいえ | OAuth か認証なししかなく、固定ヘッダーを送れない |
+
+kurama は呼び出し元を区別しません。エージェントは自分専用にし（電話番号、ウィジェット、共有を付けない）、応答がそのサービスに届いてよい API だけを公開してください。
 
 ### シークレットの参照
 <!-- en: 5941e1abe37a -->

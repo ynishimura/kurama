@@ -21,6 +21,7 @@
 //! - `sigv4` - SigV4 request signing on aws-sigv4
 //! - `secret_resolver` - op:// and aws-*:// references resolved to their values
 //! - `openapi` - OpenAPI documents (JSON / YAML) and their cache
+//! - `mcp_http` - the HTTP listener of `kurama mcp --listen`
 //! - `own_command` - kurama run again as a child, for `kurama mcp`
 //! - `clipboard` - copy text to the clipboard
 //! - `editor` - edit a text in `$EDITOR`
@@ -43,6 +44,7 @@ pub mod error;
 pub mod http;
 pub mod jq;
 pub mod keychain;
+pub mod mcp_http;
 pub mod oauth;
 pub mod openapi;
 pub mod own_command;

@@ -158,6 +158,33 @@ struct Input {
     /// shared one is never opened for writing.
     #[serde(default)]
     copy_files: Vec<CopyFile>,
+    /// Requests sent once the first run (`kurama mcp --listen`) listens;
+    /// the server is stopped after the last answer. `{mcp_token}` in a
+    /// header is the token it accepts on the layer the case runs on.
+    #[serde(default)]
+    http: Vec<HttpInput>,
+}
+
+/// One HTTP request to the server the first run starts.
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct HttpInput {
+    #[serde(default = "default_http_method")]
+    method: String,
+    #[serde(default = "default_http_path")]
+    path: String,
+    #[serde(default)]
+    headers: BTreeMap<String, String>,
+    #[serde(default)]
+    body: String,
+}
+
+fn default_http_method() -> String {
+    "POST".to_owned()
+}
+
+fn default_http_path() -> String {
+    "/mcp".to_owned()
 }
 
 #[derive(Deserialize)]
@@ -309,6 +336,8 @@ enum Spec {
 #[derive(Deserialize, Default)]
 #[serde(deny_unknown_fields, default)]
 struct Expect {
+    /// What a server run answered the `[input] http` requests, in order.
+    http: Vec<super::mcp_http::HttpResponseExpect>,
     /// The run this block is about; only in a `[[runs]]` block.
     run: Option<usize>,
     runs: Vec<Expect>,
@@ -766,6 +795,7 @@ impl Expect {
     /// has to say here whether it is an expectation.
     fn checks_anything(&self) -> bool {
         let Expect {
+            http,
             run: _,
             runs,
             exit_code,
@@ -809,6 +839,7 @@ impl Expect {
             token_store,
         } = self;
         runs.iter().any(Expect::checks_anything)
+            || !http.is_empty()
             || exit_code.is_some()
             || error.is_some()
             || json_error.is_some()
@@ -943,7 +974,11 @@ fn local_database_placeholders() -> [(&'static str, String); 4] {
 /// created, each an environment variable the runner sets. One the runner did
 /// not set stays as written, so the fake layer of the same case, which never
 /// reads the layer's config, is not touched.
-const STACK_PLACEHOLDERS: [(&str, &str); 15] = [
+const STACK_PLACEHOLDERS: [(&str, &str); 16] = [
+    // Not a stack: the `[mcp] token` reference the real layer's server
+    // reads, which the person exports beside its value,
+    // `KURAMA_REAL_MCP_TOKEN`.
+    ("{mcp_token_ref}", "KURAMA_REAL_MCP_TOKEN_REF"),
     ("{throwaway_profile}", "KURAMA_THROWAWAY_PROFILE"),
     ("{iam_api_url}", "KURAMA_STACK_IAM_API_URL"),
     ("{lambda_url}", "KURAMA_STACK_LAMBDA_URL"),
@@ -1064,6 +1099,24 @@ fn scenario(case: &Case, layer: Option<&Layer>) -> Scenario {
     if let Some(stdin) = &input.stdin {
         scenario = scenario.with_stdin(stdin.clone());
     }
+    if !input.http.is_empty() {
+        scenario = scenario.serving_http(
+            input
+                .http
+                .iter()
+                .map(|request| super::mcp_http::HttpRequest {
+                    method: leak(request.method.clone()),
+                    path: leak(request.path.clone()),
+                    headers: request
+                        .headers
+                        .iter()
+                        .map(|(name, value)| (leak(name.clone()), value.clone()))
+                        .collect(),
+                    body: super::mcp_http::Body::Bytes(request.body.clone().into_bytes()),
+                })
+                .collect(),
+        );
+    }
     for token in &input.stored_tokens {
         scenario = scenario.with_stored_token(
             leak(token.source.clone()),
@@ -1179,6 +1232,9 @@ fn apply_block(v: &mut Verification, expect: &Expect, prefix: &str) {
     };
     if let Some(code) = expect.exit_code {
         v.keyed(&key("exit_code"), |v| v.expect_exit_code(code));
+    }
+    if !expect.http.is_empty() {
+        v.keyed(&key("http"), |v| v.expect_http_responses(&expect.http));
     }
     // A failure leaves stdout empty, unless the block says what stdout holds:
     // a command that reports on stdout and fails on what it found.

@@ -387,3 +387,17 @@ the run fails as every configuration error does, whatever codes the
 diagnostics carry -- exit 2 and one `CONFIG_INVALID` JSON error document on
 stderr (`error[CONFIG_INVALID]` and `hint:` lines without `--json`), with the
 document still on stdout. Without `--json` stdout is the same report as text.
+
+### Serving MCP to a cloud client
+
+`kurama mcp --listen` reads `[mcp]`: `listen` (a loopback IP address and
+port, such as `127.0.0.1:8807` or `[::1]:8807`; a host name such as
+`localhost` is refused), `token` (an `op://`, `aws-secrets://` or
+`aws-ssm://` reference to 32 or more random bytes; a literal is refused)
+and `max_concurrent_calls` (default 2), and two keys stdio reads too:
+`tools` (the tool names offered; every tool when absent) and
+`call_timeout` (seconds, default 600, the wait for a slot included; keep it
+below the client's own timeout, 30 seconds for ElevenLabs). Write the section
+into a configuration of its own, named by `KURAMA_CONFIG_PATH`, that holds
+only the `[api.*]` the agent may reach, each with an `[api.<name>.agent]`
+`allow_paths`.

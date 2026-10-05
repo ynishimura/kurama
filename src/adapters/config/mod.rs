@@ -48,6 +48,7 @@ pub mod input;
 pub mod inventory;
 mod known_keys;
 mod layout;
+pub mod mcp;
 pub use db::{
     DbAuth, DbConnection, DbEngine, DbTls, IamSection, InstanceRef, ServerDatabase, SqliteDatabase,
 };
@@ -100,6 +101,9 @@ pub struct Config {
     /// Which calls the audit log records.
     #[serde(default)]
     pub audit: audit::AuditConfig,
+    /// What `kurama mcp` offers, and where `--listen` listens.
+    #[serde(default)]
+    pub mcp: mcp::McpConfig,
 }
 
 /// Settings that do not depend on a provider.
@@ -220,6 +224,12 @@ impl Config {
             problems.push((
                 "audit".to_owned(),
                 CoreError::config(format!("[audit] {error}")),
+            ));
+        }
+        if let Err(error) = self.mcp.validate() {
+            problems.push((
+                "mcp".to_owned(),
+                CoreError::config(format!("[mcp] {error}")),
             ));
         }
         let mut check = |kind: &str, name: &str, result: std::result::Result<(), String>| {

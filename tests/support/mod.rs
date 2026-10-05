@@ -40,6 +40,7 @@ pub mod cases;
 pub mod configs;
 pub mod data;
 pub mod expect_detail;
+pub mod mcp_http;
 pub mod png;
 pub mod s3_browse;
 pub mod tui;
@@ -349,9 +350,16 @@ pub struct Scenario {
     /// stay isolated. What `cargo xtask verify --layer throwaway` sets, and
     /// nothing else: every fake-side expectation on STS or the API is empty.
     pub real_aws: bool,
+    /// Requests sent once the first run, `kurama mcp --listen`, listens; it
+    /// is stopped after the last answer.
+    pub http: Vec<mcp_http::HttpRequest>,
 }
 
 impl Scenario {
+    pub fn serving_http(mut self, requests: Vec<mcp_http::HttpRequest>) -> Self {
+        self.http = requests;
+        self
+    }
     pub fn with_stdin(mut self, input: String) -> Self {
         self.stdin = Some(input);
         self
@@ -395,6 +403,7 @@ impl Scenario {
             service_account_token: None,
             aws_secrets: AwsSecrets::Absent,
             real_aws: false,
+            http: Vec::new(),
         }
     }
 
@@ -871,6 +880,11 @@ pub struct Run {
     pub editor_calls: Vec<String>,
     /// Environment variable names exported on stdout (values are secrets).
     pub exported_variables: Vec<String>,
+    /// What a `kurama mcp --listen` run answered the requests sent to it.
+    pub http_responses: Vec<mcp_http::HttpResponse>,
+    /// For a server that listened: whether it was still serving when the
+    /// harness stopped it after the last answer.
+    pub stopped_while_serving: Option<bool>,
 }
 
 /// One read of a secret AWS holds: which store, and which secret.
@@ -1687,6 +1701,8 @@ impl Sandbox {
             clipboard_calls,
             editor_calls,
             exported_variables,
+            http_responses: Vec::new(),
+            stopped_while_serving: None,
         }
     }
 
@@ -1764,6 +1780,19 @@ impl Sandbox {
             .filter(|(_, run)| run.timed_out)
             .map(|(index, _)| index)
             .collect();
+        let ended_early: Vec<usize> = verification
+            .observed
+            .runs
+            .iter()
+            .enumerate()
+            .filter(|(_, run)| run.stopped_while_serving == Some(false))
+            .map(|(index, _)| index)
+            .collect();
+        verification.check(
+            "every server was still serving when the harness stopped it",
+            ended_early.is_empty(),
+            format!("servers that ended on their own: {ended_early:?}"),
+        );
         verification.check(
             &format!("every run finishes within {}s", RUN_TIMEOUT.as_secs()),
             timed_out.is_empty(),
@@ -2176,7 +2205,13 @@ pub fn run(scenario: Scenario) -> Verification {
     let mut runs: Vec<Run> = scenario
         .runs
         .iter()
-        .map(|args| sandbox.run_cli(args))
+        .enumerate()
+        .map(|(index, args)| match index {
+            0 if !scenario.http.is_empty() => {
+                sandbox.run_cli_serving(args, scenario.http.clone()).0
+            }
+            _ => sandbox.run_cli(args),
+        })
         .collect();
     if let Some((count, args)) = scenario.parallel {
         runs.push(sandbox.run_cli_parallel(args, count));
