@@ -10,7 +10,7 @@ the command `kurama mcp`. stdout carries the protocol only.
 | `list_apis` | none | `kurama status --only api --json` |
 | `list_operations` | `api`, `query`? | `kurama api API --ops [QUERY] --json` |
 | `describe_operation` | `api`, `operation` | `kurama api API --schema OPERATION` |
-| `call_api` | `api`, `target`, `method`?, `params`?, `body`?, `shape`?, `sample`? | `kurama api API TARGET --json` (`-P`, `-d`, `--shape`, `--sample`) |
+| `call_api` | `api`, `target`, `method`?, `params`?, `query`?, `body`?, `shape`?, `sample`? | `kurama api API TARGET --json` (`-P`, `-d`, `--shape`, `--sample`); `query` is appended to TARGET, each value percent-encoded |
 | `query_data` | `request`, `workspace`? | `kurama data [WORKSPACE] --request - --json` |
 | `query_db` | `database`, `request` | `kurama db DATABASE --request - --json` |
 

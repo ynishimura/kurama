@@ -2139,6 +2139,14 @@ fn data_workspace_table_inference_requires_one_source() {
 }
 #[test]
 #[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn mcp_call_api_query_reaches_the_api_percent_encoded() {
+    crate::support::cases::run_case(
+        include_str!("../cases/mcp/mcp_call_api_query_reaches_the_api_percent_encoded.toml"),
+        "tests/cases/mcp/mcp_call_api_query_reaches_the_api_percent_encoded.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
 fn mcp_call_timeout_ends_the_call_and_serves_the_next() {
     crate::support::cases::run_case(
         include_str!("../cases/mcp/mcp_call_timeout_ends_the_call_and_serves_the_next.toml"),

@@ -203,6 +203,12 @@ fn every_tool() -> Value {
                     "description": "operation parameters, name to value (-P name=value)",
                     "additionalProperties": { "type": ["string", "number", "boolean"] },
                 },
+                "query": {
+                    "type": "object",
+                    "description": "query parameters appended to target, name to value, each \
+                                    percent-encoded by kurama: put a paging marker or cursor here as it came",
+                    "additionalProperties": { "type": ["string", "number", "boolean"] },
+                },
                 "body": { "description": "request body: a JSON value, or a string sent as it is" },
                 "shape": { "type": "boolean", "description": "answer the type of each value instead of the value" },
                 "sample": { "type": "integer", "minimum": 0, "description": "cut every array of the body to its first N elements" },
@@ -263,7 +269,10 @@ pub fn tool_run(name: &str, arguments: &Value) -> Result<ToolRun, String> {
             "--".into(),
             text("api")?,
         ]),
-        "call_api" => call_api(arguments, text("api")?, text("target")?)?,
+        "call_api" => {
+            let target = with_query(text("target")?, arguments.get("query"))?;
+            call_api(arguments, text("api")?, target)?
+        }
         "query_data" => {
             let request = read_request(name, arguments, "export", |request| {
                 request
@@ -325,6 +334,31 @@ fn call_api(arguments: &Value, api: String, target: String) -> Result<ToolRun, S
     }
     args.extend(["--".into(), api, target]);
     Ok(ToolRun { args, stdin })
+}
+
+/// `target` with the `query` argument appended, each value percent-encoded
+/// the way `-P` encodes a query parameter: a paging marker such as
+/// `ab+c/d==` reaches the API intact, which a model writing it into the
+/// target by hand does not manage.
+fn with_query(target: String, query: Option<&Value>) -> Result<String, String> {
+    let Some(Value::Object(query)) = query else {
+        return Ok(target);
+    };
+    let mut pairs = url::form_urlencoded::Serializer::new(String::new());
+    for (name, value) in query {
+        let value = match value {
+            Value::String(value) => value.clone(),
+            Value::Number(_) | Value::Bool(_) => value.to_string(),
+            _ => return Err("call_api: `query` values are strings, numbers or booleans".into()),
+        };
+        pairs.append_pair(name, &value);
+    }
+    let pairs = pairs.finish();
+    if pairs.is_empty() {
+        return Ok(target);
+    }
+    let joiner = if target.contains('?') { '&' } else { '?' };
+    Ok(format!("{target}{joiner}{pairs}"))
 }
 
 /// The `request` argument as the JSON a `--request -` reads, unless it
@@ -497,6 +531,41 @@ mod tests {
         .unwrap();
         assert_eq!(args(&run), ["db", "--request", "-", "--json", "--", "-d"]);
         assert_eq!(run.stdin.as_deref(), Some(r#"{"operation":"tables"}"#));
+    }
+
+    #[test]
+    fn query_is_percent_encoded_onto_the_target() {
+        let run = tool_run(
+            "call_api",
+            &json!({
+                "api": "a", "target": "/functions/?MaxItems=50",
+                "query": {"Marker": "ab+c/d==", "n": 2, "-x": "--confirm"}
+            }),
+        )
+        .unwrap();
+        assert_eq!(
+            args(&run),
+            [
+                "api",
+                "--json",
+                "--",
+                "a",
+                "/functions/?MaxItems=50&Marker=ab%2Bc%2Fd%3D%3D&n=2&-x=--confirm"
+            ]
+        );
+        let run = tool_run(
+            "call_api",
+            &json!({"api": "a", "target": "GET /tasks", "query": {"cursor": "x y"}}),
+        )
+        .unwrap();
+        assert_eq!(args(&run)[4], "GET /tasks?cursor=x+y");
+        assert_eq!(
+            tool_run(
+                "call_api",
+                &json!({"api": "a", "target": "/t", "query": {"k": {"nested": 1}}})
+            ),
+            Err("call_api: `query` values are strings, numbers or booleans".into())
+        );
     }
 
     #[test]
