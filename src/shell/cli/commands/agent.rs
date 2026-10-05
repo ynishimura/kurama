@@ -20,6 +20,7 @@ pub const AGENT_GUIDE: &str = concat!(
     include_str!("../../../../docs/agents/kurama/db.md"),
     include_str!("../../../../docs/agents/kurama/s3.md"),
     include_str!("../../../../docs/agents/kurama/mcp.md"),
+    include_str!("../../../../docs/agents/kurama/obsidian.md"),
     include_str!("../../../../docs/agents/kurama/setup.md"),
     include_str!("../../../../docs/agents/kurama/exit-codes.md"),
     include_str!("../../../../docs/agents/kurama/rules.md"),

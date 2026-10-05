@@ -37,6 +37,7 @@ pub mod inventory;
 pub mod login;
 pub mod logout;
 pub mod mcp;
+pub mod obsidian;
 pub mod preset;
 pub mod preset_add;
 pub mod profile;

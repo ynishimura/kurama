@@ -1,0 +1,33 @@
+# A cli_path that names no program is OBSIDIAN_UNAVAILABLE (exit 3): the
+# agent is told what a person has to do, and the server goes on answering.
+id = "mcp_obsidian_reports_an_unavailable_cli"
+feature = "mcp"
+
+[combination]
+command = "mcp"
+transport = "stdio"
+tool = "obsidian_read"
+cli = "missing"
+
+[input]
+args = ["mcp"]
+stdin = """
+{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"obsidian_read","arguments":{"path":"Wiki/kurama.md"}}}
+{"jsonrpc":"2.0","id":2,"method":"ping"}
+"""
+config = """
+[obsidian]
+vault = "brain"
+allow_paths = ["Wiki/"]
+cli_path = "{repo}/tests/fakes/no-such-obsidian"
+"""
+
+[expect]
+exit_code = 0
+stderr_empty = true
+obsidian_calls = []
+stdout = { line_count = 2, line_containing = [
+  ["\"id\":1", "\"isError\":true", "\"code\":\"OBSIDIAN_UNAVAILABLE\"", "\"exit_code\":3", "Command line interface"],
+  ["\"id\":2", "\"result\":{}"],
+] }
+files_written = ["home/.local/state/kurama/audit.jsonl"]

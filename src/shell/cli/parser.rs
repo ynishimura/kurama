@@ -125,6 +125,9 @@ pub fn parse_cli_command(matches: &ArgMatches) -> CliCommand {
         Some(("mcp", mcp)) => CliCommand::Mcp {
             listen: mcp.get_flag("listen"),
         },
+        Some(("obsidian", obsidian)) => {
+            CliCommand::Obsidian(super::commands::obsidian::ObsidianCommand::parse(obsidian))
+        }
         _ => CliCommand::Tui,
     }
 }

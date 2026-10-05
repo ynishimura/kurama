@@ -1,0 +1,32 @@
+# `files FOLDER` lists that folder only, and a folder outside allow_paths is
+# refused before the CLI runs.
+id = "mcp_obsidian_files_lists_one_folder"
+feature = "mcp"
+
+[combination]
+command = "obsidian-files"
+output = "json"
+
+[input]
+args = ["obsidian", "files", "Wiki", "--json"]
+then_run = [["obsidian", "files", "Private", "--json"]]
+config = """
+[obsidian]
+vault = "brain"
+allow_paths = ["Wiki/", "Daily/"]
+cli_path = "{repo}/tests/fakes/obsidian"
+"""
+
+[expect]
+exit_code = 2
+
+[[expect.runs]]
+run = 0
+stderr_empty = true
+obsidian_calls = ["vault=brain\tfiles\tfolder=Wiki"]
+stdout_json = { "/files" = ["Wiki/kurama.md"] }
+
+[[expect.runs]]
+run = 1
+obsidian_calls = []
+json_error = { code = "OBSIDIAN_PATH_REFUSED", exit = 2 }

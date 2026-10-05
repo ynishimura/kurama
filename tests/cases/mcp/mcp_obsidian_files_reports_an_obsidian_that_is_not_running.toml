@@ -1,0 +1,27 @@
+# A CLI that reaches no Obsidian (`Unable to connect to main process`, exit
+# 1): OBSIDIAN_UNAVAILABLE (exit 3), not the CLI's own failure, and the hint
+# says what a person starts, enables or sets.
+id = "mcp_obsidian_files_reports_an_obsidian_that_is_not_running"
+feature = "mcp"
+
+[combination]
+command = "obsidian-files"
+obsidian_app = "not-running"
+
+[input]
+args = ["obsidian", "files"]
+env = { KURAMA_FAKE_OBSIDIAN_MODE = "not-running" }
+config = """
+[obsidian]
+vault = "brain"
+allow_paths = ["Wiki/"]
+cli_path = "{repo}/tests/fakes/obsidian"
+"""
+
+[expect]
+exit_code = 3
+error = { code = "OBSIDIAN_UNAVAILABLE", exit = 3 }
+hint = "start Obsidian and enable Settings > General > Command line interface, or set [obsidian] cli_path to the CLI (/Applications/Obsidian.app/Contents/MacOS/obsidian)"
+stderr_contains = ["Unable to connect to main process"]
+stdout_lines = 0
+obsidian_calls = ["vault=brain\tfiles\tfolder=Wiki"]

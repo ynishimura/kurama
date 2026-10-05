@@ -49,6 +49,7 @@ pub mod inventory;
 mod known_keys;
 mod layout;
 pub mod mcp;
+pub mod obsidian;
 pub use db::{
     DbAuth, DbConnection, DbEngine, DbTls, IamSection, InstanceRef, ServerDatabase, SqliteDatabase,
 };
@@ -104,6 +105,9 @@ pub struct Config {
     /// What `kurama mcp` offers, and where `--listen` listens.
     #[serde(default)]
     pub mcp: mcp::McpConfig,
+    /// The vault `kurama obsidian` reads, and the folders it may read.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub obsidian: Option<obsidian::ObsidianConfig>,
 }
 
 /// Settings that do not depend on a provider.
@@ -230,6 +234,29 @@ impl Config {
             problems.push((
                 "mcp".to_owned(),
                 CoreError::config(format!("[mcp] {error}")),
+            ));
+        }
+        if let Some(tool) = self
+            .mcp
+            .obsidian_tool_without_a_vault(self.obsidian.is_some())
+        {
+            problems.push((
+                // Its own section name: `config check` drops it when it is
+                // only there because `[obsidian]` did not read.
+                "mcp.tools".to_owned(),
+                CoreError::config(format!(
+                    "[mcp] tools names {tool:?}, which reads the vault an [obsidian] section names, and there is none"
+                )),
+            ));
+        }
+        if let Some(Err(error)) = self
+            .obsidian
+            .as_ref()
+            .map(obsidian::ObsidianConfig::validate)
+        {
+            problems.push((
+                "obsidian".to_owned(),
+                CoreError::config(format!("[obsidian] {error}")),
             ));
         }
         let mut check = |kind: &str, name: &str, result: std::result::Result<(), String>| {

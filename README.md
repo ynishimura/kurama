@@ -757,6 +757,35 @@ kurama does not tell callers apart: keep the agent to yourself (no phone
 number, widget or sharing), and expose only APIs whose responses may reach
 the service hosting it.
 
+#### Obsidian vault (`kurama obsidian`)
+
+With an `[obsidian]` section, kurama reads an Obsidian vault through the
+official Obsidian CLI (Obsidian 1.12.7+, Settings > General > Command line
+interface), and `kurama mcp` adds the `obsidian_search`, `obsidian_read` and
+`obsidian_files` tools. Only the folders `allow_paths` names are searched and
+read; nothing is ever written, and no CLI command but `search:context`,
+`read` and `files` runs. Obsidian has to be running.
+
+```toml
+[obsidian]
+vault = "obsidian-brain"
+allow_paths = ["Wiki/", "Daily/"]
+cli_path = "/Applications/Obsidian.app/Contents/MacOS/obsidian"  # default "obsidian"
+max_read_bytes = 65536   # a longer note is cut and says so
+timeout = 20             # seconds per CLI call
+```
+
+```bash
+kurama obsidian search "kurama" --path Wiki --json   # {"matches": [{"path", "line", "text"}]}
+kurama obsidian read Wiki/kurama.md --json           # {"path", "content", "truncated"}
+kurama obsidian files Daily                          # one path per line
+```
+
+A path that is absolute, holds `..` or lies outside `allow_paths` is
+`OBSIDIAN_PATH_REFUSED` before the CLI runs. A note read over `--listen`
+stays in the logs of the service hosting the client, as every tool result
+does: name only the folders that may go there.
+
 ### Secret references
 
 These keys hold secrets: `[auth.*] client_secret`, `[auth.*] token`,

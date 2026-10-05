@@ -1,0 +1,18 @@
+# `obsidian` takes a subcommand. Asked for JSON, the missing one is the usage
+# error document, not clap's text, and the CLI is never called.
+id = "mcp_obsidian_without_a_subcommand_under_json_is_an_error_document"
+feature = "mcp"
+
+[combination]
+command = "obsidian"
+output = "json"
+
+[input]
+args = ["obsidian", "--json"]
+
+[expect]
+json_error = { code = "ARGUMENT_INVALID", exit = 2 }
+stderr_lines = 1
+stderr_json = { "/error/hint" = "run `kurama obsidian --help` to see the arguments it takes" }
+obsidian_calls = []
+no_files_written = true

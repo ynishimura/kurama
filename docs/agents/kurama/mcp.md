@@ -13,6 +13,9 @@ the command `kurama mcp`. stdout carries the protocol only.
 | `call_api` | `api`, `target`, `method`?, `params`?, `query`?, `body`?, `shape`?, `sample`? | `kurama api API TARGET --json` (`-P`, `-d`, `--shape`, `--sample`); `query` is appended to TARGET, each value percent-encoded |
 | `query_data` | `request`, `workspace`? | `kurama data [WORKSPACE] --request - --json` |
 | `query_db` | `database`, `request` | `kurama db DATABASE --request - --json` |
+| `obsidian_search` | `query`, `path`?, `limit`? | `kurama obsidian search QUERY --json` |
+| `obsidian_read` | `path` | `kurama obsidian read PATH --json` |
+| `obsidian_files` | `folder`? | `kurama obsidian files [FOLDER] --json` |
 
 Each call is kurama run again with `KURAMA_AGENT=1`, whatever the server's
 own environment says: the `[agent]` policy applies, the audit log records
@@ -25,6 +28,8 @@ a call the policy refuses is made by a person on the command line.
 before anything runs. A call ends after `[mcp] call_timeout` seconds (600 by
 default). `[mcp] tools` names the tools offered; a tool it leaves out is
 absent from `tools/list`, and a call of it is a refused tool result. The
+`obsidian_*` tools are offered only when `[obsidian]` is configured (see
+`kurama obsidian`), and naming one in `tools` without it is `CONFIG_INVALID`. The
 configuration is read at start, so an invalid one stops `kurama mcp` with
 `CONFIG_INVALID` before it answers anything.
 

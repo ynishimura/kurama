@@ -62,7 +62,7 @@ pub async fn run(matches: &clap::ArgMatches) -> anyhow::Result<()> {
     result
 }
 
-/// The calls the audit log records: `api`, `exec`, `db` and `data`.
+/// The calls the audit log records: `api`, `exec`, `db`, `data` and `obsidian`.
 fn audited_call(command: &command::CliCommand) -> Option<crate::shell::audit::Call<'_>> {
     use crate::shell::audit::Call;
     use command::CliCommand;
@@ -89,6 +89,11 @@ fn audited_call(command: &command::CliCommand) -> Option<crate::shell::audit::Ca
         CliCommand::Data(data) => Some(Call {
             command: "data",
             target: data.workspace.as_deref().unwrap_or("ad-hoc"),
+            program: None,
+        }),
+        CliCommand::Obsidian(obsidian) => Some(Call {
+            command: "obsidian",
+            target: obsidian.audit_target(),
             program: None,
         }),
         _ => None,

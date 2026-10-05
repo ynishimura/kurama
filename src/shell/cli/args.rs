@@ -60,6 +60,7 @@ pub fn build_command() -> Command {
         .subcommand(super::commands::s3_command::command())
         .subcommand(super::commands::audit::command())
         .subcommand(super::commands::mcp::command())
+        .subcommand(super::commands::obsidian::command())
 }
 
 const SOURCE_HELP: &str = "AWS profile in ~/.aws/config, or an [auth.*] source in config.toml";

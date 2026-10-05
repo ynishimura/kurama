@@ -50,7 +50,8 @@ pub fn command() -> Command {
         .long_about(
             "Serve kurama as an MCP server on stdio (JSON-RPC, one message per line).\n\n\
              Tools: ready, list_apis, list_operations, describe_operation, call_api,\n\
-             query_data and query_db (read only); [mcp] tools names a subset. Each call\n\
+             query_data and query_db (read only), and with [obsidian] obsidian_search,\n\
+             obsidian_read and obsidian_files; [mcp] tools names a subset. Each call\n\
              runs kurama's own JSON command with KURAMA_AGENT=1, so the [agent] policy\n\
              refuses what it refuses on the command line, the audit log records the call,\n\
              and a failure is the same JSON error document. Nothing prompts: a call that\n\
@@ -72,7 +73,7 @@ pub fn command() -> Command {
 
 pub async fn run(listen: bool, config: &Config) -> Result<()> {
     let program = std::env::current_exe()?;
-    let exposed = config.mcp.exposed_tools();
+    let exposed = config.mcp.exposed_tools(config.obsidian.is_some());
     let deadline = Duration::from_secs(config.mcp.call_timeout);
     if listen {
         return run_http(config, program, exposed, deadline).await;

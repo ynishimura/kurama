@@ -1,0 +1,40 @@
+# obsidian_read runs `read path=` once and answers {path, content,
+# truncated}; the run is kurama run again as an agent, so the audit log
+# records it with the note it read.
+id = "mcp_obsidian_read_returns_a_note_and_records_the_audit_entry"
+feature = "mcp"
+
+[combination]
+command = "mcp"
+transport = "stdio"
+tool = "obsidian_read"
+
+[input]
+args = ["mcp"]
+stdin = """
+{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"obsidian_read","arguments":{"path":"Wiki/kurama.md"}}}
+"""
+then_run = [["audit", "--json"]]
+config = """
+[obsidian]
+vault = "brain"
+allow_paths = ["Wiki/", "Daily/"]
+cli_path = "{repo}/tests/fakes/obsidian"
+"""
+
+[expect]
+exit_code = 0
+files_written = ["home/.local/state/kurama/audit.jsonl"]
+
+[[expect.runs]]
+run = 0
+stderr_empty = true
+obsidian_calls = ["vault=brain\tread\tpath=Wiki/kurama.md"]
+stdout = { line_count = 1, line_containing = [
+  ["\"id\":1", "\"isError\":false", "\"path\":\"Wiki/kurama.md\"", "kurama reads the vault through the Obsidian CLI.", "Kurama never writes.", "\"truncated\":false"],
+] }
+
+[[expect.runs]]
+run = 1
+obsidian_calls = []
+stdout_json = { "/entries" = { length = 1 }, "/entries/0/command" = "obsidian", "/entries/0/target" = "Wiki/kurama.md", "/entries/0/agent" = true, "/entries/0/exit_code" = 0 }

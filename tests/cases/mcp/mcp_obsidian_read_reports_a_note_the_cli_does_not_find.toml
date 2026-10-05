@@ -1,0 +1,24 @@
+# The CLI exits 0 and prints `Error: File "..." not found.` on stdout for a
+# note that does not exist: kurama reads that as the CLI's own failure,
+# OBSIDIAN_FAILED (exit 1) with the CLI's message, and prints nothing on stdout.
+id = "mcp_obsidian_read_reports_a_note_the_cli_does_not_find"
+feature = "mcp"
+
+[combination]
+command = "obsidian-read"
+note = "missing"
+
+[input]
+args = ["obsidian", "read", "Wiki/nope.md"]
+config = """
+[obsidian]
+vault = "brain"
+allow_paths = ["Wiki/"]
+cli_path = "{repo}/tests/fakes/obsidian"
+"""
+
+[expect]
+exit_code = 1
+error = { code = "OBSIDIAN_FAILED", exit = 1, message = "the Obsidian CLI failed: Error: File \"Wiki/nope.md\" not found." }
+stdout_lines = 0
+obsidian_calls = ["vault=brain\tread\tpath=Wiki/nope.md"]

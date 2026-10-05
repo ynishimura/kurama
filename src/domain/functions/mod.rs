@@ -36,6 +36,7 @@
 //! - `api_skill` - the `--skill` Agent Skill
 //! - `mcp` - the messages, tools and command lines of `kurama mcp`
 //! - `mcp_http` - what an HTTP request to `kurama mcp --listen` is answered with
+//! - `obsidian` - vault paths held to `[obsidian] allow_paths`, the Obsidian CLI argv and its answer shaped
 
 pub mod agent_policy;
 pub mod api_body_fit;
@@ -58,6 +59,7 @@ pub mod jq_completion;
 pub mod mcp;
 pub mod mcp_http;
 pub mod oauth;
+pub mod obsidian;
 pub mod onepassword;
 pub mod openapi;
 mod openapi_schema;

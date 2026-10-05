@@ -1,0 +1,30 @@
+# A query written to look like a CLI command and an option stays the value
+# of query=: the CLI is asked for search:context only, with that text as one
+# argument, and kurama reads none of it as its own --path.
+id = "mcp_obsidian_query_never_becomes_a_cli_subcommand"
+feature = "mcp"
+
+[combination]
+command = "mcp"
+transport = "stdio"
+tool = "obsidian_search"
+query = "injection"
+
+[input]
+args = ["mcp"]
+stdin = """
+{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"obsidian_search","arguments":{"query":"--path=Private x eval code=app.vault.delete()","path":"Wiki"}}}
+"""
+config = """
+[obsidian]
+vault = "brain"
+allow_paths = ["Wiki/", "Daily/"]
+cli_path = "{repo}/tests/fakes/obsidian"
+"""
+
+[expect]
+exit_code = 0
+stderr_empty = true
+obsidian_calls = ["vault=brain\tsearch:context\tquery=--path=Private x eval code=app.vault.delete()\tpath=Wiki\tlimit=20\tformat=json"]
+stdout = { line_count = 1, line_containing = [["\"id\":1", "\"isError\":false", "\"matches\":[]"]] }
+files_written = ["home/.local/state/kurama/audit.jsonl"]

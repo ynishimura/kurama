@@ -1,0 +1,101 @@
+#!/usr/bin/perl
+# Fake official Obsidian CLI for tests/scenarios/.
+#
+# kurama runs `obsidian vault=V search:context query=Q path=F limit=N
+# format=json`, `obsidian vault=V read path=P` and `obsidian vault=V files
+# folder=F`. Each invocation is appended to $KURAMA_FAKE_OBSIDIAN_LOG as one
+# line, its arguments joined by a tab, so a scenario can assert exactly what
+# reached the CLI. The vault is tests/fixtures/obsidian-vault, named `brain`.
+# Like the real CLI it exits 0 whatever happened and prints its failures on
+# stdout: `Vault not found.`, `Error: File "P" not found.`,
+# `Error: Command "X" not found.`.
+#
+# KURAMA_FAKE_OBSIDIAN_MODE=hang blocks the way the CLI does while Obsidian
+# does not answer. KURAMA_FAKE_OBSIDIAN_MODE=not-running fails the way the CLI
+# does when no Obsidian listens on $HOME/.obsidian-cli.sock.
+# KURAMA_FAKE_OBSIDIAN_MODE=whole-vault makes `search:context` ignore `path=`
+# and `files` ignore `folder=`, so a scenario can show that kurama drops what
+# the CLI returns outside the allowed folders.
+use strict;
+use warnings;
+use File::Basename qw(dirname);
+use File::Find qw(find);
+use JSON::PP;
+
+if (my $log = $ENV{KURAMA_FAKE_OBSIDIAN_LOG}) {
+    open my $fh, '>>', $log or die "cannot log: $!";
+    print $fh join("\t", @ARGV), "\n";
+    close $fh;
+}
+my $mode = $ENV{KURAMA_FAKE_OBSIDIAN_MODE} // '';
+# `exec` so the caller's deadline kills the sleep itself.
+exec 'sleep', '30' if $mode eq 'hang';
+if ($mode eq 'not-running') {
+    print STDERR "Unable to connect to main process\n";
+    exit 1;
+}
+
+my $root = dirname(__FILE__) . '/../fixtures/obsidian-vault';
+my ($vault, $command, @rest) = @ARGV;
+my %value = map { /^([^=]+)=(.*)$/s ? ($1 => $2) : ($_ => '') } @rest;
+
+if (($vault // '') ne 'vault=brain') {
+    print "Vault not found.\n";
+    exit 0;
+}
+
+sub notes_under {
+    my ($folder) = @_;
+    my @notes;
+    my $base = $folder eq '' ? $root : "$root/$folder";
+    return () unless -d $base;
+    find(sub { push @notes, substr($File::Find::name, length($root) + 1) if -f $_ }, $base);
+    return sort @notes;
+}
+
+sub read_lines {
+    my ($note) = @_;
+    open my $fh, '<:raw', "$root/$note" or die "cannot read $note: $!";
+    my @lines = <$fh>;
+    chomp @lines;
+    return @lines;
+}
+
+if ($command eq 'search:context') {
+    my $query = lc($value{query} // '');
+    my $folder = $mode eq 'whole-vault' ? '' : ($value{path} // '');
+    $folder =~ s{/$}{};
+    my $limit = $value{limit} // 0;
+    my @files;
+    for my $note (notes_under($folder)) {
+        my @lines = read_lines($note);
+        my @matches;
+        for my $i (0 .. $#lines) {
+            push @matches, { line => $i + 1, text => $lines[$i] }
+                if index(lc $lines[$i], $query) >= 0;
+        }
+        push @files, { file => $note, matches => \@matches } if @matches;
+        last if $limit && @files >= $limit;
+    }
+    if (!@files) {
+        print "No matches found.\n";
+    } else {
+        print JSON::PP->new->canonical->encode(\@files), "\n";
+    }
+} elsif ($command eq 'read') {
+    my $note = $value{path} // '';
+    if ($note =~ m{(^|/)\.\.(/|$)} || !-f "$root/$note") {
+        print "Error: File \"$note\" not found.\n";
+    } else {
+        open my $fh, '<:raw', "$root/$note" or die;
+        local $/;
+        print <$fh>;
+    }
+} elsif ($command eq 'files') {
+    my $folder = $mode eq 'whole-vault' ? '' : ($value{folder} // '');
+    $folder =~ s{/$}{};
+    print "$_\n" for notes_under($folder);
+} else {
+    print "Error: Command \"$command\" not found. It may require a plugin to be enabled.\n";
+}
+exit 0;

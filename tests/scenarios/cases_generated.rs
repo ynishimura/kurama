@@ -2211,6 +2211,126 @@ fn mcp_lists_the_tools_and_calls_an_api() {
 }
 #[test]
 #[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn mcp_obsidian_cuts_a_long_note_at_max_read_bytes() {
+    crate::support::cases::run_case(
+        include_str!("../cases/mcp/mcp_obsidian_cuts_a_long_note_at_max_read_bytes.toml"),
+        "tests/cases/mcp/mcp_obsidian_cuts_a_long_note_at_max_read_bytes.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn mcp_obsidian_files_lists_one_folder() {
+    crate::support::cases::run_case(
+        include_str!("../cases/mcp/mcp_obsidian_files_lists_one_folder.toml"),
+        "tests/cases/mcp/mcp_obsidian_files_lists_one_folder.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn mcp_obsidian_files_reports_an_obsidian_that_is_not_running() {
+    crate::support::cases::run_case(
+        include_str!("../cases/mcp/mcp_obsidian_files_reports_an_obsidian_that_is_not_running.toml"),
+        "tests/cases/mcp/mcp_obsidian_files_reports_an_obsidian_that_is_not_running.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn mcp_obsidian_query_never_becomes_a_cli_subcommand() {
+    crate::support::cases::run_case(
+        include_str!("../cases/mcp/mcp_obsidian_query_never_becomes_a_cli_subcommand.toml"),
+        "tests/cases/mcp/mcp_obsidian_query_never_becomes_a_cli_subcommand.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn mcp_obsidian_read_json_refusal_names_the_allowed_folders() {
+    crate::support::cases::run_case(
+        include_str!("../cases/mcp/mcp_obsidian_read_json_refusal_names_the_allowed_folders.toml"),
+        "tests/cases/mcp/mcp_obsidian_read_json_refusal_names_the_allowed_folders.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn mcp_obsidian_read_refuses_a_path_outside_allow_paths() {
+    crate::support::cases::run_case(
+        include_str!("../cases/mcp/mcp_obsidian_read_refuses_a_path_outside_allow_paths.toml"),
+        "tests/cases/mcp/mcp_obsidian_read_refuses_a_path_outside_allow_paths.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn mcp_obsidian_read_refuses_a_path_with_parent_segments() {
+    crate::support::cases::run_case(
+        include_str!("../cases/mcp/mcp_obsidian_read_refuses_a_path_with_parent_segments.toml"),
+        "tests/cases/mcp/mcp_obsidian_read_refuses_a_path_with_parent_segments.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn mcp_obsidian_read_reports_a_note_the_cli_does_not_find() {
+    crate::support::cases::run_case(
+        include_str!("../cases/mcp/mcp_obsidian_read_reports_a_note_the_cli_does_not_find.toml"),
+        "tests/cases/mcp/mcp_obsidian_read_reports_a_note_the_cli_does_not_find.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn mcp_obsidian_read_returns_a_note_and_records_the_audit_entry() {
+    crate::support::cases::run_case(
+        include_str!("../cases/mcp/mcp_obsidian_read_returns_a_note_and_records_the_audit_entry.toml"),
+        "tests/cases/mcp/mcp_obsidian_read_returns_a_note_and_records_the_audit_entry.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn mcp_obsidian_reports_an_obsidian_that_does_not_answer() {
+    crate::support::cases::run_case(
+        include_str!("../cases/mcp/mcp_obsidian_reports_an_obsidian_that_does_not_answer.toml"),
+        "tests/cases/mcp/mcp_obsidian_reports_an_obsidian_that_does_not_answer.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn mcp_obsidian_reports_an_unavailable_cli() {
+    crate::support::cases::run_case(
+        include_str!("../cases/mcp/mcp_obsidian_reports_an_unavailable_cli.toml"),
+        "tests/cases/mcp/mcp_obsidian_reports_an_unavailable_cli.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn mcp_obsidian_search_and_files_print_text_without_json() {
+    crate::support::cases::run_case(
+        include_str!("../cases/mcp/mcp_obsidian_search_and_files_print_text_without_json.toml"),
+        "tests/cases/mcp/mcp_obsidian_search_and_files_print_text_without_json.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn mcp_obsidian_search_returns_matches_from_allowed_folders_only() {
+    crate::support::cases::run_case(
+        include_str!("../cases/mcp/mcp_obsidian_search_returns_matches_from_allowed_folders_only.toml"),
+        "tests/cases/mcp/mcp_obsidian_search_returns_matches_from_allowed_folders_only.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn mcp_obsidian_tools_are_absent_without_an_obsidian_section() {
+    crate::support::cases::run_case(
+        include_str!("../cases/mcp/mcp_obsidian_tools_are_absent_without_an_obsidian_section.toml"),
+        "tests/cases/mcp/mcp_obsidian_tools_are_absent_without_an_obsidian_section.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn mcp_obsidian_without_a_subcommand_under_json_is_an_error_document() {
+    crate::support::cases::run_case(
+        include_str!("../cases/mcp/mcp_obsidian_without_a_subcommand_under_json_is_an_error_document.toml"),
+        "tests/cases/mcp/mcp_obsidian_without_a_subcommand_under_json_is_an_error_document.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
 fn mcp_returns_the_error_document_when_a_person_has_to_act() {
     crate::support::cases::run_case(
         include_str!("../cases/mcp/mcp_returns_the_error_document_when_a_person_has_to_act.toml"),

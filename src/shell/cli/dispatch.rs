@@ -134,5 +134,6 @@ pub async fn execute_command(command: CliCommand, config: Config) -> Result<()> 
         CliCommand::AgentInstall(install) => {
             super::commands::agent_install::run(&install, config).await
         }
+        CliCommand::Obsidian(command) => super::commands::obsidian::run(command, &config).await,
     }
 }
