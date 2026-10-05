@@ -1,5 +1,5 @@
 [mcp]
-summary = "`kurama mcp`: an MCP server on stdio, or over Streamable HTTP with --listen, whose tools (ready, list_apis, list_operations, describe_operation, call_api, query_data, query_db) run kurama's own JSON commands as an agent's, so the [agent] policy, the audit log and the error document are the command line's"
+summary = "`kurama mcp`: an MCP server on stdio, or over Streamable HTTP with --listen, whose tools (ready, list_apis, list_operations, describe_operation, call_api, query_data, query_db, and with [obsidian] obsidian_search, obsidian_read, obsidian_files) run kurama's own JSON commands as an agent's, so the [agent] policy, the audit log and the error document are the command line's"
 entry = "src/shell/cli/commands/mcp.rs"
 files = [
   "src/shell/cli/commands/mcp.rs",
@@ -9,6 +9,12 @@ files = [
   "src/adapters/own_command.rs",
   "tests/scenarios/mcp.rs",
   "docs/agents/kurama/mcp.md",
+  "src/shell/cli/commands/obsidian.rs",
+  "src/domain/functions/obsidian.rs",
+  "src/adapters/obsidian_cli.rs",
+  "tests/fakes/obsidian",
+  "tests/fixtures/obsidian-vault/",
+  "docs/agents/kurama/obsidian.md",
 ]
 scenarios = [
   "mcp_lists_the_tools_and_calls_an_api",
@@ -36,9 +42,22 @@ scenarios = [
   "mcp_http_reports_an_unreadable_token",
   "mcp_config_set_edits_the_mcp_section_and_refuses_a_literal_token",
   "mcp_call_api_query_reaches_the_api_percent_encoded",
+  "mcp_obsidian_search_returns_matches_from_allowed_folders_only",
+  "mcp_obsidian_read_returns_a_note_and_records_the_audit_entry",
+  "mcp_obsidian_read_refuses_a_path_outside_allow_paths",
+  "mcp_obsidian_read_refuses_a_path_with_parent_segments",
+  "mcp_obsidian_query_never_becomes_a_cli_subcommand",
+  "mcp_obsidian_tools_are_absent_without_an_obsidian_section",
+  "mcp_obsidian_reports_an_unavailable_cli",
+  "mcp_obsidian_cuts_a_long_note_at_max_read_bytes",
+  "mcp_obsidian_read_reports_a_note_the_cli_does_not_find",
+  "mcp_obsidian_search_and_files_print_text_without_json",
+  "mcp_obsidian_read_json_refusal_names_the_allowed_folders",
+  "mcp_obsidian_files_reports_a_missing_cli_with_what_to_enable",
+  "mcp_obsidian_without_a_subcommand_under_json_is_an_error_document",
 ]
-depends_on = ["config", "secrets", "api-explorer", "cli-entry", "api-client", "agent-policy", "audit", "database", "local-analytics", "agent-guide", "status"]
-notes = "Each tool call is the binary run again (current_exe) with KURAMA_AGENT=1, stdin null or the request, stdout and stderr captured, killed after [mcp] call_timeout (600 seconds by default); over stdio the server reads the next line only after answering, one call at a time; over HTTP at most [mcp] max_concurrent_calls run at once and the wait for a slot counts toward call_timeout. --listen binds the loopback [mcp] listen, reads [mcp] token once (a reference, never a literal), and checks the token before anything else: 401, then Origin 403, path 404, method 405, Content-Type 415, MCP-Protocol-Version 400, body 413/400; JSON responses only, no session, no SSE. [mcp] tools hides and refuses the tools it leaves out, over both transports. Every agent value goes after `--` or glued with `=`, so none becomes an option such as --confirm, and MCP offers no --confirm: a call the policy refuses is made by a person on the command line. query_db refuses execute and query_data refuses export before anything runs. No exec tool, no TLS (Funnel or another front terminates it), no OAuth."
+depends_on = ["config", "secrets", "api-explorer", "cli-entry", "api-client", "agent-policy", "audit", "database", "local-analytics", "agent-guide", "status", "errors"]
+notes = "Each tool call is the binary run again (current_exe) with KURAMA_AGENT=1, stdin null or the request, stdout and stderr captured, killed after [mcp] call_timeout (600 seconds by default); over stdio the server reads the next line only after answering, one call at a time; over HTTP at most [mcp] max_concurrent_calls run at once and the wait for a slot counts toward call_timeout. --listen binds the loopback [mcp] listen, reads [mcp] token once (a reference, never a literal), and checks the token before anything else: 401, then Origin 403, path 404, method 405, Content-Type 415, MCP-Protocol-Version 400, body 413/400; JSON responses only, no session, no SSE. [mcp] tools hides and refuses the tools it leaves out, over both transports. Every agent value goes after `--` or glued with `=`, so none becomes an option such as --confirm, and MCP offers no --confirm: a call the policy refuses is made by a person on the command line. query_db refuses execute and query_data refuses export before anything runs. No exec tool, no TLS (Funnel or another front terminates it), no OAuth. `kurama obsidian search|read|files` reads the [obsidian] vault through the official Obsidian CLI (adapters/obsidian_cli.rs, through own_command): every argv is built in domain/functions/obsidian.rs (search:context, read, files only; a caller's value is one key=value element), a path is refused before the CLI runs when absolute, with `..` or a backslash, or outside allow_paths, and every answer is filtered to allow_paths again. The CLI exits 0 and prints its failures on stdout (`Error: ...`, `Vault not found.`). The obsidian_* tools are listed only with [obsidian]."
 
 [mcp.real]
 cases = "an MCP session over stdio (a GET answered, a POST refused by the [agent] policy, a SQLite read) and one over HTTP with `kurama mcp --listen` reading its token through the reference exported as KURAMA_REAL_MCP_TOKEN_REF while the client sends KURAMA_REAL_MCP_TOKEN (a GET answered, a POST refused, a request without the token refused with 401), both against the public Swagger Petstore v3, and the audit entries"

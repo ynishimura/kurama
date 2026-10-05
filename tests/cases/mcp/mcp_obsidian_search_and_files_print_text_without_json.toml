@@ -1,0 +1,33 @@
+# Without --json, a search prints one `path:line: text` line per match and
+# files one path per line, both held to allow_paths.
+id = "mcp_obsidian_search_and_files_print_text_without_json"
+feature = "mcp"
+
+[combination]
+command = "obsidian-search"
+output = "text"
+
+[input]
+args = ["obsidian", "search", "kurama", "--path", "Wiki", "--limit", "5"]
+then_run = [["obsidian", "files"]]
+config = """
+[obsidian]
+vault = "brain"
+allow_paths = ["Wiki/", "Daily/"]
+cli_path = "{repo}/tests/fakes/obsidian"
+"""
+
+[expect]
+exit_code = 0
+
+[[expect.runs]]
+run = 0
+stderr_empty = true
+obsidian_calls = ["vault=brain\tsearch:context\tquery=kurama\tpath=Wiki\tlimit=5\tformat=json"]
+stdout = { equals = "Wiki/kurama.md:1: # kurama\nWiki/kurama.md:3: kurama reads the vault through the Obsidian CLI.\nWiki/kurama.md:5: Kurama never writes.\n" }
+
+[[expect.runs]]
+run = 1
+stderr_empty = true
+obsidian_calls = ["vault=brain\tfiles\tfolder=Wiki", "vault=brain\tfiles\tfolder=Daily"]
+stdout = { equals = "Wiki/kurama.md\nDaily/2026-10-05.md\n" }

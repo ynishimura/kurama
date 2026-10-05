@@ -1,0 +1,33 @@
+# A note outside allow_paths is refused before the CLI runs: the agent gets
+# the OBSIDIAN_PATH_REFUSED error document naming the allowed folders, and the
+# CLI is never called.
+id = "mcp_obsidian_read_refuses_a_path_outside_allow_paths"
+feature = "mcp"
+
+[combination]
+command = "mcp"
+transport = "stdio"
+tool = "obsidian_read"
+path = "outside"
+
+[input]
+args = ["mcp"]
+stdin = """
+{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"obsidian_read","arguments":{"path":"Private/secret.md"}}}
+"""
+config = """
+[obsidian]
+vault = "brain"
+allow_paths = ["Wiki/", "Daily/"]
+cli_path = "{repo}/tests/fakes/obsidian"
+"""
+
+[expect]
+exit_code = 0
+stderr_empty = true
+obsidian_calls = []
+stdout = { line_count = 1, line_containing = [
+  ["\"id\":1", "\"isError\":true", "\"code\":\"OBSIDIAN_PATH_REFUSED\"", "\"exit_code\":2", "is outside [obsidian] allow_paths", "inside one of: Wiki/, Daily/"],
+] }
+stdout_excludes = ["never show this line"]
+files_written = ["home/.local/state/kurama/audit.jsonl"]

@@ -90,6 +90,9 @@ pub enum ErrorCode {
     ApiGraphqlError,
     AgentInstallFailed,
     McpListenFailed,
+    ObsidianPathRefused,
+    ObsidianUnavailable,
+    ObsidianFailed,
 }
 
 /// A hint and what kind it is. The distinction is the point: text that is the
@@ -191,6 +194,9 @@ impl ErrorCode {
             Self::ApiGraphqlError => "API_GRAPHQL_ERROR",
             Self::AgentInstallFailed => "AGENT_INSTALL_FAILED",
             Self::McpListenFailed => "MCP_LISTEN_FAILED",
+            Self::ObsidianPathRefused => "OBSIDIAN_PATH_REFUSED",
+            Self::ObsidianUnavailable => "OBSIDIAN_UNAVAILABLE",
+            Self::ObsidianFailed => "OBSIDIAN_FAILED",
         }
     }
 
@@ -215,14 +221,16 @@ impl ErrorCode {
             | Self::SecretInvalid
             | Self::DbInvalid
             | Self::PresetNotFound
-            | Self::S3Invalid => 2,
+            | Self::S3Invalid
+            | Self::ObsidianPathRefused => 2,
             Self::MfaTokenUnavailable
             | Self::MfaProviderFailed
             | Self::SessionCacheError
             | Self::OAuthLoginRequired
             | Self::TokenStoreError
             | Self::SecretUnavailable
-            | Self::AgentPolicyDenied => 3,
+            | Self::AgentPolicyDenied
+            | Self::ObsidianUnavailable => 3,
             Self::StsAccessDenied
             | Self::StsInvalidMfaToken
             | Self::StsInvalidCredentials
@@ -251,6 +259,7 @@ impl ErrorCode {
             | Self::ConfigWriteFailed
             | Self::AgentInstallFailed
             | Self::McpListenFailed
+            | Self::ObsidianFailed
             | Self::BrowserFailed
             | Self::S3Failed => 1,
         }
@@ -593,6 +602,17 @@ impl ErrorCode {
             Self::McpListenFailed => {
                 "choose another [mcp] listen port, or stop the process holding this one (lsof -nP -iTCP -sTCP:LISTEN)"
             }
+            Self::ObsidianUnavailable => {
+                "start Obsidian and enable Settings > General > Command line interface, or set [obsidian] cli_path to the CLI (/Applications/Obsidian.app/Contents/MacOS/obsidian)"
+            }
+            Self::ObsidianPathRefused => {
+                let Some(refused) = error.chain().find_map(|cause| {
+                    cause.downcast_ref::<crate::domain::functions::obsidian::PathRefused>()
+                }) else {
+                    return Hint::Derived(None);
+                };
+                return Hint::derived(refused.hint());
+            }
             Self::AgentPolicyDenied => {
                 "ask a person whether this call may be made, then rerun it with --confirm; to allow it for every agent run, widen [agent] or [api.<name>.agent] in config.toml"
             }
@@ -664,6 +684,23 @@ impl ErrorCode {
                 .is_some()
             {
                 return Self::McpListenFailed;
+            }
+            if cause
+                .downcast_ref::<crate::domain::functions::obsidian::PathRefused>()
+                .is_some()
+            {
+                return Self::ObsidianPathRefused;
+            }
+            if let Some(error) =
+                cause.downcast_ref::<crate::adapters::obsidian_cli::ObsidianCliError>()
+            {
+                use crate::adapters::obsidian_cli::ObsidianCliError;
+                return match error {
+                    ObsidianCliError::NotRunnable { .. } | ObsidianCliError::NoAnswer { .. } => {
+                        Self::ObsidianUnavailable
+                    }
+                    ObsidianCliError::Failed { .. } => Self::ObsidianFailed,
+                };
             }
             if let Some(error) = cause.downcast_ref::<ApiError>() {
                 return match error {
@@ -1122,6 +1159,28 @@ mod tests {
                 }
                 .into(),
                 ErrorCode::McpListenFailed,
+                1,
+            ),
+            (
+                crate::domain::functions::obsidian::PathRefused::Outside {
+                    path: "Private/a.md".into(),
+                    allowed: vec!["Wiki/".into()],
+                }
+                .into(),
+                ErrorCode::ObsidianPathRefused,
+                2,
+            ),
+            (
+                crate::adapters::obsidian_cli::ObsidianCliError::NoAnswer { seconds: 20 }.into(),
+                ErrorCode::ObsidianUnavailable,
+                3,
+            ),
+            (
+                crate::adapters::obsidian_cli::ObsidianCliError::Failed {
+                    message: "Vault not found.".into(),
+                }
+                .into(),
+                ErrorCode::ObsidianFailed,
                 1,
             ),
             (ApiError::Jq("bad".into()).into(), ErrorCode::JqError, 1),

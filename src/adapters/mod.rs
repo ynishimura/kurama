@@ -22,7 +22,8 @@
 //! - `secret_resolver` - op:// and aws-*:// references resolved to their values
 //! - `openapi` - OpenAPI documents (JSON / YAML) and their cache
 //! - `mcp_http` - the HTTP listener of `kurama mcp --listen`
-//! - `own_command` - kurama run again as a child, for `kurama mcp`
+//! - `own_command` - kurama run again as a child, for `kurama mcp`, and the Obsidian CLI
+//! - `obsidian_cli` - the official Obsidian CLI, for `kurama obsidian`
 //! - `clipboard` - copy text to the clipboard
 //! - `editor` - edit a text in `$EDITOR`
 //! - `request_history` - the explorer's request history file
@@ -46,6 +47,7 @@ pub mod jq;
 pub mod keychain;
 pub mod mcp_http;
 pub mod oauth;
+pub mod obsidian_cli;
 pub mod openapi;
 pub mod own_command;
 pub mod profile;

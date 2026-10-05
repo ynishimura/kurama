@@ -1,4 +1,4 @@
-//! The audit entry of this process: opened when `api`, `exec`, `db` or `data` starts, filled in as the call learns its request and status, and appended once when it ends.
+//! The audit entry of this process: opened when `api`, `exec`, `db`, `data` or `obsidian` starts, filled in as the call learns its request and status, and appended once when it ends.
 //!
 //! `[audit] enabled` decides whether a run is recorded: absent, only a run
 //! under `KURAMA_AGENT` is. The log is a record, never a requirement: an

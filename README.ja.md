@@ -606,6 +606,28 @@ Funnel を使うには、tailnet で HTTPS 証明書を有効にし、ポリシ�
 
 kurama は呼び出し元を区別しません。エージェントは自分専用にし（電話番号、ウィジェット、共有を付けない）、応答がそのサービスに届いてよい API だけを公開してください。
 
+#### Obsidian の vault（`kurama obsidian`）
+<!-- en: 21a302d94673 -->
+
+`[obsidian]` セクションがあると、kurama は公式の Obsidian CLI（Obsidian 1.12.7 以降、Settings > General > Command line interface）を通して Obsidian の vault を読み、`kurama mcp` に `obsidian_search`、`obsidian_read`、`obsidian_files` のツールが加わります。検索と読み取りの対象は `allow_paths` に挙げたフォルダだけです。vault には一切書き込まず、CLI のコマンドも `search:context`、`read`、`files` 以外は実行しません。Obsidian が起動している必要があります。
+
+```toml
+[obsidian]
+vault = "obsidian-brain"
+allow_paths = ["Wiki/", "Daily/"]
+cli_path = "/Applications/Obsidian.app/Contents/MacOS/obsidian"  # default "obsidian"
+max_read_bytes = 65536   # a longer note is cut and says so
+timeout = 20             # seconds per CLI call
+```
+
+```bash
+kurama obsidian search "kurama" --path Wiki --json   # {"matches": [{"path", "line", "text"}]}
+kurama obsidian read Wiki/kurama.md --json           # {"path", "content", "truncated"}
+kurama obsidian files Daily                          # one path per line
+```
+
+絶対パス、`..` を含むパス、`allow_paths` の外のパスは、CLI を実行する前に `OBSIDIAN_PATH_REFUSED` になります。`--listen` 経由で読んだノートは、ほかのツールの結果と同じくクライアントをホストするサービスのログに残ります。そこに渡ってよいフォルダだけを挙げてください。
+
 ### シークレットの参照
 <!-- en: 5941e1abe37a -->
 

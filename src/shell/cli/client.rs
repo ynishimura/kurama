@@ -63,6 +63,7 @@ pub enum JsonErrorKind {
     Token,
     Config,
     Preset,
+    Obsidian,
 }
 
 impl JsonErrorKind {
@@ -74,6 +75,7 @@ impl JsonErrorKind {
         Self::Token,
         Self::Config,
         Self::Preset,
+        Self::Obsidian,
     ];
 
     /// The subcommand this kind names.
@@ -86,6 +88,7 @@ impl JsonErrorKind {
             Self::Token => "token",
             Self::Config => "config",
             Self::Preset => "preset",
+            Self::Obsidian => "obsidian",
         }
     }
 
@@ -105,9 +108,12 @@ impl JsonErrorKind {
         match self {
             Self::Client(kind) => kind.usage_code(),
             Self::Api => ErrorCode::ApiArgumentInvalid,
-            Self::Status | Self::Env | Self::Token | Self::Config | Self::Preset => {
-                ErrorCode::ArgumentInvalid
-            }
+            Self::Status
+            | Self::Env
+            | Self::Token
+            | Self::Config
+            | Self::Preset
+            | Self::Obsidian => ErrorCode::ArgumentInvalid,
         }
     }
 
@@ -366,7 +372,9 @@ mod tests {
                 .iter()
                 .map(|kind| kind.as_str())
                 .collect::<Vec<_>>(),
-            ["api", "status", "env", "token", "config", "preset"]
+            [
+                "api", "status", "env", "token", "config", "preset", "obsidian"
+            ]
         );
         assert!(JsonErrorKind::Client(ClientKind::Data).reports_text_usage());
         assert_eq!(
@@ -387,6 +395,7 @@ mod tests {
             JsonErrorKind::Token,
             JsonErrorKind::Config,
             JsonErrorKind::Preset,
+            JsonErrorKind::Obsidian,
         ] {
             assert_eq!(kind.usage_code(), ErrorCode::ArgumentInvalid);
         }

@@ -44,6 +44,10 @@ aws_profile = ""
 
 [s3."*"]
 aws_profile = ""
+
+[obsidian]
+vault = ""
+allow_paths = []
 "#;
 
 /// The sections that read `key`, as they are written in config.toml

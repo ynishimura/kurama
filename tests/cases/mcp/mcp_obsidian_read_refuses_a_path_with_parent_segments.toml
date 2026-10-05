@@ -1,0 +1,34 @@
+# A path that starts inside an allowed folder and climbs out of it with `..`
+# is refused before the CLI runs, as is an absolute one.
+id = "mcp_obsidian_read_refuses_a_path_with_parent_segments"
+feature = "mcp"
+
+[combination]
+command = "mcp"
+transport = "stdio"
+tool = "obsidian_read"
+path = "parent-segments"
+
+[input]
+args = ["mcp"]
+stdin = """
+{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"obsidian_read","arguments":{"path":"Wiki/../Private/secret.md"}}}
+{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"obsidian_read","arguments":{"path":"/Wiki/kurama.md"}}}
+"""
+config = """
+[obsidian]
+vault = "brain"
+allow_paths = ["Wiki/", "Daily/"]
+cli_path = "{repo}/tests/fakes/obsidian"
+"""
+
+[expect]
+exit_code = 0
+stderr_empty = true
+obsidian_calls = []
+stdout = { line_count = 2, line_containing = [
+  ["\"id\":1", "\"isError\":true", "\"code\":\"OBSIDIAN_PATH_REFUSED\"", "holds `..`"],
+  ["\"id\":2", "\"isError\":true", "\"code\":\"OBSIDIAN_PATH_REFUSED\"", "it is absolute"],
+] }
+stdout_excludes = ["never show this line"]
+files_written = ["home/.local/state/kurama/audit.jsonl"]

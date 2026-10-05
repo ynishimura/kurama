@@ -390,6 +390,8 @@ struct Expect {
     open_calls_containing: Option<Vec<Vec<String>>>,
     /// Systems Manager operations, in order; `[]` is none.
     ssm_calls: Option<Vec<String>>,
+    /// The Obsidian CLI argv of each call, its arguments joined by a tab.
+    obsidian_calls: Option<Vec<String>>,
     api_calls: Option<ApiCalls>,
     /// Every API request of the run is validly signed for this service and
     /// region, however many there are: for a run whose request count varies.
@@ -826,6 +828,7 @@ impl Expect {
             open_calls,
             open_calls_containing,
             ssm_calls,
+            obsidian_calls,
             api_calls,
             api_signed,
             api_requests_matching,
@@ -868,6 +871,7 @@ impl Expect {
             || open_calls.is_some()
             || open_calls_containing.is_some()
             || ssm_calls.is_some()
+            || obsidian_calls.is_some()
             || api_calls.is_some()
             || api_signed.is_some()
             || !api_requests_matching.is_empty()
@@ -903,6 +907,7 @@ impl Expect {
                 self.open_calls_containing.is_some(),
             ),
             ("ssm_calls", self.ssm_calls.is_some()),
+            ("obsidian_calls", self.obsidian_calls.is_some()),
             ("api_calls", self.api_calls.is_some()),
             ("api_signed", self.api_signed.is_some()),
             (
@@ -1447,6 +1452,10 @@ fn apply_block(v: &mut Verification, expect: &Expect, prefix: &str) {
     if let Some(operations) = &expect.ssm_calls {
         let operations: Vec<&str> = operations.iter().map(String::as_str).collect();
         v.keyed(&key("ssm_calls"), |v| v.expect_ssm_calls(&operations));
+    }
+    if let Some(calls) = &expect.obsidian_calls {
+        let calls: Vec<&str> = calls.iter().map(String::as_str).collect();
+        v.keyed(&key("obsidian_calls"), |v| v.expect_obsidian_calls(&calls));
     }
     if let Some(calls) = &expect.api_calls {
         match &calls.sigv4 {

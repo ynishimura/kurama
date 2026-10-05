@@ -1,0 +1,26 @@
+# `kurama obsidian read --json` outside allow_paths: one error document on
+# stderr, OBSIDIAN_PATH_REFUSED (exit 2), whose hint names the folders that
+# may be read; the CLI is never called and stdout stays empty.
+id = "mcp_obsidian_read_json_refusal_names_the_allowed_folders"
+feature = "mcp"
+
+[combination]
+command = "obsidian-read"
+output = "json"
+path = "outside"
+
+[input]
+args = ["obsidian", "read", "Private/secret.md", "--json"]
+config = """
+[obsidian]
+vault = "brain"
+allow_paths = ["Wiki/", "Daily/"]
+cli_path = "{repo}/tests/fakes/obsidian"
+"""
+
+[expect]
+exit_code = 2
+json_error = { code = "OBSIDIAN_PATH_REFUSED", exit = 2 }
+stderr_json = { "/error/hint" = "name a path relative to the vault root inside one of: Wiki/, Daily/" }
+stdout_lines = 0
+obsidian_calls = []

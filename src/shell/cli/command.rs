@@ -92,6 +92,9 @@ pub enum CliCommand {
     /// Agent Skills of kurama and of every API, written to a directory; it
     /// reads the configuration for the APIs
     AgentInstall(super::commands::agent_install::AgentInstall),
+    /// `obsidian search|read|files [--json]`: the `[obsidian]` vault through
+    /// the Obsidian CLI, inside `allow_paths` only
+    Obsidian(super::commands::obsidian::ObsidianCommand),
 }
 
 impl CliCommand {
@@ -124,7 +127,8 @@ impl CliCommand {
             | Self::S3(_)
             | Self::AgentReady { .. }
             | Self::Mcp { .. }
-            | Self::AgentInstall(_) => true,
+            | Self::AgentInstall(_)
+            | Self::Obsidian(_) => true,
         }
     }
 
@@ -139,6 +143,7 @@ impl CliCommand {
             Self::S3(command) => command.json,
             Self::AgentReady { json } => *json,
             Self::AgentInstall(install) => install.json,
+            Self::Obsidian(command) => command.json,
             // Over HTTP stdout carries nothing, and stderr is the request log.
             Self::Mcp { listen } => !listen,
             _ => false,

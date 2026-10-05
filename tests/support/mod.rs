@@ -18,7 +18,9 @@
 //!   or 503 when the scenario says the server is down.
 //! - 1Password is `tests/fakes/op`, the browser is `tests/fakes/open`, the
 //!   clipboard is `tests/fakes/pbcopy` (and `xclip`) and `$EDITOR` is
-//!   `tests/fakes/editor`; each logs what it was given instead of doing
+//!   `tests/fakes/editor` and the Obsidian CLI is `tests/fakes/obsidian`
+//!   (answering from `tests/fixtures/obsidian-vault`); each logs what it was
+//!   given instead of doing
 //!   anything (the editor also replaces the file with a fixed body). The fake
 //!   browser answers an OAuth authorization request by sending the redirect
 //!   with a code.
@@ -874,6 +876,8 @@ pub struct Run {
     pub spec_calls: Vec<SpecCall>,
     pub op_calls: Vec<String>,
     pub open_calls: Vec<String>,
+    /// The Obsidian CLI argv of each call, its arguments joined by a tab.
+    pub obsidian_calls: Vec<String>,
     /// Texts handed to the fake clipboard.
     pub clipboard_calls: Vec<String>,
     /// The file contents handed to the fake `$EDITOR`.
@@ -994,9 +998,10 @@ pub struct Verification {
 
 /// Files the harness itself owns: their writes are the record, not a leak.
 /// `completion-stderr.log` has its own check, which prints what landed in it.
-const FAKE_LOGS: [&str; 5] = [
+const FAKE_LOGS: [&str; 6] = [
     "op.log",
     "open.log",
+    "obsidian.log",
     "pbcopy.log",
     "editor.log",
     "completion-stderr.log",
@@ -1020,6 +1025,7 @@ pub struct Sandbox {
     kurama_config: PathBuf,
     op_log: PathBuf,
     open_log: PathBuf,
+    obsidian_log: PathBuf,
     pbcopy_log: PathBuf,
     editor_log: PathBuf,
     /// Where `init zsh` sends the completing child's stderr, so a diagnostic
@@ -1047,6 +1053,7 @@ pub struct Sandbox {
     seen_requests: usize,
     seen_op: usize,
     seen_open: usize,
+    seen_obsidian: usize,
     seen_pbcopy: usize,
     seen_editor: usize,
     /// The statuses the fake description endpoint answered, in order.
@@ -1192,6 +1199,7 @@ impl Sandbox {
         Self {
             op_log: dir.path().join("op.log"),
             open_log: dir.path().join("open.log"),
+            obsidian_log: dir.path().join("obsidian.log"),
             pbcopy_log: dir.path().join("pbcopy.log"),
             editor_log: dir.path().join("editor.log"),
             completion_stderr,
@@ -1221,6 +1229,7 @@ impl Sandbox {
             seen_requests: 0,
             seen_op: 0,
             seen_open: 0,
+            seen_obsidian: 0,
             seen_pbcopy: 0,
             seen_editor: 0,
             spec_statuses,
@@ -1293,6 +1302,10 @@ impl Sandbox {
             ),
             ("KURAMA_FAKE_OP_LOG".into(), self.op_log.clone().into()),
             ("KURAMA_FAKE_OPEN_LOG".into(), self.open_log.clone().into()),
+            (
+                "KURAMA_FAKE_OBSIDIAN_LOG".into(),
+                self.obsidian_log.clone().into(),
+            ),
             (
                 "KURAMA_FAKE_PBCOPY_LOG".into(),
                 self.pbcopy_log.clone().into(),
@@ -1682,6 +1695,7 @@ impl Sandbox {
             }
         }
         let open_calls = new_lines(&self.open_log, &mut self.seen_open);
+        let obsidian_calls = new_lines(&self.obsidian_log, &mut self.seen_obsidian);
         let exported_variables = exported_variables(&stdout);
         Run {
             command,
@@ -1698,6 +1712,7 @@ impl Sandbox {
             spec_calls,
             op_calls,
             open_calls,
+            obsidian_calls,
             clipboard_calls,
             editor_calls,
             exported_variables,
@@ -1840,6 +1855,7 @@ impl Sandbox {
                         || !run.spec_calls.is_empty()
                         || !run.op_calls.is_empty()
                         || !run.open_calls.is_empty()
+                        || !run.obsidian_calls.is_empty()
                         || !run.clipboard_calls.is_empty()
                         || !run.editor_calls.is_empty()
                 })
@@ -2628,6 +2644,17 @@ impl Verification {
             &format!("the browser is opened on exactly {urls:?}"),
             calls == urls,
             format!("observed {calls:?}"),
+        )
+    }
+
+    /// The Obsidian CLI calls of the run, exactly and in order, each argv
+    /// joined by a tab.
+    pub fn expect_obsidian_calls(&mut self, calls: &[&str]) -> &mut Self {
+        let observed = self.focused().obsidian_calls.clone();
+        self.check(
+            &format!("the Obsidian CLI is called exactly with {calls:?}"),
+            observed == calls,
+            format!("observed {observed:?}"),
         )
     }
 

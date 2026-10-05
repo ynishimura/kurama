@@ -1,0 +1,27 @@
+# Without [obsidian], tools/list offers no obsidian_* tool and a call of one
+# is refused before anything runs.
+id = "mcp_obsidian_tools_are_absent_without_an_obsidian_section"
+feature = "mcp"
+
+[combination]
+command = "mcp"
+transport = "stdio"
+obsidian = "absent"
+
+[input]
+args = ["mcp"]
+stdin = """
+{"jsonrpc":"2.0","id":1,"method":"tools/list"}
+{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"obsidian_read","arguments":{"path":"Wiki/kurama.md"}}}
+"""
+
+[expect]
+exit_code = 0
+stderr_empty = true
+obsidian_calls = []
+no_files_written = true
+stdout = { line_count = 2, line_containing = [
+  ["\"id\":1", "\"name\":\"call_api\"", "\"name\":\"query_db\""],
+  ["\"id\":2", "\"isError\":true", "no tool obsidian_read"],
+] }
+stdout_excludes = ["\"name\":\"obsidian_"]

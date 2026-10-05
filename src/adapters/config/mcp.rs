@@ -14,7 +14,7 @@ use std::net::SocketAddr;
 use serde::{Deserialize, Serialize};
 
 use crate::adapters::error::CoreError;
-use crate::domain::functions::mcp::TOOL_NAMES;
+use crate::domain::functions::mcp::{TOOL_NAMES, reads_obsidian};
 use crate::domain::types::SecretRef;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -102,12 +102,30 @@ impl McpConfig {
         Ok(())
     }
 
-    /// The tools offered.
-    pub fn exposed_tools(&self) -> Vec<String> {
+    /// The tools offered; without an `[obsidian]` section, every tool but
+    /// those that read it.
+    pub fn exposed_tools(&self, obsidian: bool) -> Vec<String> {
         match &self.tools {
             Some(tools) => tools.clone(),
-            None => TOOL_NAMES.map(str::to_owned).to_vec(),
+            None => TOOL_NAMES
+                .into_iter()
+                .filter(|tool| obsidian || !reads_obsidian(tool))
+                .map(str::to_owned)
+                .collect(),
         }
+    }
+
+    /// A tool `tools` names that reads a vault no `[obsidian]` section names.
+    pub fn obsidian_tool_without_a_vault(&self, obsidian: bool) -> Option<&str> {
+        (!obsidian)
+            .then(|| {
+                self.tools
+                    .iter()
+                    .flatten()
+                    .find(|tool| reads_obsidian(tool))
+            })
+            .flatten()
+            .map(String::as_str)
     }
 
     /// The address and token `--listen` uses, or the key that is missing.
@@ -144,7 +162,8 @@ mod tests {
     #[test]
     fn without_a_section_every_tool_is_offered_and_nothing_listens() {
         let config = Config::parse("").unwrap();
-        assert_eq!(config.mcp.exposed_tools().len(), 7);
+        assert_eq!(config.mcp.exposed_tools(false).len(), 7);
+        assert_eq!(config.mcp.exposed_tools(true).len(), 10);
         assert_eq!(config.mcp.call_timeout, 600);
         assert_eq!(config.mcp.max_concurrent_calls, 2);
         let missing = config.mcp.listening().err().unwrap();
@@ -164,7 +183,7 @@ mod tests {
         .unwrap();
         let listen = config.mcp.listening().unwrap();
         assert!(listen.address.ip().is_loopback());
-        assert_eq!(config.mcp.exposed_tools(), ["call_api"]);
+        assert_eq!(config.mcp.exposed_tools(false), ["call_api"]);
         let ipv6 =
             Config::parse("[mcp]\nlisten = \"[::1]:8807\"\ntoken = \"op://a/b/c\"\n").unwrap();
         assert!(ipv6.mcp.listening().is_ok());
@@ -183,6 +202,10 @@ mod tests {
     #[case("listen = \"localhost:8807\"", "is not an address and port")]
     #[case("token = \"plain-token-value\"", "token is the value itself")]
     #[case("tools = [\"exec\"]", "tools names \"exec\"")]
+    #[case(
+        "tools = [\"obsidian_read\"]",
+        "tools names \"obsidian_read\", which reads the vault an [obsidian] section names"
+    )]
     #[case("call_timeout = 0", "call_timeout must be at least 1 second")]
     #[case("max_concurrent_calls = 0", "max_concurrent_calls must be at least 1")]
     fn a_value_kurama_cannot_use_is_a_configuration_error(

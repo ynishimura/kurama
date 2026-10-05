@@ -32,7 +32,7 @@ pub enum Incoming {
 
 /// Every tool this server can offer, in the order `tools/list` lists them;
 /// `[mcp] tools` names a subset.
-pub const TOOL_NAMES: [&str; 7] = [
+pub const TOOL_NAMES: [&str; 10] = [
     "ready",
     "list_apis",
     "list_operations",
@@ -40,7 +40,16 @@ pub const TOOL_NAMES: [&str; 7] = [
     "call_api",
     "query_data",
     "query_db",
+    "obsidian_search",
+    "obsidian_read",
+    "obsidian_files",
 ];
+
+/// The tools that read the `[obsidian]` vault: offered only when it is
+/// configured.
+pub fn reads_obsidian(tool: &str) -> bool {
+    tool.starts_with("obsidian_")
+}
 
 /// Read one line of the stdio transport. `exposed` names the tools offered.
 pub fn read_message(line: &str, exposed: &[String]) -> Incoming {
@@ -233,6 +242,32 @@ fn every_tool() -> Value {
                 "request": { "type": "object", "description": "{\"operation\": ..., \"args\": {...}}" },
             }), &["database", "request"]),
         },
+        {
+            "name": "obsidian_search",
+            "description": "Search the [obsidian] vault's allowed folders: each matching line with \
+                            its note path and line number (kurama obsidian search --json). Read only.",
+            "inputSchema": object(json!({
+                "query": name("text to search for"),
+                "path": name("an allowed folder, or one inside it; every allowed folder when absent"),
+                "limit": { "type": "integer", "minimum": 1, "description": "notes per folder searched (default 20)" },
+            }), &["query"]),
+        },
+        {
+            "name": "obsidian_read",
+            "description": "Read one note of the [obsidian] vault inside its allowed folders: \
+                            {path, content, truncated} (kurama obsidian read --json). Read only.",
+            "inputSchema": object(json!({
+                "path": name("the note's path from the vault root, such as Wiki/kurama.md"),
+            }), &["path"]),
+        },
+        {
+            "name": "obsidian_files",
+            "description": "List the notes of the [obsidian] vault's allowed folders \
+                            (kurama obsidian files --json). Read only.",
+            "inputSchema": object(json!({
+                "folder": name("an allowed folder, or one inside it; every allowed folder when absent"),
+            }), &[]),
+        },
     ])
 }
 
@@ -299,6 +334,33 @@ pub fn tool_run(name: &str, arguments: &Value) -> Result<ToolRun, String> {
                 args,
                 stdin: Some(request),
             }
+        }
+        "obsidian_search" => {
+            let mut args = owned(&["obsidian", "search", "--json"]);
+            if let Some(path) = optional("path") {
+                args.push(format!("--path={path}"));
+            }
+            if let Some(limit) = arguments.get("limit") {
+                let limit = limit
+                    .as_u64()
+                    .filter(|limit| *limit > 0)
+                    .ok_or_else(|| format!("{name}: `limit` is a positive integer"))?;
+                args.push(format!("--limit={limit}"));
+            }
+            args.extend(["--".into(), text("query")?]);
+            run(args)
+        }
+        "obsidian_read" => {
+            let mut args = owned(&["obsidian", "read", "--json", "--"]);
+            args.push(text("path")?);
+            run(args)
+        }
+        "obsidian_files" => {
+            let mut args = owned(&["obsidian", "files", "--json"]);
+            if let Some(folder) = optional("folder") {
+                args.extend(["--".into(), folder.to_owned()]);
+            }
+            run(args)
         }
         _ => return Err(format!("no tool {name}")),
     })
@@ -443,12 +505,21 @@ mod tests {
         assert_eq!(names, TOOL_NAMES);
         let arguments = json!({
             "api": "a", "operation": "o", "target": "/t", "database": "d",
-            "request": {"operation": "query", "args": {"sql": "SELECT 1"}}
+            "request": {"operation": "query", "args": {"sql": "SELECT 1"}},
+            "query": "q", "path": "Wiki/a.md"
         });
         for name in names {
             assert!(tool_run(name, &arguments).is_ok(), "{name}");
         }
         assert_eq!(tool_run("exec", &arguments), Err("no tool exec".into()));
+        let vault_readers: Vec<&str> = TOOL_NAMES
+            .into_iter()
+            .filter(|tool| reads_obsidian(tool))
+            .collect();
+        assert_eq!(
+            vault_readers,
+            ["obsidian_search", "obsidian_read", "obsidian_files"]
+        );
     }
 
     #[test]
@@ -531,6 +602,37 @@ mod tests {
         .unwrap();
         assert_eq!(args(&run), ["db", "--request", "-", "--json", "--", "-d"]);
         assert_eq!(run.stdin.as_deref(), Some(r#"{"operation":"tables"}"#));
+    }
+
+    #[test]
+    fn an_obsidian_value_stays_a_value_after_the_separator() {
+        let run = tool_run(
+            "obsidian_search",
+            &json!({"query": "--confirm x eval code=1", "path": "-Wiki", "limit": 3}),
+        )
+        .unwrap();
+        assert_eq!(
+            args(&run),
+            [
+                "obsidian",
+                "search",
+                "--json",
+                "--path=-Wiki",
+                "--limit=3",
+                "--",
+                "--confirm x eval code=1"
+            ]
+        );
+        let run = tool_run("obsidian_read", &json!({"path": "-v"})).unwrap();
+        assert_eq!(args(&run), ["obsidian", "read", "--json", "--", "-v"]);
+        let run = tool_run("obsidian_files", &json!({})).unwrap();
+        assert_eq!(args(&run), ["obsidian", "files", "--json"]);
+        let run = tool_run("obsidian_files", &json!({"folder": "Wiki"})).unwrap();
+        assert_eq!(args(&run), ["obsidian", "files", "--json", "--", "Wiki"]);
+        assert_eq!(
+            tool_run("obsidian_search", &json!({"query": "q", "limit": 0})),
+            Err("obsidian_search: `limit` is a positive integer".into())
+        );
     }
 
     #[test]

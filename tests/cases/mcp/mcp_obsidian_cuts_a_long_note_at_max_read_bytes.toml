@@ -1,0 +1,33 @@
+# A note longer than max_read_bytes is cut there and says so: the first 20
+# bytes, truncated true.
+id = "mcp_obsidian_cuts_a_long_note_at_max_read_bytes"
+feature = "mcp"
+
+[combination]
+command = "mcp"
+transport = "stdio"
+tool = "obsidian_read"
+note = "longer-than-max-read-bytes"
+
+[input]
+args = ["mcp"]
+stdin = """
+{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"obsidian_read","arguments":{"path":"Wiki/kurama.md"}}}
+"""
+config = """
+[obsidian]
+vault = "brain"
+allow_paths = ["Wiki/"]
+cli_path = "{repo}/tests/fakes/obsidian"
+max_read_bytes = 20
+"""
+
+[expect]
+exit_code = 0
+stderr_empty = true
+obsidian_calls = ["vault=brain\tread\tpath=Wiki/kurama.md"]
+stdout = { line_count = 1, line_containing = [
+  ["\"id\":1", "\"isError\":false", "\"content\":\"# kurama\\n\\nkurama rea\"", "\"truncated\":true"],
+] }
+stdout_excludes = ["kurama read", "never writes"]
+files_written = ["home/.local/state/kurama/audit.jsonl"]

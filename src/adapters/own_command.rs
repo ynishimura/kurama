@@ -1,4 +1,4 @@
-//! A program run for `kurama mcp` (kurama itself, one subcommand): stdin fed and closed or null, stdout and stderr captured, killed at a deadline.
+//! A program run to its end: kurama itself for `kurama mcp`, or the Obsidian CLI; stdin fed and closed or null, stdout and stderr captured, killed at a deadline.
 //!
 //! The child never shares this process's stdin: `kurama mcp` reads its
 //! protocol there, and a child that read it would take the next request.

@@ -117,7 +117,7 @@ fn tui_view_update_layout_theme_and_components_are_pure() {
 pub(crate) const FILES_THAT_SPAWN: [Allowed; 7] = [
     (
         "src/adapters/own_command.rs",
-        "kurama itself for `kurama mcp`, with stdin fed or null, both streams captured and a deadline",
+        "kurama itself for `kurama mcp` and the Obsidian CLI, with stdin fed or null, both streams captured and a deadline",
         "a_call_that_does_not_end_is_killed_at_the_deadline",
     ),
     (
