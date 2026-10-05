@@ -364,7 +364,11 @@ describes the flows, not the files.
   after `--` or glued with `=`), and `adapters/own_command.rs` runs this
   binary again with `KURAMA_AGENT=1`, stdin null or the request, and a
   deadline. The policy, the audit entry and the error document are the
-  command line's, not a copy. Files: `cargo xtask map mcp`.
+  command line's, not a copy. `kurama mcp --listen` serves the same tools
+  over Streamable HTTP on the loopback `[mcp] listen` for a cloud client:
+  `domain/functions/mcp_http.rs` decides each response (token first, then
+  `Origin`, path, method, headers, body) and `adapters/mcp_http.rs` only
+  listens with hyper and reads the bounded body. Files: `cargo xtask map mcp`.
 - `.agent/features/<feature>.toml`: hand-written feature map, one file per
   feature holding a single table named after the file, validated by tests and
   `cargo xtask doctor`. The `cargo test` filters are not hand-written: they are

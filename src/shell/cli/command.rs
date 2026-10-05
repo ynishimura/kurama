@@ -84,9 +84,10 @@ pub enum CliCommand {
         /// `--watch`: the activity monitor instead of the listing.
         watch: bool,
     },
-    /// `kurama mcp`: the MCP server on stdio; each tool call is kurama run again
-    /// as an agent, which reads the configuration itself
-    Mcp,
+    /// `kurama mcp [--listen]`: the MCP server on stdio, or over HTTP on the
+    /// `[mcp] listen` address; each tool call is kurama run again as an
+    /// agent, which reads the configuration itself
+    Mcp { listen: bool },
     /// `agent install [--dir DIR] [--offline] [--dry-run] [--json]`: the
     /// Agent Skills of kurama and of every API, written to a directory; it
     /// reads the configuration for the APIs
@@ -108,8 +109,7 @@ impl CliCommand {
             | Self::Inventory
             | Self::Config(_)
             | Self::Preset(_)
-            | Self::Audit { .. }
-            | Self::Mcp => false,
+            | Self::Audit { .. } => false,
             Self::Profile(_)
             | Self::Login { .. }
             | Self::Token { .. }
@@ -123,6 +123,7 @@ impl CliCommand {
             | Self::Tui
             | Self::S3(_)
             | Self::AgentReady { .. }
+            | Self::Mcp { .. }
             | Self::AgentInstall(_) => true,
         }
     }
@@ -138,7 +139,8 @@ impl CliCommand {
             Self::S3(command) => command.json,
             Self::AgentReady { json } => *json,
             Self::AgentInstall(install) => install.json,
-            Self::Mcp => true,
+            // Over HTTP stdout carries nothing, and stderr is the request log.
+            Self::Mcp { listen } => !listen,
             _ => false,
         }
     }

@@ -1,0 +1,51 @@
+# `[mcp] tools` names the tools offered: `tools/list` lists those only, and a
+# call of another one is a refused tool result with nothing run -- no API
+# request and no audit entry -- while a listed one still runs.
+id = "mcp_tools_setting_hides_and_refuses_unlisted_tools"
+feature = "mcp"
+
+[combination]
+command = "mcp"
+transport = "stdio"
+
+[input]
+args = ["mcp"]
+stdin = """
+{"jsonrpc":"2.0","id":1,"method":"tools/list"}
+{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"ready","arguments":{}}}
+{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"query_db","arguments":{"database":"app","request":{"operation":"tables"}}}}
+{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"call_api","arguments":{"api":"pets","target":"/pet/findByStatus?status=available"}}}
+"""
+then_run = [["audit", "--json"]]
+config = """
+[mcp]
+tools = ["list_operations", "call_api"]
+
+[api.pets]
+base_url = "{server}/api"
+
+[db.app]
+engine = "sqlite"
+path = "{repo}/tests/fixtures/db/app.sqlite3"
+"""
+
+[expect]
+exit_code = 0
+files_written = ["home/.local/state/kurama/audit.jsonl"]
+
+[[expect.runs]]
+run = 0
+stderr_empty = true
+api_calls = { count = 1, calls = [{ method = "GET", path = "/api/pet/findByStatus?status=available" }] }
+stdout = { line_count = 4, line_containing = [
+  ["\"id\":1", "\"name\":\"list_operations\"", "\"name\":\"call_api\""],
+  ["\"id\":2", "\"isError\":true", "no tool ready"],
+  ["\"id\":3", "\"isError\":true", "no tool query_db"],
+  ["\"id\":4", "\"isError\":false", "\"status\":200"],
+] }
+stdout_excludes = ["\"name\":\"ready\"", "\"name\":\"list_apis\"", "\"name\":\"describe_operation\"", "\"name\":\"query_data\"", "\"name\":\"query_db\""]
+
+[[expect.runs]]
+run = 1
+api_calls = { count = 0 }
+stdout_json = { "/entries" = { length = 1 }, "/entries/0/command" = "api", "/entries/0/agent" = true, "/entries/0/path" = "/api/pet/findByStatus" }

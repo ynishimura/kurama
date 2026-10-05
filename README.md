@@ -711,6 +711,46 @@ Claude Code:
 claude mcp add kurama -- kurama mcp
 ```
 
+#### Remote MCP clients (`kurama mcp --listen`)
+
+An agent that runs in the cloud cannot start `kurama mcp` on your Mac.
+`kurama mcp --listen` serves the same tools over MCP Streamable HTTP on a
+loopback address, and Tailscale Funnel gives it an HTTPS URL. Every request
+carries a fixed token, kept in a secret store:
+
+```toml
+# ~/.config/kurama/remote.toml, named by KURAMA_CONFIG_PATH
+[mcp]
+listen = "127.0.0.1:8807"
+token = "op://Agent/kurama-mcp-token/credential"
+tools = ["list_operations", "describe_operation", "call_api"]
+call_timeout = 25
+
+[api.example]          # only the APIs the agent may reach
+base_url = "https://api.example.com"
+
+[api.example.agent]
+allow_paths = ["/v1/items*"]
+```
+
+```bash
+KURAMA_CONFIG_PATH=~/.config/kurama/remote.toml kurama mcp --listen
+tailscale funnel --bg 8807     # https://<machine>.<tailnet>.ts.net/mcp
+```
+
+| Client | Works | How the token is passed |
+| --- | --- | --- |
+| ElevenLabs Agents | yes | the MCP server's secret token |
+| xAI API (Grok) | yes | `authorization` of Remote MCP Tools |
+| Claude API | yes | `authorization_token` of the MCP connector |
+| OpenAI API | yes | `authorization` of the remote MCP tool |
+| claude.ai | conditionally | a custom connector with "No sign-in" and an `Authorization: Bearer <token>` request header (a beta some organizations see) |
+| ChatGPT | no | it offers OAuth or nothing, no fixed header |
+
+kurama does not tell callers apart: keep the agent to yourself (no phone
+number, widget or sharing), and expose only APIs whose responses may reach
+the service hosting it.
+
 ### Secret references
 
 These keys hold secrets: `[auth.*] client_secret`, `[auth.*] token`,

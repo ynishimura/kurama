@@ -1,18 +1,38 @@
 [mcp]
-summary = "`kurama mcp`: an MCP server on stdio whose tools (ready, list_apis, list_operations, describe_operation, call_api, query_data, query_db) run kurama's own JSON commands as an agent's, so the [agent] policy, the audit log and the error document are the command line's"
+summary = "`kurama mcp`: an MCP server on stdio, or over Streamable HTTP with --listen, whose tools (ready, list_apis, list_operations, describe_operation, call_api, query_data, query_db) run kurama's own JSON commands as an agent's, so the [agent] policy, the audit log and the error document are the command line's"
 entry = "src/shell/cli/commands/mcp.rs"
 files = [
   "src/shell/cli/commands/mcp.rs",
   "src/domain/functions/mcp.rs",
+  "src/domain/functions/mcp_http.rs",
+  "src/adapters/mcp_http.rs",
   "src/adapters/own_command.rs",
+  "tests/scenarios/mcp.rs",
   "docs/agents/kurama/mcp.md",
 ]
 scenarios = [
   "mcp_lists_the_tools_and_calls_an_api",
   "mcp_returns_the_error_document_when_a_person_has_to_act",
+  "mcp_http_answers_tools_list_with_the_token",
+  "mcp_http_accepts_the_token_with_and_without_the_bearer_prefix",
+  "mcp_http_runs_call_api_as_an_agent_and_records_the_audit_entry",
+  "mcp_http_refuses_a_missing_or_wrong_token_and_runs_nothing",
+  "mcp_http_answers_401_before_revealing_the_path_or_method",
+  "mcp_http_refuses_a_request_with_an_origin",
+  "mcp_http_answers_a_notification_with_202",
+  "mcp_http_refuses_a_body_that_is_not_one_json_rpc_message",
+  "mcp_http_refuses_an_unknown_protocol_version",
+  "mcp_http_refuses_a_body_over_the_limit",
+  "mcp_http_refuses_to_listen_on_a_non_loopback_address",
+  "mcp_http_refuses_a_literal_token",
+  "mcp_http_reports_a_port_in_use_as_listen_failed",
+  "mcp_http_token_never_appears_in_output_or_logs",
+  "mcp_tools_setting_hides_and_refuses_unlisted_tools",
+  "mcp_tools_setting_refuses_an_unknown_tool_name",
+  "mcp_call_timeout_ends_the_call_and_serves_the_next",
 ]
-depends_on = ["cli-entry", "api-client", "agent-policy", "audit", "database", "local-analytics", "agent-guide", "status"]
-notes = "Each tool call is the binary run again (current_exe) with KURAMA_AGENT=1, stdin null or the request, stdout and stderr captured, killed after 600 seconds; the server reads the next line only after answering, one call at a time. Every agent value goes after `--` or glued with `=`, so none becomes an option such as --confirm, and MCP offers no --confirm: a call the policy refuses is made by a person on the command line. query_db refuses execute and query_data refuses export before anything runs. No HTTP transport, no exec tool."
+depends_on = ["config", "secrets", "api-explorer", "cli-entry", "api-client", "agent-policy", "audit", "database", "local-analytics", "agent-guide", "status"]
+notes = "Each tool call is the binary run again (current_exe) with KURAMA_AGENT=1, stdin null or the request, stdout and stderr captured, killed after [mcp] call_timeout (600 seconds by default); over stdio the server reads the next line only after answering, one call at a time; over HTTP at most [mcp] max_concurrent_calls run at once and the wait for a slot counts toward call_timeout. --listen binds the loopback [mcp] listen, reads [mcp] token once (a reference, never a literal), and checks the token before anything else: 401, then Origin 403, path 404, method 405, Content-Type 415, MCP-Protocol-Version 400, body 413/400; JSON responses only, no session, no SSE. [mcp] tools hides and refuses the tools it leaves out, over both transports. Every agent value goes after `--` or glued with `=`, so none becomes an option such as --confirm, and MCP offers no --confirm: a call the policy refuses is made by a person on the command line. query_db refuses execute and query_data refuses export before anything runs. No exec tool, no TLS (Funnel or another front terminates it), no OAuth."
 
 [mcp.real]
 cases = "an MCP session over stdio against the public Swagger Petstore v3: a GET answered, a POST refused by the [agent] policy, a SQLite read, and the audit entries"

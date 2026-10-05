@@ -40,6 +40,7 @@ pub mod cases;
 pub mod configs;
 pub mod data;
 pub mod expect_detail;
+pub mod mcp_http;
 pub mod png;
 pub mod s3_browse;
 pub mod tui;

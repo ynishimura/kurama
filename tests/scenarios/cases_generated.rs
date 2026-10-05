@@ -2139,6 +2139,30 @@ fn data_workspace_table_inference_requires_one_source() {
 }
 #[test]
 #[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn mcp_call_timeout_ends_the_call_and_serves_the_next() {
+    crate::support::cases::run_case(
+        include_str!("../cases/mcp/mcp_call_timeout_ends_the_call_and_serves_the_next.toml"),
+        "tests/cases/mcp/mcp_call_timeout_ends_the_call_and_serves_the_next.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn mcp_http_refuses_a_literal_token() {
+    crate::support::cases::run_case(
+        include_str!("../cases/mcp/mcp_http_refuses_a_literal_token.toml"),
+        "tests/cases/mcp/mcp_http_refuses_a_literal_token.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn mcp_http_refuses_to_listen_on_a_non_loopback_address() {
+    crate::support::cases::run_case(
+        include_str!("../cases/mcp/mcp_http_refuses_to_listen_on_a_non_loopback_address.toml"),
+        "tests/cases/mcp/mcp_http_refuses_to_listen_on_a_non_loopback_address.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
 fn mcp_lists_the_tools_and_calls_an_api() {
     crate::support::cases::run_case(
         include_str!("../cases/mcp/mcp_lists_the_tools_and_calls_an_api.toml"),
@@ -2151,6 +2175,22 @@ fn mcp_returns_the_error_document_when_a_person_has_to_act() {
     crate::support::cases::run_case(
         include_str!("../cases/mcp/mcp_returns_the_error_document_when_a_person_has_to_act.toml"),
         "tests/cases/mcp/mcp_returns_the_error_document_when_a_person_has_to_act.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn mcp_tools_setting_hides_and_refuses_unlisted_tools() {
+    crate::support::cases::run_case(
+        include_str!("../cases/mcp/mcp_tools_setting_hides_and_refuses_unlisted_tools.toml"),
+        "tests/cases/mcp/mcp_tools_setting_hides_and_refuses_unlisted_tools.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn mcp_tools_setting_refuses_an_unknown_tool_name() {
+    crate::support::cases::run_case(
+        include_str!("../cases/mcp/mcp_tools_setting_refuses_an_unknown_tool_name.toml"),
+        "tests/cases/mcp/mcp_tools_setting_refuses_an_unknown_tool_name.toml",
     );
 }
 #[test]

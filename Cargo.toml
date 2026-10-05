@@ -24,7 +24,7 @@ path = "src/main.rs"
 
 [dependencies]
 # Core async runtime
-tokio = { version = "1.53.1", features = ["macros", "rt-multi-thread", "fs", "time", "signal", "process", "io-util"] }
+tokio = { version = "1.53.1", features = ["macros", "rt-multi-thread", "fs", "time", "signal", "process", "io-util", "net", "sync"] }
 async-trait = "0.1.92"
 
 # AWS SDK
@@ -88,6 +88,9 @@ aws-sdk-ssm = { version = "1.124.0", default-features = false, features = ["defa
 aws-sdk-secretsmanager = { version = "1.117.0", default-features = false, features = ["default-https-client", "rt-tokio"] }
 strum = { version = "0.28", features = ["derive"] }
 toml_edit = "0.25.15"
+hyper = { version = "1.11.1", features = ["server", "http1"] }
+hyper-util = { version = "0.1.20", features = ["tokio", "server", "http1"] }
+http-body-util = "0.1.5"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 keyring = "4.2.0"

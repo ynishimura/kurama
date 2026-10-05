@@ -24,6 +24,7 @@ mod cli_entry;
 mod config;
 mod database;
 mod local_analytics;
+mod mcp;
 mod oauth;
 mod preset;
 mod s3_explorer;

@@ -568,6 +568,42 @@ max_bytes = 1048576    # the default: past it the log moves to audit.jsonl.1
 claude mcp add kurama -- kurama mcp
 ```
 
+#### リモート MCP クライアント（`kurama mcp --listen`）
+<!-- en: ac61f51939c1 -->
+
+クラウドで動くエージェントは、Mac 上で `kurama mcp` を起動できません。`kurama mcp --listen` は同じツールを MCP Streamable HTTP でループバックアドレスに提供し、Tailscale Funnel がそれに HTTPS の URL を与えます。どのリクエストも、シークレットストアに置いた固定トークンを送ります。
+
+```toml
+# ~/.config/kurama/remote.toml, named by KURAMA_CONFIG_PATH
+[mcp]
+listen = "127.0.0.1:8807"
+token = "op://Agent/kurama-mcp-token/credential"
+tools = ["list_operations", "describe_operation", "call_api"]
+call_timeout = 25
+
+[api.example]          # only the APIs the agent may reach
+base_url = "https://api.example.com"
+
+[api.example.agent]
+allow_paths = ["/v1/items*"]
+```
+
+```bash
+KURAMA_CONFIG_PATH=~/.config/kurama/remote.toml kurama mcp --listen
+tailscale funnel --bg 8807     # https://<machine>.<tailnet>.ts.net/mcp
+```
+
+| クライアント | 使えるか | トークンの渡し方 |
+| --- | --- | --- |
+| ElevenLabs Agents | はい | MCP サーバーの secret token |
+| xAI API (Grok) | はい | Remote MCP Tools の `authorization` |
+| Claude API | はい | MCP connector の `authorization_token` |
+| OpenAI API | はい | remote MCP tool の `authorization` |
+| claude.ai | 条件付き | "No sign-in" のカスタムコネクタと `Authorization: Bearer <token>` のリクエストヘッダー（一部の組織にだけ見えるベータ） |
+| ChatGPT | いいえ | OAuth か認証なししかなく、固定ヘッダーを送れない |
+
+kurama は呼び出し元を区別しません。エージェントは自分専用にし（電話番号、ウィジェット、共有を付けない）、応答がそのサービスに届いてよい API だけを公開してください。
+
 ### シークレットの参照
 <!-- en: 5941e1abe37a -->
 

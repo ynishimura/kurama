@@ -35,6 +35,7 @@
 //! - `api_schema` - the `--schema` contract
 //! - `api_skill` - the `--skill` Agent Skill
 //! - `mcp` - the messages, tools and command lines of `kurama mcp`
+//! - `mcp_http` - what an HTTP request to `kurama mcp --listen` is answered with
 
 pub mod agent_policy;
 pub mod api_body_fit;
@@ -55,6 +56,7 @@ pub mod graphql;
 pub mod graphql_call;
 pub mod jq_completion;
 pub mod mcp;
+pub mod mcp_http;
 pub mod oauth;
 pub mod onepassword;
 pub mod openapi;

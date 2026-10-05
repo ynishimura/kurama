@@ -22,4 +22,43 @@ the command's JSON error document, `next_actions` included; nothing waits
 for a person, because the call has no terminal. MCP offers no `--confirm`:
 a call the policy refuses is made by a person on the command line.
 `query_data` refuses `args.export` and `query_db` the `execute` operation
-before anything runs. A call ends after at most 600 seconds.
+before anything runs. A call ends after `[mcp] call_timeout` seconds (600 by
+default). `[mcp] tools` names the tools offered; a tool it leaves out is
+absent from `tools/list`, and a call of it is a refused tool result.
+
+### Over HTTP: `kurama mcp --listen`
+
+For a client that runs in the cloud and cannot start a local process
+(ElevenLabs Agents, the xAI, Claude or OpenAI APIs, a claude.ai custom
+connector), `--listen` serves MCP Streamable HTTP on `[mcp] listen`: JSON
+responses only, no session, no SSE stream. TLS is not kurama's: put
+Tailscale Funnel (`tailscale funnel --bg 8807`) or another front before it.
+
+```toml
+[mcp]
+listen = "127.0.0.1:8807"                         # loopback only
+token = "op://Agent/kurama-mcp-token/credential"  # a reference, never the value
+tools = ["list_operations", "describe_operation", "call_api"]
+call_timeout = 25                                 # below the client's own timeout
+max_concurrent_calls = 2
+```
+
+Every request carries the token in `Authorization`, as `Bearer <token>` or
+the token alone. The token is checked first, so a request without it is
+`401` whatever its path or method; then a request with an `Origin` header is
+`403`, a path other than `/mcp` `404`, a method other than POST `405`, a
+`Content-Type` other than `application/json` `415`, an `MCP-Protocol-Version`
+this server does not speak `400`, a body over 1 MiB `413`, and a body that is
+not one JSON-RPC message `400`. A request is answered `200` with one JSON
+response, a notification or a response `202`. The token is read once at
+start: changing it takes a restart. stderr gets `listening on ADDRESS`, then
+one line per request with the method, the path and the status. A missing
+`listen` or `token`, a `listen` that is not loopback, a literal `token` or an
+unknown name in `tools` is `CONFIG_INVALID`; a port another process holds is
+`MCP_LISTEN_FAILED` (exit 1).
+
+kurama does not tell callers apart: whoever holds the token acts with your
+AWS roles and API credentials, and a tool's input and output stay in the
+logs of the service hosting the client. Expose it to your own agent only,
+name only APIs whose responses may reach that service, and leave `ready`,
+`list_apis`, `query_data` and `query_db` out of `tools`.

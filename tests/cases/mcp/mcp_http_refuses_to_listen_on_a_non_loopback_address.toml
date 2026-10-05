@@ -1,0 +1,28 @@
+# `[mcp] listen` on an address that is not loopback would carry the token
+# off the machine in plain HTTP, so the configuration is refused before
+# anything is read or bound: no token read, no request served.
+id = "mcp_http_refuses_to_listen_on_a_non_loopback_address"
+feature = "mcp"
+
+[combination]
+command = "mcp"
+transport = "http"
+
+[input]
+args = ["mcp", "--listen"]
+config = """
+[mcp]
+listen = "0.0.0.0:8807"
+token = "op://Agent/kurama-mcp-token/credential"
+"""
+
+[fakes]
+op = "enabled"
+
+[expect]
+error = { code = "CONFIG_INVALID", exit = 2 }
+stderr_contains = ["[mcp] listen \"0.0.0.0:8807\" is not a loopback address"]
+stdout = "empty"
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true

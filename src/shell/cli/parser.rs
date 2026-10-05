@@ -122,7 +122,9 @@ pub fn parse_cli_command(matches: &ArgMatches) -> CliCommand {
             json: audit.get_flag("json"),
             watch: audit.get_flag("watch"),
         },
-        Some(("mcp", _)) => CliCommand::Mcp,
+        Some(("mcp", mcp)) => CliCommand::Mcp {
+            listen: mcp.get_flag("listen"),
+        },
         _ => CliCommand::Tui,
     }
 }

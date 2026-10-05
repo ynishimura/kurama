@@ -1,0 +1,34 @@
+# `[mcp] call_timeout` bounds one call: the API answers after 3 seconds, the
+# call is ended after 1 with a tool error saying so, and the server goes on
+# answering the next request.
+id = "mcp_call_timeout_ends_the_call_and_serves_the_next"
+feature = "mcp"
+
+[combination]
+command = "mcp"
+transport = "stdio"
+
+[input]
+args = ["mcp"]
+stdin = """
+{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"call_api","arguments":{"api":"pets","target":"/pet/findByStatus?status=available"}}}
+{"jsonrpc":"2.0","id":2,"method":"ping"}
+"""
+config = """
+[mcp]
+call_timeout = 1
+
+[api.pets]
+base_url = "{server}/api"
+"""
+
+[fakes]
+api = "slow"
+
+[expect]
+exit_code = 0
+stderr_empty = true
+stdout = { line_count = 2, line_containing = [
+  ["\"id\":1", "\"isError\":true", "the call did not end within 1 seconds"],
+  ["\"id\":2", "\"result\":{}"],
+] }
