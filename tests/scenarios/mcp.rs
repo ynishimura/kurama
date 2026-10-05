@@ -5,8 +5,8 @@
 //! scenario writes; the stdio scenarios are TOML cases under
 //! `tests/cases/mcp/`.
 
-use crate::support::mcp_http::{Body, HttpRequest, bearer, serve, statuses};
-use crate::support::{FAKE_CLIENT_SECRET, JsonExpect, OnePassword, Sandbox, Scenario};
+use crate::support::mcp_http::{Body, HttpRequest, Serving, bearer, serve, statuses};
+use crate::support::{ApiFake, FAKE_CLIENT_SECRET, JsonExpect, OnePassword, Sandbox, Scenario};
 use serde_json::json;
 
 /// The server a cloud client reaches: loopback, a token from 1Password (the
@@ -32,12 +32,11 @@ fn mcp_http_answers_tools_list_with_the_token() {
     let (mut v, responses) = serve(
         "mcp_http_answers_tools_list_with_the_token",
         SERVER_CONFIG,
-        &[],
         vec![
             HttpRequest::rpc(&bearer(), INITIALIZE),
             HttpRequest::rpc(&bearer(), TOOLS_LIST).header("MCP-Protocol-Version", "2025-06-18"),
         ],
-        false,
+        Serving::default(),
     );
     let names: Vec<String> = responses[1].json()["result"]["tools"]
         .as_array()
@@ -76,12 +75,11 @@ fn mcp_http_accepts_the_token_with_and_without_the_bearer_prefix() {
     let (mut v, responses) = serve(
         "mcp_http_accepts_the_token_with_and_without_the_bearer_prefix",
         SERVER_CONFIG,
-        &[],
         vec![
             HttpRequest::rpc(&bearer(), PING),
             HttpRequest::rpc(FAKE_CLIENT_SECRET, PING),
         ],
-        false,
+        Serving::default(),
     );
     v.check(
         "`Bearer <token>` and `<token>` both get the ping's empty result",
@@ -99,12 +97,14 @@ fn mcp_http_runs_call_api_as_an_agent_and_records_the_audit_entry() {
     let (mut v, responses) = serve(
         "mcp_http_runs_call_api_as_an_agent_and_records_the_audit_entry",
         SERVER_CONFIG,
-        &[],
         vec![
             HttpRequest::rpc(&bearer(), CALL_GET),
             HttpRequest::rpc(&bearer(), CALL_POST),
         ],
-        true,
+        Serving {
+            audit: true,
+            ..Serving::default()
+        },
     );
     let (get, post) = (responses[0].json(), responses[1].json());
     v.check(
@@ -172,7 +172,6 @@ fn mcp_http_refuses_a_missing_or_wrong_token_and_runs_nothing() {
     let (mut v, responses) = serve(
         "mcp_http_refuses_a_missing_or_wrong_token_and_runs_nothing",
         SERVER_CONFIG,
-        &[],
         vec![
             without,
             HttpRequest::rpc("Bearer not-the-token", CALL_GET),
@@ -187,7 +186,10 @@ fn mcp_http_refuses_a_missing_or_wrong_token_and_runs_nothing() {
             HttpRequest::rpc(&format!("Bearer {FAKE_CLIENT_SECRET}x"), CALL_GET),
             HttpRequest::rpc("Basic ZmFrZS1jbGllbnQtc2VjcmV0", CALL_GET),
         ],
-        true,
+        Serving {
+            audit: true,
+            ..Serving::default()
+        },
     );
     v.check(
         "each is 401 with `WWW-Authenticate: Bearer` and no body",
@@ -227,7 +229,6 @@ fn mcp_http_answers_401_before_revealing_the_path_or_method() {
     let (mut v, responses) = serve(
         "mcp_http_answers_401_before_revealing_the_path_or_method",
         SERVER_CONFIG,
-        &[],
         vec![
             bare("GET", "/"),
             bare("DELETE", "/mcp"),
@@ -237,7 +238,7 @@ fn mcp_http_answers_401_before_revealing_the_path_or_method() {
             with_token("GET", "/mcp"),
             with_token("DELETE", "/mcp"),
         ],
-        false,
+        Serving::default(),
     );
     v.check(
         "without the token every path and method is 401; with it, 404 and 405 say what is wrong",
@@ -253,12 +254,11 @@ fn mcp_http_refuses_a_request_with_an_origin() {
     let (mut v, responses) = serve(
         "mcp_http_refuses_a_request_with_an_origin",
         SERVER_CONFIG,
-        &[],
         vec![
             HttpRequest::rpc(&bearer(), CALL_GET).header("Origin", "http://127.0.0.1:8807"),
             HttpRequest::rpc(&bearer(), PING).header("Origin", "null"),
         ],
-        false,
+        Serving::default(),
     );
     v.check(
         "a request a browser sent is 403 with nothing run, whatever the origin",
@@ -274,7 +274,6 @@ fn mcp_http_answers_a_notification_with_202() {
     let (mut v, responses) = serve(
         "mcp_http_answers_a_notification_with_202",
         SERVER_CONFIG,
-        &[],
         vec![
             HttpRequest::rpc(
                 &bearer(),
@@ -282,7 +281,7 @@ fn mcp_http_answers_a_notification_with_202() {
             ),
             HttpRequest::rpc(&bearer(), r#"{"jsonrpc":"2.0","id":9,"result":{}}"#),
         ],
-        false,
+        Serving::default(),
     );
     v.check(
         "a notification and a response are 202 with no body",
@@ -298,7 +297,6 @@ fn mcp_http_refuses_a_body_that_is_not_one_json_rpc_message() {
     let (mut v, responses) = serve(
         "mcp_http_refuses_a_body_that_is_not_one_json_rpc_message",
         SERVER_CONFIG,
-        &[],
         vec![
             HttpRequest::rpc(&bearer(), "{not json"),
             HttpRequest::rpc(&bearer(), &format!("[{PING}]")),
@@ -313,7 +311,7 @@ fn mcp_http_refuses_a_body_that_is_not_one_json_rpc_message() {
                 body: Body::Bytes(PING.as_bytes().to_vec()),
             },
         ],
-        false,
+        Serving::default(),
     );
     let codes: Vec<serde_json::Value> = responses
         .iter()
@@ -337,12 +335,11 @@ fn mcp_http_refuses_an_unknown_protocol_version() {
     let (mut v, responses) = serve(
         "mcp_http_refuses_an_unknown_protocol_version",
         SERVER_CONFIG,
-        &[],
         vec![
             HttpRequest::rpc(&bearer(), PING).header("MCP-Protocol-Version", "1999-01-01"),
             HttpRequest::rpc(&bearer(), PING).header("MCP-Protocol-Version", "2025-03-26"),
         ],
-        false,
+        Serving::default(),
     );
     v.check(
         "a version this server does not speak is 400 naming it; one it speaks is served",
@@ -370,13 +367,12 @@ fn mcp_http_refuses_a_body_over_the_limit() {
     let (mut v, responses) = serve(
         "mcp_http_refuses_a_body_over_the_limit",
         SERVER_CONFIG,
-        &[],
         vec![
             request(Body::DeclaredOnly(LIMIT + 1)),
             request(Body::Chunked(vec![b' '; LIMIT + 1])),
             HttpRequest::rpc(&bearer(), PING),
         ],
-        false,
+        Serving::default(),
     );
     v.check(
         "a declared length past 1 MiB and a chunked body that grows past it are 413; the server goes on",
@@ -415,12 +411,14 @@ fn mcp_http_token_never_appears_in_output_or_logs() {
     let (mut v, responses) = serve(
         "mcp_http_token_never_appears_in_output_or_logs",
         SERVER_CONFIG,
-        &[("RUST_LOG", "kurama=trace")],
         vec![
             HttpRequest::rpc(&bearer(), CALL_GET),
             HttpRequest::rpc("Bearer guessed-token-value", PING),
         ],
-        false,
+        Serving {
+            env: &[("RUST_LOG", "kurama=trace")],
+            ..Serving::default()
+        },
     );
     v.check(
         "the right token is served and the wrong one refused",
@@ -440,5 +438,44 @@ fn mcp_http_token_never_appears_in_output_or_logs() {
             .expect_stderr_excludes("authorization")
             .expect_stderr_excludes("Authorization")
     });
+    v.finish();
+}
+
+/// Two calls at once with one slot and a two-second deadline, against an
+/// API that answers after three: the first holds the slot until its
+/// deadline ends it, and the second's deadline runs out while it waits for
+/// the slot, so it never runs. Both are tool errors saying so, and the API
+/// was asked once.
+#[test]
+fn mcp_http_holds_calls_past_max_concurrent_calls_until_the_deadline() {
+    let config = SERVER_CONFIG.replace(
+        "tools = [",
+        "max_concurrent_calls = 1\ncall_timeout = 2\ntools = [",
+    );
+    let (mut v, responses) = serve(
+        "mcp_http_holds_calls_past_max_concurrent_calls_until_the_deadline",
+        &config,
+        vec![
+            HttpRequest::rpc(&bearer(), CALL_GET),
+            HttpRequest::rpc(&bearer(), CALL_GET),
+        ],
+        Serving {
+            at_once: true,
+            api: Some(ApiFake::Slow),
+            ..Serving::default()
+        },
+    );
+    v.check(
+        "both calls end at the two-second deadline as tool errors",
+        responses.iter().all(|response| {
+            response.status == 200
+                && response.json()["result"]["isError"] == true
+                && response
+                    .body
+                    .contains("the call did not end within 2 seconds")
+        }),
+        format!("{responses:?}"),
+    )
+    .keyed_run(0, "server", |v| v.expect_api_call_count(1));
     v.finish();
 }

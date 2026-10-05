@@ -63,8 +63,8 @@ impl HttpRequest {
     }
 }
 
-/// What the server answered.
-#[derive(Debug, Clone, serde::Serialize)]
+/// What the server answered; status 0 when nothing was.
+#[derive(Debug, Clone, Default, serde::Serialize)]
 pub struct HttpResponse {
     pub status: u16,
     /// Header names in lowercase.
@@ -85,15 +85,46 @@ impl HttpResponse {
     }
 }
 
+/// How the requests reach the server.
+#[derive(Clone, Copy, PartialEq)]
+pub enum Sending {
+    /// One after another, each once the previous one was answered.
+    InOrder,
+    /// All at once, each on its own connection.
+    AtOnce,
+}
+
 impl Sandbox {
     /// Start `args`, send `requests` one after another once it listens, then
     /// stop it with SIGTERM. A server that exits before it listens is the
-    /// run, with no response. The run's stdout and stderr are the server's.
+    /// run, and every request is answered with status 0. The run's stdout
+    /// and stderr are the server's.
     pub fn run_cli_serving(
         &mut self,
         args: &[&str],
         requests: Vec<HttpRequest>,
     ) -> (Run, Vec<HttpResponse>) {
+        self.run_cli_serving_with(args, requests, Sending::InOrder)
+    }
+
+    pub fn run_cli_serving_with(
+        &mut self,
+        args: &[&str],
+        requests: Vec<HttpRequest>,
+        sending: Sending,
+    ) -> (Run, Vec<HttpResponse>) {
+        // Read before the server starts, so a missing variable leaves no
+        // process behind; on the real layer the token is a secret every
+        // output is checked against.
+        let token = if self.real_aws {
+            let token = std::env::var(REAL_TOKEN_VARIABLE).unwrap_or_else(|_| {
+                panic!("{REAL_TOKEN_VARIABLE} holds the token the real layer sends")
+            });
+            self.secrets.push(token.clone());
+            token
+        } else {
+            FAKE_CLIENT_SECRET.to_owned()
+        };
         let mut child = self
             .create_cli_command(args)
             .stdin(Stdio::null())
@@ -132,22 +163,24 @@ impl Sandbox {
                 Err(mpsc::RecvTimeoutError::Timeout) => {}
             }
         };
-        let token = if self.real_aws {
-            std::env::var(REAL_TOKEN_VARIABLE).unwrap_or_else(|_| {
-                panic!("{REAL_TOKEN_VARIABLE} holds the token the real layer sends")
-            })
-        } else {
-            FAKE_CLIENT_SECRET.to_owned()
-        };
-        let responses: Vec<HttpResponse> = match port {
-            Some(port) => requests
-                .into_iter()
-                .map(|request| send(port, &request, &token))
+        let responses: Vec<HttpResponse> = match (port, sending) {
+            (None, _) => requests.iter().map(|_| HttpResponse::default()).collect(),
+            (Some(port), Sending::InOrder) => requests
+                .iter()
+                .map(|request| send(port, request, &token))
                 .collect(),
-            None => Vec::new(),
+            (Some(port), Sending::AtOnce) => std::thread::scope(|scope| {
+                let sent: Vec<_> = requests
+                    .iter()
+                    .map(|request| scope.spawn(|| send(port, request, &token)))
+                    .collect();
+                sent.into_iter()
+                    .map(|answer| answer.join().unwrap_or_default())
+                    .collect()
+            }),
         };
-        let timed_out = port.is_none() && child.try_wait().unwrap().is_none();
-        if child.try_wait().unwrap().is_none() {
+        let still_running = child.try_wait().unwrap().is_none();
+        if still_running {
             let _ = Command::new("/bin/kill")
                 .args(["-TERM", &child.id().to_string()])
                 .status();
@@ -160,11 +193,12 @@ impl Sandbox {
         let mut run = self.record_run(
             command,
             status.code(),
-            timed_out,
+            port.is_none() && still_running,
             stdout.join().unwrap(),
             reader.join().unwrap(),
         );
         run.http_responses = responses.clone();
+        run.stopped_while_serving = port.map(|_| still_running);
         (run, responses)
     }
 }
@@ -179,26 +213,49 @@ pub fn statuses(responses: &[HttpResponse]) -> Vec<u16> {
     responses.iter().map(|response| response.status).collect()
 }
 
-/// `kurama mcp --listen` with `config` and `env`, sent `requests`, then
-/// `audit --json` as run 1 when `audit` says so. Run 0 is checked for what
-/// every server run keeps: an answer to each request, nothing on stdout, one
-/// token read, and stderr holding only the listening line and request lines
-/// unless `env` raised the log level.
+/// What a server scenario sets up besides its requests.
+#[derive(Default)]
+pub struct Serving {
+    pub env: &'static [(&'static str, &'static str)],
+    /// `audit --json` as run 1.
+    pub audit: bool,
+    pub at_once: bool,
+    pub api: Option<super::ApiFake>,
+}
+
+/// `kurama mcp --listen` with `config`, sent `requests` as `serving` says.
+/// Run 0 is checked for what every server run keeps: an answer to each
+/// request, nothing on stdout, one read of the `[mcp] token` item, and
+/// stderr holding only the listening line and request lines unless `env`
+/// raised the log level.
 pub fn serve(
     id: &'static str,
     config: &str,
-    env: &[(&'static str, &'static str)],
     requests: Vec<HttpRequest>,
-    audit: bool,
+    serving: Serving,
 ) -> (Verification, Vec<HttpResponse>) {
+    let Serving {
+        env,
+        audit,
+        at_once,
+        api,
+    } = serving;
     let mut scenario = Scenario::new(id, "mcp", &[])
         .onepassword(OnePassword::Enabled)
         .with_extra_config(config);
+    if let Some(api) = api {
+        scenario = scenario.api(api);
+    }
     for (name, value) in env {
         scenario = scenario.with_env(name, value);
     }
     let mut sandbox = Sandbox::create(&scenario);
-    let (run, responses) = sandbox.run_cli_serving(&["mcp", "--listen"], requests);
+    let sending = if at_once {
+        Sending::AtOnce
+    } else {
+        Sending::InOrder
+    };
+    let (run, responses) = sandbox.run_cli_serving_with(&["mcp", "--listen"], requests, sending);
     let mut runs: Vec<Run> = vec![run];
     if audit {
         runs.push(sandbox.run_cli(&["audit", "--json"]));
@@ -211,7 +268,8 @@ pub fn serve(
             format!("{responses:?}"),
         )
         .expect_stdout_empty()
-        .expect_op_calls(1);
+        .expect_op_calls(1)
+        .expect_op_calls_containing("kurama-mcp-token", 1);
         if env.is_empty() {
             v.expect_stderr_lines_start_with(&[
                 "listening on 127.0.0.1:",
@@ -225,9 +283,12 @@ pub fn serve(
     (v, responses)
 }
 
-/// Write one request on its own connection and read the whole answer.
+/// Write one request on its own connection and read the whole answer; a
+/// server nobody can connect to answers status 0.
 fn send(port: u16, request: &HttpRequest, token: &str) -> HttpResponse {
-    let mut stream = TcpStream::connect(("127.0.0.1", port)).expect("connect to kurama");
+    let Ok(mut stream) = TcpStream::connect(("127.0.0.1", port)) else {
+        return HttpResponse::default();
+    };
     stream
         .set_read_timeout(Some(Duration::from_secs(60)))
         .unwrap();

@@ -16,7 +16,15 @@ use crate::adapters::error::CoreError;
 use crate::domain::types::SecretRef;
 
 /// The top-level tables that are units whole.
-pub const FIXED: [&str; 6] = ["core", "aws", "onepassword", "openapi", "agent", "audit"];
+pub const FIXED: [&str; 7] = [
+    "core",
+    "aws",
+    "onepassword",
+    "openapi",
+    "agent",
+    "audit",
+    "mcp",
+];
 
 /// The top-level tables whose entries are units of their own.
 pub const NAMED: [&str; 5] = ["auth", "api", "data", "db", "s3"];

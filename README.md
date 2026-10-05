@@ -704,8 +704,11 @@ tools: `ready`, `list_apis`, `list_operations`, `describe_operation`,
 kurama's own JSON commands with `KURAMA_AGENT=1`. So every call is held to the
 `[agent]` policy above and recorded in the audit log. A failure returns the
 same JSON error document, including the `next_actions` for a person to run.
-Nothing prompts, and there is no `--confirm` over MCP. To register it with
-Claude Code:
+Nothing prompts, and there is no `--confirm` over MCP. `[mcp] tools` names
+a subset of the tools and `[mcp] call_timeout` (600 seconds by default)
+bounds each call, over stdio and HTTP alike; the configuration is read at
+start, so an invalid one stops `kurama mcp` with `CONFIG_INVALID`. To
+register it with Claude Code:
 
 ```bash
 claude mcp add kurama -- kurama mcp
@@ -738,9 +741,12 @@ KURAMA_CONFIG_PATH=~/.config/kurama/remote.toml kurama mcp --listen
 tailscale funnel --bg 8807     # https://<machine>.<tailnet>.ts.net/mcp
 ```
 
+Funnel needs HTTPS certificates enabled for the tailnet and the `funnel`
+nodeAttr in its policy file; it serves on 443 (or 8443 / 10000).
+
 | Client | Works | How the token is passed |
 | --- | --- | --- |
-| ElevenLabs Agents | yes | the MCP server's secret token |
+| ElevenLabs Agents | yes | the MCP server's secret token (a workspace member accepts the MCP Server Terms first) |
 | xAI API (Grok) | yes | `authorization` of Remote MCP Tools |
 | Claude API | yes | `authorization_token` of the MCP connector |
 | OpenAI API | yes | `authorization` of the remote MCP tool |

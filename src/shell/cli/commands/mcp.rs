@@ -21,12 +21,14 @@ use tokio::sync::Semaphore;
 
 use crate::adapters::config::Config;
 use crate::adapters::mcp_http::{Endpoint, RunTool, bind, serve};
-use crate::adapters::own_command::run_own_command;
+use crate::adapters::own_command::{ended_late, run_own_command};
 use crate::adapters::secret_resolver::ConfiguredSecrets;
 use crate::domain::functions::mcp::{
     Incoming, ToolRun, read_message, result, tool_failure, tool_result,
 };
 use crate::domain::functions::mcp_http::McpToken;
+use crate::domain::types::limits::MCP_HTTP;
+use crate::ports::secret::SecretError;
 use crate::ports::{AwsProfileCredentials, SecretResolver};
 use crate::shell::agent_policy::AGENT_ENV;
 use crate::shell::aws_profile_credentials::AssumedRoles;
@@ -53,7 +55,8 @@ pub fn command() -> Command {
              refuses what it refuses on the command line, the audit log records the call,\n\
              and a failure is the same JSON error document. Nothing prompts: a call that\n\
              needs a person returns that document with its next_actions. stdout carries\n\
-             the protocol only.\n\n\
+             the protocol only. The configuration is read at start: an invalid one stops\n\
+             kurama mcp with CONFIG_INVALID.\n\n\
              With --listen, serve MCP Streamable HTTP (JSON responses, no session) on the\n\
              loopback address [mcp] listen names, for a client in the cloud reaching it\n\
              through Tailscale Funnel or another TLS front. Every request carries the\n\
@@ -111,11 +114,17 @@ async fn run_http(
     // Read once: a changed token takes a restart.
     let roles: Arc<dyn AwsProfileCredentials> =
         Arc::new(AssumedRoles::of_config(Arc::new(config.clone())));
-    let token = McpToken::new(
-        ConfiguredSecrets::new(&config.onepassword, roles)
-            .resolve(listen.token)
-            .await?,
-    );
+    let token = ConfiguredSecrets::new(&config.onepassword, roles)
+        .resolve(listen.token)
+        .await?;
+    // An empty token would admit an empty `Authorization`: refused here,
+    // before anything listens for a client.
+    let token = McpToken::new(token).ok_or_else(|| {
+        SecretError::invalid(format!(
+            "[mcp] token {:?} holds an empty value",
+            listen.token
+        ))
+    })?;
     crate::console::write_line(&format!("listening on {address}"));
     let slots = Arc::new(Semaphore::new(config.mcp.max_concurrent_calls));
     let program = Arc::new(program);
@@ -142,9 +151,10 @@ async fn run_http(
             token,
             exposed,
             run_tool,
+            limits: MCP_HTTP,
         }),
     )
-    .await?;
+    .await;
     Ok(())
 }
 
@@ -162,8 +172,4 @@ async fn call_tool(program: &Path, run: &ToolRun, deadline: Duration) -> Value {
         Ok(output) => tool_result(output.success, &output.stdout, &output.stderr),
         Err(error) => tool_failure(&error.to_string()),
     }
-}
-
-fn ended_late(deadline: Duration) -> String {
-    format!("the call did not end within {} seconds", deadline.as_secs())
 }

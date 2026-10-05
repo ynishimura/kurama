@@ -976,7 +976,8 @@ fn local_database_placeholders() -> [(&'static str, String); 4] {
 /// reads the layer's config, is not touched.
 const STACK_PLACEHOLDERS: [(&str, &str); 16] = [
     // Not a stack: the `[mcp] token` reference the real layer's server
-    // reads, whose value the runner sets as `KURAMA_REAL_MCP_TOKEN`.
+    // reads, which the person exports beside its value,
+    // `KURAMA_REAL_MCP_TOKEN`.
     ("{mcp_token_ref}", "KURAMA_REAL_MCP_TOKEN_REF"),
     ("{throwaway_profile}", "KURAMA_THROWAWAY_PROFILE"),
     ("{iam_api_url}", "KURAMA_STACK_IAM_API_URL"),

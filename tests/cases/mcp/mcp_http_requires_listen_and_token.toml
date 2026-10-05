@@ -1,0 +1,37 @@
+# `--listen` needs both `[mcp] listen` and `[mcp] token`: without them it is
+# refused before anything is bound or read. Over stdio the same file serves.
+id = "mcp_http_requires_listen_and_token"
+feature = "mcp"
+
+[combination]
+command = "mcp"
+transport = "http"
+
+[input]
+args = ["mcp", "--listen"]
+then_run = [["mcp"]]
+stdin = """
+{"jsonrpc":"2.0","id":1,"method":"ping"}
+"""
+config = """
+[mcp]
+listen = "127.0.0.1:0"
+"""
+
+[fakes]
+op = "enabled"
+
+[expect]
+op_calls = 0
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+error = { code = "CONFIG_INVALID", exit = 2 }
+stderr_contains = ["[mcp] token is required by --listen"]
+stdout = "empty"
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+stdout = { line_count = 1, line_containing = [["\"id\":1", "\"result\":{}"]] }

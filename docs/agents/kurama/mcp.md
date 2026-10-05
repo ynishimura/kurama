@@ -24,7 +24,9 @@ a call the policy refuses is made by a person on the command line.
 `query_data` refuses `args.export` and `query_db` the `execute` operation
 before anything runs. A call ends after `[mcp] call_timeout` seconds (600 by
 default). `[mcp] tools` names the tools offered; a tool it leaves out is
-absent from `tools/list`, and a call of it is a refused tool result.
+absent from `tools/list`, and a call of it is a refused tool result. The
+configuration is read at start, so an invalid one stops `kurama mcp` with
+`CONFIG_INVALID` before it answers anything.
 
 ### Over HTTP: `kurama mcp --listen`
 
@@ -33,6 +35,8 @@ For a client that runs in the cloud and cannot start a local process
 connector), `--listen` serves MCP Streamable HTTP on `[mcp] listen`: JSON
 responses only, no session, no SSE stream. TLS is not kurama's: put
 Tailscale Funnel (`tailscale funnel --bg 8807`) or another front before it.
+Funnel needs HTTPS certificates enabled for the tailnet and the `funnel`
+nodeAttr in its policy file; it serves on 443 (or 8443 / 10000).
 
 ```toml
 [mcp]
@@ -48,10 +52,13 @@ the token alone. The token is checked first, so a request without it is
 `401` whatever its path or method; then a request with an `Origin` header is
 `403`, a path other than `/mcp` `404`, a method other than POST `405`, a
 `Content-Type` other than `application/json` `415`, an `MCP-Protocol-Version`
-this server does not speak `400`, a body over 1 MiB `413`, and a body that is
-not one JSON-RPC message `400`. A request is answered `200` with one JSON
+this server does not speak `400` (except on `initialize`, which negotiates
+the version in its body), a body over 1 MiB `413`, and a body not received
+within 30 seconds or one that is not one JSON-RPC message `400`; a
+connection that has not sent its headers within 10 seconds is closed. A request is answered `200` with one JSON
 response, a notification or a response `202`. The token is read once at
-start: changing it takes a restart. stderr gets `listening on ADDRESS`, then
+start: changing it takes a restart, and an empty value is
+`SECRET_INVALID`. stderr gets `listening on ADDRESS`, then
 one line per request with the method, the path and the status. A missing
 `listen` or `token`, a `listen` that is not loopback, a literal `token` or an
 unknown name in `tools` is `CONFIG_INVALID`; a port another process holds is

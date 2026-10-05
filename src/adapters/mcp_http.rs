@@ -13,7 +13,7 @@ use std::time::Duration;
 
 use http_body_util::{BodyExt, Full, Limited};
 use hyper::body::{Bytes, Incoming as Body};
-use hyper::header::{CONTENT_TYPE, WWW_AUTHENTICATE};
+use hyper::header::{ALLOW, CONTENT_TYPE, WWW_AUTHENTICATE};
 use hyper::server::conn::http1;
 use hyper::service::service_fn;
 use hyper::{Request, Response, StatusCode};
@@ -23,7 +23,7 @@ use tokio::net::TcpListener;
 
 use crate::domain::functions::mcp::{Incoming, ToolRun, result};
 use crate::domain::functions::mcp_http::{McpToken, Refusal, RequestHead, admit, read_body};
-use crate::domain::types::limits::MCP_HTTP;
+use crate::domain::types::limits::McpHttpLimits;
 
 /// Runs one tool and answers its MCP tool result.
 pub type RunTool =
@@ -34,6 +34,8 @@ pub struct Endpoint {
     pub token: McpToken,
     pub exposed: Vec<String>,
     pub run_tool: RunTool,
+    /// `limits::MCP_HTTP`; a test passes shorter deadlines.
+    pub limits: McpHttpLimits,
 }
 
 /// Bind `address`; the port is the one asked for, or the one the system
@@ -44,11 +46,23 @@ pub async fn bind(address: SocketAddr) -> Result<(TcpListener, SocketAddr)> {
     Ok((listener, local))
 }
 
-/// Answer connections until the process ends.
-pub async fn serve(listener: TcpListener, endpoint: Arc<Endpoint>) -> Result<()> {
+/// Answer connections until the process ends. A connection that cannot be
+/// accepted (the descriptors are used up, the client reset it first) is that
+/// connection's failure, never the server's: anyone who can reach the port
+/// could otherwise stop it.
+pub async fn serve(listener: TcpListener, endpoint: Arc<Endpoint>) {
     loop {
-        let (stream, _) = listener.accept().await?;
+        let stream = match listener.accept().await {
+            Ok((stream, _)) => stream,
+            Err(error) => {
+                crate::console::write_line(&format!("accept failed: {error}"));
+                // Descriptors used up stay used up for a while: do not spin.
+                tokio::time::sleep(Duration::from_millis(100)).await;
+                continue;
+            }
+        };
         let endpoint = Arc::clone(&endpoint);
+        let header_secs = endpoint.limits.header_secs;
         tokio::spawn(async move {
             let service = service_fn(move |request| {
                 let endpoint = Arc::clone(&endpoint);
@@ -58,7 +72,7 @@ pub async fn serve(listener: TcpListener, endpoint: Arc<Endpoint>) -> Result<()>
             // connection is the client's business, not the server's.
             let _ = http1::Builder::new()
                 .timer(TokioTimer::new())
-                .header_read_timeout(Duration::from_secs(MCP_HTTP.header_secs))
+                .header_read_timeout(Duration::from_secs(header_secs))
                 .serve_connection(TokioIo::new(stream), service)
                 .await;
         });
@@ -98,9 +112,13 @@ async fn exchange(
         },
         &endpoint.token,
     )?;
+    let version = request
+        .headers()
+        .get("mcp-protocol-version")
+        .map(|value| String::from_utf8_lossy(value.as_bytes()).into_owned());
     let body = tokio::time::timeout(
-        Duration::from_secs(MCP_HTTP.body_secs),
-        Limited::new(request.into_body(), MCP_HTTP.body_bytes).collect(),
+        Duration::from_secs(endpoint.limits.body_secs),
+        Limited::new(request.into_body(), endpoint.limits.body_bytes).collect(),
     )
     .await
     .map_err(|_| Refusal::BadRequest(None))?
@@ -111,13 +129,15 @@ async fn exchange(
         },
     )?
     .to_bytes();
-    Ok(match read_body(&body, &endpoint.exposed)? {
-        Incoming::Nothing => empty(StatusCode::ACCEPTED),
-        Incoming::Answer(answer) => json(StatusCode::OK, &answer),
-        Incoming::Call { id, run } => {
-            json(StatusCode::OK, &result(id, (endpoint.run_tool)(run).await))
-        }
-    })
+    Ok(
+        match read_body(&body, version.as_deref(), &endpoint.exposed)? {
+            Incoming::Nothing => empty(StatusCode::ACCEPTED),
+            Incoming::Answer(answer) => json(StatusCode::OK, &answer),
+            Incoming::Call { id, run } => {
+                json(StatusCode::OK, &result(id, (endpoint.run_tool)(run).await))
+            }
+        },
+    )
 }
 
 fn refused(refusal: &Refusal) -> Response<Full<Bytes>> {
@@ -128,6 +148,13 @@ fn refused(refusal: &Refusal) -> Response<Full<Bytes>> {
             response
                 .headers_mut()
                 .insert(WWW_AUTHENTICATE, "Bearer".parse().expect("a header value"));
+            response
+        }
+        Refusal::MethodNotAllowed => {
+            let mut response = empty(status);
+            response
+                .headers_mut()
+                .insert(ALLOW, "POST".parse().expect("a header value"));
             response
         }
         Refusal::BadRequest(Some(error)) => json(status, error),
@@ -149,4 +176,84 @@ fn json(status: StatusCode, value: &Value) -> Response<Full<Bytes>> {
         "application/json".parse().expect("a header value"),
     );
     response
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::time::Instant;
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    use tokio::net::TcpStream;
+
+    /// A server with one-second deadlines, answering every tool call `{}`.
+    async fn server() -> SocketAddr {
+        let (listener, address) = bind("127.0.0.1:0".parse().unwrap()).await.unwrap();
+        let run_tool: RunTool = Arc::new(|_| Box::pin(async { serde_json::json!({}) }));
+        let endpoint = Endpoint {
+            token: McpToken::new("t0ken".to_owned()).unwrap(),
+            exposed: Vec::new(),
+            run_tool,
+            limits: McpHttpLimits {
+                body_bytes: 1024,
+                header_secs: 1,
+                body_secs: 1,
+            },
+        };
+        tokio::spawn(serve(listener, Arc::new(endpoint)));
+        address
+    }
+
+    /// Write `bytes`, then read until the server closes, and how long it took.
+    async fn exchange(address: SocketAddr, bytes: &[u8]) -> (String, Duration) {
+        let started = Instant::now();
+        let mut stream = TcpStream::connect(address).await.unwrap();
+        stream.write_all(bytes).await.unwrap();
+        let mut answer = Vec::new();
+        let _ = tokio::time::timeout(Duration::from_secs(5), stream.read_to_end(&mut answer)).await;
+        (
+            String::from_utf8_lossy(&answer).into_owned(),
+            started.elapsed(),
+        )
+    }
+
+    #[tokio::test]
+    async fn a_body_that_stops_arriving_is_400_at_the_body_deadline() {
+        let address = server().await;
+        let (answer, took) = exchange(
+            address,
+            b"POST /mcp HTTP/1.1\r\nHost: x\r\nAuthorization: Bearer t0ken\r\n\
+              Content-Type: application/json\r\nContent-Length: 10\r\n\r\n{\"a\"",
+        )
+        .await;
+        assert!(answer.starts_with("HTTP/1.1 400"), "{answer:?}");
+        assert!(
+            took >= Duration::from_millis(900) && took < Duration::from_secs(4),
+            "{took:?}"
+        );
+    }
+
+    #[tokio::test]
+    async fn headers_that_never_end_close_the_connection_at_the_header_deadline() {
+        let address = server().await;
+        let (_, took) = exchange(address, b"POST /mcp HTTP/1.1\r\nHost: x\r\n").await;
+        assert!(
+            took >= Duration::from_millis(900) && took < Duration::from_secs(4),
+            "{took:?}"
+        );
+    }
+
+    #[tokio::test]
+    async fn a_method_other_than_post_says_which_one_is_allowed() {
+        let address = server().await;
+        let (answer, _) = exchange(
+            address,
+            b"GET /mcp HTTP/1.1\r\nHost: x\r\nAuthorization: t0ken\r\nConnection: close\r\n\r\n",
+        )
+        .await;
+        assert!(answer.starts_with("HTTP/1.1 405"), "{answer:?}");
+        assert!(
+            answer.to_ascii_lowercase().contains("\r\nallow: post\r\n"),
+            "{answer:?}"
+        );
+    }
 }

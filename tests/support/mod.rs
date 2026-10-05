@@ -882,6 +882,9 @@ pub struct Run {
     pub exported_variables: Vec<String>,
     /// What a `kurama mcp --listen` run answered the requests sent to it.
     pub http_responses: Vec<mcp_http::HttpResponse>,
+    /// For a server that listened: whether it was still serving when the
+    /// harness stopped it after the last answer.
+    pub stopped_while_serving: Option<bool>,
 }
 
 /// One read of a secret AWS holds: which store, and which secret.
@@ -1699,6 +1702,7 @@ impl Sandbox {
             editor_calls,
             exported_variables,
             http_responses: Vec::new(),
+            stopped_while_serving: None,
         }
     }
 
@@ -1776,6 +1780,19 @@ impl Sandbox {
             .filter(|(_, run)| run.timed_out)
             .map(|(index, _)| index)
             .collect();
+        let ended_early: Vec<usize> = verification
+            .observed
+            .runs
+            .iter()
+            .enumerate()
+            .filter(|(_, run)| run.stopped_while_serving == Some(false))
+            .map(|(index, _)| index)
+            .collect();
+        verification.check(
+            "every server was still serving when the harness stopped it",
+            ended_early.is_empty(),
+            format!("servers that ended on their own: {ended_early:?}"),
+        );
         verification.check(
             &format!("every run finishes within {}s", RUN_TIMEOUT.as_secs()),
             timed_out.is_empty(),

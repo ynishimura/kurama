@@ -1,0 +1,38 @@
+# `[mcp]` is a section `config set` edits like `[agent]`: `call_timeout` is
+# written beside the keys the file holds, and a literal `token` is refused
+# with the file left as it was, the value never printed back.
+id = "mcp_config_set_edits_the_mcp_section_and_refuses_a_literal_token"
+feature = "mcp"
+
+[combination]
+command = "config-set"
+transport = "http"
+
+[input]
+args = ["config", "set", "mcp.call_timeout", "25"]
+then_run = [
+  ["config", "set", "mcp.token", "\"plain-mcp-token-value\""],
+  ["config", "show", "mcp"],
+]
+config = """
+[mcp]
+listen = "127.0.0.1:8807"
+token = "op://Agent/kurama-mcp-token/credential"
+"""
+
+[expect]
+exit_code = 0
+stdout = { contains = ["call_timeout = 25", "token = \"op://Agent/kurama-mcp-token/credential\""] }
+stdout_excludes = ["plain-mcp-token-value"]
+op_calls = 0
+files_written = ["kurama-config.toml"]
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+
+[[expect.runs]]
+run = 1
+error = { code = "CONFIG_INVALID", exit = 2 }
+stderr_contains = ["[mcp] token is the value itself"]
+stderr_excludes = ["plain-mcp-token-value"]

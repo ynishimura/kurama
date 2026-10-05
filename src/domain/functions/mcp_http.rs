@@ -21,8 +21,10 @@ pub const ENDPOINT: &str = "/mcp";
 pub struct McpToken(String);
 
 impl McpToken {
-    pub fn new(token: String) -> Self {
-        Self(token)
+    /// The token, or `None` when it is empty: an empty token would admit an
+    /// empty `Authorization` and `Bearer ` alike.
+    pub fn new(token: String) -> Option<Self> {
+        (!token.is_empty()).then_some(Self(token))
     }
 }
 
@@ -106,17 +108,6 @@ pub fn admit(head: &RequestHead<'_>, token: &McpToken) -> Result<(), Refusal> {
     if !media_type.is_some_and(|media| media.eq_ignore_ascii_case("application/json")) {
         return Err(Refusal::UnsupportedMediaType);
     }
-    if let Some(version) = head.header("mcp-protocol-version")
-        && !PROTOCOL_VERSIONS.contains(&version)
-    {
-        return Err(Refusal::BadRequest(Some(error(
-            -32600,
-            &format!(
-                "MCP-Protocol-Version {version} is not one of {}",
-                PROTOCOL_VERSIONS.join(", ")
-            ),
-        ))));
-    }
     let length = head
         .header("content-length")
         .and_then(|value| value.parse::<u64>().ok());
@@ -128,7 +119,14 @@ pub fn admit(head: &RequestHead<'_>, token: &McpToken) -> Result<(), Refusal> {
 
 /// What the body asks for. A notification or a response is `202` with no
 /// body ([`Incoming::Nothing`]); a request is answered with `200`.
-pub fn read_body(body: &[u8], exposed: &[String]) -> Result<Incoming, Refusal> {
+/// `version` is the `MCP-Protocol-Version` header: a message other than
+/// `initialize`, which negotiates the version in its body, that names one
+/// this server does not speak is `400`.
+pub fn read_body(
+    body: &[u8],
+    version: Option<&str>,
+    exposed: &[String],
+) -> Result<Incoming, Refusal> {
     let Ok(message) = serde_json::from_slice::<Value>(body) else {
         return Err(Refusal::BadRequest(Some(error(
             -32700,
@@ -142,6 +140,19 @@ pub fn read_body(body: &[u8], exposed: &[String]) -> Result<Incoming, Refusal> {
         return Err(Refusal::BadRequest(Some(error(
             -32600,
             "the body is not one JSON-RPC message",
+        ))));
+    }
+    let initializes = message.get("method").and_then(Value::as_str) == Some("initialize");
+    if let Some(version) = version
+        && !initializes
+        && !PROTOCOL_VERSIONS.contains(&version)
+    {
+        return Err(Refusal::BadRequest(Some(error(
+            -32600,
+            &format!(
+                "MCP-Protocol-Version {version} is not one of {}",
+                PROTOCOL_VERSIONS.join(", ")
+            ),
         ))));
     }
     Ok(read_value(&message, exposed))
@@ -178,7 +189,7 @@ mod tests {
     const TOKEN: &str = "s3cr3t-token-of-the-test";
 
     fn token() -> McpToken {
-        McpToken::new(TOKEN.to_owned())
+        McpToken::new(TOKEN.to_owned()).expect("a token")
     }
 
     fn headers(pairs: &[(&str, &str)]) -> Vec<(String, String)> {
@@ -286,26 +297,32 @@ mod tests {
     }
 
     #[test]
-    fn a_protocol_version_is_one_this_server_speaks_or_absent() {
-        for version in PROTOCOL_VERSIONS {
-            assert_eq!(
-                check(
-                    "POST",
-                    ENDPOINT,
-                    &[BEARER, JSON, ("mcp-protocol-version", version)]
-                ),
-                Ok(())
+    fn a_protocol_version_is_one_this_server_speaks_or_absent_except_on_initialize() {
+        let ping = br#"{"jsonrpc":"2.0","id":1,"method":"ping"}"#;
+        for version in PROTOCOL_VERSIONS.map(Some).into_iter().chain([None]) {
+            assert!(
+                matches!(read_body(ping, version, &every()), Ok(Incoming::Answer(_))),
+                "{version:?}"
             );
         }
-        let refused = check(
-            "POST",
-            ENDPOINT,
-            &[BEARER, JSON, ("mcp-protocol-version", "1999-01-01")],
-        );
+        let refused = read_body(ping, Some("1999-01-01"), &every());
         assert!(
             matches!(&refused, Err(Refusal::BadRequest(Some(error))) if error["error"]["message"].as_str().unwrap().contains("1999-01-01")),
             "{refused:?}"
         );
+        // A newer client may name its own latest version before the two
+        // sides agreed on one; initialize answers with one this server speaks.
+        let initialize = br#"{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2099-01-01"}}"#;
+        let Ok(Incoming::Answer(answer)) = read_body(initialize, Some("2099-01-01"), &every())
+        else {
+            panic!("initialize negotiates");
+        };
+        assert_eq!(answer["result"]["protocolVersion"], PROTOCOL_VERSIONS[0]);
+    }
+
+    #[test]
+    fn an_empty_token_is_no_token() {
+        assert!(McpToken::new(String::new()).is_none());
     }
 
     #[test]
@@ -331,7 +348,7 @@ mod tests {
             "{}",
             "1",
         ] {
-            let refused = read_body(body.as_bytes(), &every());
+            let refused = read_body(body.as_bytes(), None, &every());
             assert!(
                 matches!(refused, Err(Refusal::BadRequest(Some(_)))),
                 "{body}: {refused:?}"
@@ -340,17 +357,20 @@ mod tests {
         assert_eq!(
             read_body(
                 br#"{"jsonrpc":"2.0","method":"notifications/initialized"}"#,
+                None,
                 &every()
             ),
             Ok(Incoming::Nothing)
         );
         assert_eq!(
-            read_body(br#"{"jsonrpc":"2.0","id":3,"result":{}}"#, &every()),
+            read_body(br#"{"jsonrpc":"2.0","id":3,"result":{}}"#, None, &every()),
             Ok(Incoming::Nothing)
         );
-        let Ok(Incoming::Answer(answer)) =
-            read_body(br#"{"jsonrpc":"2.0","id":1,"method":"ping"}"#, &every())
-        else {
+        let Ok(Incoming::Answer(answer)) = read_body(
+            br#"{"jsonrpc":"2.0","id":1,"method":"ping"}"#,
+            None,
+            &every(),
+        ) else {
             panic!("a request is answered");
         };
         assert_eq!(answer["id"], 1);

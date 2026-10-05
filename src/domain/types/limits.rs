@@ -163,6 +163,7 @@ pub const S3_READ: S3ReadLimits = S3ReadLimits {
 /// The endpoint faces the internet through Funnel, so a scanner holding a
 /// connection open or sending a body without end must not hold a task or
 /// memory for long. A tool call itself is bounded by `[mcp] call_timeout`.
+#[derive(Clone, Copy)]
 pub struct McpHttpLimits {
     /// Bytes of a request body; a longer one is `413`.
     pub body_bytes: usize,

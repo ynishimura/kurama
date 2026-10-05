@@ -2147,6 +2147,14 @@ fn mcp_call_timeout_ends_the_call_and_serves_the_next() {
 }
 #[test]
 #[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn mcp_config_set_edits_the_mcp_section_and_refuses_a_literal_token() {
+    crate::support::cases::run_case(
+        include_str!("../cases/mcp/mcp_config_set_edits_the_mcp_section_and_refuses_a_literal_token.toml"),
+        "tests/cases/mcp/mcp_config_set_edits_the_mcp_section_and_refuses_a_literal_token.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
 fn mcp_http_refuses_a_literal_token() {
     crate::support::cases::run_case(
         include_str!("../cases/mcp/mcp_http_refuses_a_literal_token.toml"),
@@ -2159,6 +2167,22 @@ fn mcp_http_refuses_to_listen_on_a_non_loopback_address() {
     crate::support::cases::run_case(
         include_str!("../cases/mcp/mcp_http_refuses_to_listen_on_a_non_loopback_address.toml"),
         "tests/cases/mcp/mcp_http_refuses_to_listen_on_a_non_loopback_address.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn mcp_http_reports_an_unreadable_token() {
+    crate::support::cases::run_case(
+        include_str!("../cases/mcp/mcp_http_reports_an_unreadable_token.toml"),
+        "tests/cases/mcp/mcp_http_reports_an_unreadable_token.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn mcp_http_requires_listen_and_token() {
+    crate::support::cases::run_case(
+        include_str!("../cases/mcp/mcp_http_requires_listen_and_token.toml"),
+        "tests/cases/mcp/mcp_http_requires_listen_and_token.toml",
     );
 }
 #[test]

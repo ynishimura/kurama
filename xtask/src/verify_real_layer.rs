@@ -109,10 +109,22 @@ pub(crate) fn verify_real_layer(args: &[String]) -> Result<(), String> {
             detail: error,
         }]
     });
-    gates.push(credential_scan(
-        &dir,
-        environment.service_account_token.as_deref(),
-    )?);
+    // The MCP token a person exports for `kurama mcp --listen` is sent by
+    // the harness itself, so it is a secret every report is checked for too.
+    let mcp_token = std::env::var("KURAMA_REAL_MCP_TOKEN")
+        .ok()
+        .filter(|token| !token.is_empty());
+    let secrets: Vec<(&str, &str)> = [
+        (
+            "the service account token",
+            environment.service_account_token.as_deref(),
+        ),
+        ("the MCP token", mcp_token.as_deref()),
+    ]
+    .into_iter()
+    .filter_map(|(name, value)| Some((name, value?)))
+    .collect();
+    gates.push(credential_scan(&dir, &secrets)?);
     if !skipped.is_empty() {
         gates.push(Gate {
             name: "requirements".into(),
@@ -264,18 +276,20 @@ fn keychain_service_account_token() -> Option<String> {
 }
 
 /// Every report the layer wrote, scanned the way real evidence is, and for
-/// the service account token this run handed the cases: a report that holds
-/// either is removed and named, so the matrix never reads it and the value
-/// is not in this output either.
-fn credential_scan(dir: &Path, token: Option<&str>) -> Result<Gate, String> {
+/// the `secrets` this run handed the cases, each by what it is called: a
+/// report that holds any is removed and named, so the matrix never reads it
+/// and the value is not in this output either.
+fn credential_scan(dir: &Path, secrets: &[(&str, &str)]) -> Result<Gate, String> {
     let mut leaked = Vec::new();
     let files = crate::json_files(dir).map_err(|e| format!("{}: {e}", dir.display()))?;
     for file in files {
         let text =
             std::fs::read_to_string(&file).map_err(|e| format!("{}: {e}", file.display()))?;
         let mut marks = credential_marks(&text);
-        if token.is_some_and(|token| text.contains(token)) {
-            marks.push("the service account token");
+        for (name, value) in secrets {
+            if text.contains(value) {
+                marks.push(name);
+            }
         }
         if !marks.is_empty() {
             std::fs::remove_file(&file).map_err(|e| format!("{}: {e}", file.display()))?;
@@ -362,7 +376,15 @@ mod tests {
         )
         .unwrap();
         std::fs::write(dir.join("token.json"), "{\"stderr\":\"ops_value\"}").unwrap();
-        let gate = credential_scan(&dir, Some("ops_value")).unwrap();
+        std::fs::write(dir.join("mcp.json"), "{\"stderr\":\"mcp_value\"}").unwrap();
+        let gate = credential_scan(
+            &dir,
+            &[
+                ("the service account token", "ops_value"),
+                ("the MCP token", "mcp_value"),
+            ],
+        )
+        .unwrap();
         assert!(!gate.ok);
         assert!(gate.detail.contains("leaky.json held"), "{}", gate.detail);
         assert!(!gate.detail.contains("abc.def"), "{}", gate.detail);
@@ -372,7 +394,14 @@ mod tests {
             "{}",
             gate.detail
         );
+        assert!(
+            gate.detail
+                .contains("mcp.json held the MCP token and was removed"),
+            "{}",
+            gate.detail
+        );
         assert!(!gate.detail.contains("ops_value"), "{}", gate.detail);
+        assert!(!gate.detail.contains("mcp_value"), "{}", gate.detail);
         assert!(!dir.join("leaky.json").exists());
         assert!(dir.join("clean.json").exists());
         let _ = std::fs::remove_dir_all(&dir);
