@@ -11,9 +11,10 @@
 //! stored is a failure here even though it is usable, because the next
 //! unattended run would find nothing and ask for a person again.
 //!
-//! A source of kind `token` has nothing to authorize and nothing to store:
-//! its credential is read from a secret store on every use, so `login`
-//! succeeds and says so, the way a profile without `mfa_serial` does.
+//! A source of kind `token` or `secrets` has nothing to authorize and
+//! nothing to store: its values are read from secret stores on every use,
+//! so `login` succeeds and says so, the way a profile without `mfa_serial`
+//! does.
 
 use anyhow::{Context, Result};
 use chrono::Utc;
@@ -24,7 +25,7 @@ use crate::adapters::error::CoreError;
 use crate::console::progress;
 use crate::domain::Profile;
 use crate::domain::functions::profile_status::describe_remaining;
-use crate::domain::types::{AuthSource, OAuthClientConfig, TokenSourceConfig};
+use crate::domain::types::{AuthSource, OAuthClientConfig};
 use crate::ports::TokenStoreError;
 use crate::shell::api_runtime::ApiRuntimeOptions;
 use crate::shell::mfa_login_executor::execute_mfa_login;
@@ -45,7 +46,11 @@ pub async fn handle_login_command(
             login_oauth(&client, force, no_browser, verbose, config).await
         }
         CredentialSource::Auth(AuthSource::Token(source)) => {
-            login_issued(&source);
+            login_read_each_time(&source.name, "a credential issued elsewhere");
+            Ok(())
+        }
+        CredentialSource::Auth(AuthSource::Secrets(source)) => {
+            login_read_each_time(&source.name, "secrets read on each use");
             Ok(())
         }
     }
@@ -54,11 +59,8 @@ pub async fn handle_login_command(
 /// Nothing is authorized and nothing is cached: saying so is the whole of
 /// `login` here, and it keeps `kurama login <source>` from being an error a
 /// person has to learn does not apply.
-fn login_issued(source: &TokenSourceConfig) {
-    progress!(
-        "# Source '{}' uses a credential issued elsewhere; there is nothing to log in to",
-        source.name
-    );
+fn login_read_each_time(name: &str, what: &str) {
+    progress!("# Source '{name}' uses {what}; there is nothing to log in to");
 }
 
 async fn login_aws(profile: &Profile, force: bool, config: Config) -> Result<()> {

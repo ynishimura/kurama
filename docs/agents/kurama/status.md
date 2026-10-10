@@ -9,11 +9,15 @@ profile, `[data.*]` workspace and `[s3.*]` connection. It is printed as a single
   "mfa_serial":"arn:aws:iam::123456789012:mfa/me","session":"valid",
   "logged_in":true,"expires_at":"2026-09-17T03:00:00Z","needs_human":false},
  {"name":"github","kind":"auth","auth_kind":"oauth","grant_type":"authorization_code",
-  "header":null,"env_var":"GITHUB_TOKEN",
+  "header":null,"env_var":"GITHUB_TOKEN","env_vars":["GITHUB_TOKEN"],
   "active":false,"token":"valid","logged_in":true,"expires_at":"2026-09-17T03:00:00Z",
   "refreshable":false,"needs_human":false},
  {"name":"example","kind":"auth","auth_kind":"token","grant_type":null,
-  "header":"X-API-Key","env_var":"EXAMPLE_TOKEN",
+  "header":"X-API-Key","env_var":"EXAMPLE_TOKEN","env_vars":["EXAMPLE_TOKEN"],
+  "active":false,"token":"not_checked","logged_in":false,"expires_at":null,
+  "refreshable":false,"needs_human":false},
+ {"name":"example-login","kind":"auth","auth_kind":"secrets","grant_type":null,
+  "header":null,"env_var":null,"env_vars":["SITE_OTP","SITE_PASS","SITE_USER"],
   "active":false,"token":"not_checked","logged_in":false,"expires_at":null,
   "refreshable":false,"needs_human":false},
  {"name":"github","kind":"api","base_url":"https://api.github.com","description":"GitHub REST API",
@@ -27,19 +31,23 @@ profile, `[data.*]` workspace and `[s3.*]` connection. It is printed as a single
   (keychain error) or `cache_disabled`. `token` (auth) is `valid`, `expired`,
   `missing`, `unreadable` or `not_checked`; `refreshable` means an expired
   token can be refreshed without a person.
-- `auth_kind` is `oauth` (a grant issues the token, which is cached) or
+- `auth_kind` is `oauth` (a grant issues the token, which is cached),
   `token` (a credential issued elsewhere, read from its secret store on every
-  use). A `token` source reports `"token":"not_checked"` and never
-  `"missing"`: `status` does not read secret stores, and there is nothing to
-  log in to. `grant_type` is null for it and `header` names the header its
-  credential is sent in; for an `oauth` source `header` is null.
+  use) or `secrets` (several values for the environment of `exec`, each read
+  from its secret store on every use). A `token` or `secrets` source reports
+  `"token":"not_checked"` and never `"missing"`: `status` does not read
+  secret stores, and there is nothing to log in to. `grant_type` is null for
+  both; `header` names the header a `token` source's credential is sent in
+  and is null for the other kinds. `env_vars` lists the variables `env` /
+  `exec` set; `env_var` is the one of an `oauth` or `token` source and null
+  for `secrets`, which has several.
 - `needs_human: true` means `exec`, `env`, `token` and `api` will stop with
   exit code 3. For an AWS profile: MFA is required, no cached session is
   valid and 1Password is not configured; ask a person to enable
   `[onepassword]` or to run `kurama` in a terminal and type the code. For an
   auth source: no usable token and the grant needs a browser or a code; ask a
   person to run `kurama login <source>` in a terminal. `client_credentials`
-  and `auth_kind: "token"` sources never need a person. An API with `aws_profile` follows the AWS
+  and `auth_kind: "token"` / `"secrets"` sources never need a person. An API with `aws_profile` follows the AWS
   profile it names: read that profile's `needs_human`.
 - `active: true` marks the profile (`KURAMA_AWS`) or source (`KURAMA_AUTH`)
   whose credentials the calling shell holds.

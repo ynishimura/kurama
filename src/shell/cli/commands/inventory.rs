@@ -276,7 +276,7 @@ mod tests {
         assert_eq!(find("[api.*]", "base_url")["kind"], "string");
         assert_eq!(
             find("[auth.*]", "kind")["values"],
-            json!(["oauth", "token"])
+            json!(["oauth", "token", "secrets"])
         );
         assert_eq!(find("[auth.*]", "token")["kind"], "secret");
         assert_eq!(document["config"]["source"], config_inventory::SOURCE);

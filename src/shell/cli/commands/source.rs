@@ -11,7 +11,9 @@ use crate::adapters::config::Config;
 use crate::adapters::config::references::name_collisions;
 use crate::adapters::profile::{find_profile, load_profiles};
 use crate::domain::Profile;
-use crate::domain::types::{AuthSource, OAuthClientConfig, SourceCredential};
+use crate::domain::types::{
+    AuthSource, OAuthClientConfig, RequestAuth, SecretsSourceConfig, SourceCredential,
+};
 use crate::shell::api_runtime::{ApiRuntime, ApiRuntimeOptions};
 use crate::shell::cli::executor::CliExecutorError;
 use crate::workflows::oauth_token::{TokenMode, TokenOutput};
@@ -50,16 +52,28 @@ pub async fn ensure_source_token(
         .with_context(|| format!("Failed to get a token for '{}'", client.name))
 }
 
-/// The credential of a source of either kind (`token`, `env`, `exec`).
+/// The credential of an `oauth` or `token` source (`token`, `env`, `exec`).
 pub async fn ensure_source_credential(
     config: Config,
-    source: &AuthSource,
+    source: &RequestAuth,
     options: ApiRuntimeOptions,
 ) -> Result<SourceCredential> {
     ApiRuntime::from_config(Arc::new(config), options)?
         .ensure_credential(source, TokenMode::Reuse)
         .await
         .with_context(|| format!("Failed to get a token for '{}'", source.name()))
+}
+
+/// Every value of a `secrets` source (`env`, `exec`), or the failure of the
+/// first reference that could not be read.
+pub async fn resolve_source_secrets(
+    config: Config,
+    source: &SecretsSourceConfig,
+    options: ApiRuntimeOptions,
+) -> Result<Vec<(String, String)>> {
+    ApiRuntime::from_config(Arc::new(config), options)?
+        .resolve_secrets(source)
+        .await
 }
 
 /// An `[auth.*]` name that is also an AWS profile name is a configuration error.

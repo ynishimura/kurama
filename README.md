@@ -371,9 +371,10 @@ the legacy `AWS_CREDENTIAL_EXPIRATION` and `AWS_DEFAULT_PROFILE`.
 `AWS_CA_BUNDLE` is kept, because it controls TLS.
 
 For an `[auth.*]` source, `kurama env` exports the token into the source's
-`env_var`. It also sets `KURAMA_AUTH` to the source name and `KURAMA_AUTH_VAR`
-to the variable's name. That way `kurama unset` can still clear the token
-after the configuration renames or removes the `env_var`.
+`env_var` -- or, for a `kind = "secrets"` source, each secret into its own
+variable. It also sets `KURAMA_AUTH` to the source name and `KURAMA_AUTH_VAR`
+to the variables' names, space separated. That way `kurama unset` can still
+clear them after the configuration renames or removes a variable.
 
 `kurama exec` sets the same variables for one command only, then replaces
 itself with that command. The exit code and signals are the command's own.
@@ -596,6 +597,13 @@ token = "op://Agent/kurama-backlog/credential"
 query = "apiKey"               # instead of header/format/username: the credential in this query parameter;
                                # an error message names the URL without its query
 
+[auth.example-login]           # values for the environment of `kurama exec`: no request, no grant, nothing cached
+kind = "secrets"
+[auth.example-login.env]       # VARIABLE = reference; a literal, AWS_* and KURAMA_* are refused
+SITE_USER = "op://Agent/<item-id>/username"
+SITE_PASS = "op://Agent/<item-id>/password"
+SITE_OTP = "op://Agent/<item-id>/one-time password?attribute=otp"
+
 [api.github]
 description = "GitHub REST API"
 base_url = "https://api.github.com"
@@ -643,6 +651,25 @@ such a source:
 - `kurama env` and `kurama exec` put it in `env_var`;
 - `kurama login` and `kurama logout` have nothing to do;
 - `kurama status` reports it as `not_checked`, because it resolves no secret.
+
+A `kind = "secrets"` source is for a command that needs several secrets in
+its environment, such as a browser automation tool getting past a login
+screen. Every reference under `env` is read when `kurama exec` or
+`kurama env` runs, and the command starts only after all of them were read;
+the first that cannot be read fails the run with its `SECRET_*` code. Fields
+of one 1Password item are one `op` call, and an `?attribute=otp` reference
+is read fresh for each run. For such a source:
+
+- `kurama exec <source> -- <cmd>` runs `<cmd>` with every variable set, and
+  `kurama env` exports them (`--json`: `{"env": {...}}`);
+- `kurama token`, `console` and `--readonly` are refused (`KIND_UNSUPPORTED`),
+  and an `[api.*]` cannot use it as `auth` (`CONFIG_INVALID`);
+- `kurama login` and `kurama logout` have nothing to do;
+- `kurama status` lists its variable names, never a value, as `not_checked`.
+
+The environment of a command is not a boundary: a command an agent runs can
+print what it was given. What kurama keeps out is the transcript, the shell
+history and every file.
 
 ### Guardrails for agents (`[agent]`)
 

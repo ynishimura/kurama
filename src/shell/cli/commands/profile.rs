@@ -13,19 +13,21 @@
 //!
 //! ## `[auth.*]` sources
 //!
-//! `env` exports the credential into the source's `env_var` (and the source
-//! name into `KURAMA_AUTH`, the `env_var` into `KURAMA_AUTH_VAR`), `exec`
-//! puts them in the command's environment;
-//! `console` and `--readonly` do not apply to either kind.
+//! `env` exports the credential into the source's `env_var` -- or, for a
+//! `kind = "secrets"` source, each secret into its own variable -- with the
+//! source name in `KURAMA_AUTH` and the variable names in `KURAMA_AUTH_VAR`;
+//! `exec` puts them in the command's environment, after every value was
+//! read. `console` and `--readonly` do not apply to any kind.
 
-use super::source::ensure_source_credential;
+use super::source::{ensure_source_credential, resolve_source_secrets};
 use super::unset::managed_token_vars;
 use crate::adapters::config::Config;
 use crate::adapters::env_script::output_shell_script;
 use crate::console::progress;
 use crate::domain::OutputFormat;
 use crate::domain::functions::export::{
-    generate_token_export_script, generate_token_json, token_env_vars,
+    auth_env_vars, generate_auth_export_script, generate_secrets_json, generate_token_json,
+    token_env_vars,
 };
 use crate::domain::types::AuthSource;
 use crate::shell::agent_policy::exec_is_read_only;
@@ -165,28 +167,35 @@ pub async fn handle_auth_profile_command(
         report_secret_reads: config.verbose,
         ..ApiRuntimeOptions::default()
     };
-    let credential = ensure_source_credential(app_config, &source, options).await?;
+    // What was exported, for the progress line; the variables; `--json`.
+    let (what, vars, json) = match source.request_auth() {
+        Ok(source) => {
+            let credential = ensure_source_credential(app_config, &source, options).await?;
+            (
+                "Token for",
+                token_env_vars(&credential, &source),
+                generate_token_json(&credential),
+            )
+        }
+        Err(secrets) => {
+            let values = resolve_source_secrets(app_config, &secrets, options).await?;
+            let json = generate_secrets_json(&values);
+            ("Secrets of", auth_env_vars(&secrets.name, values), json)
+        }
+    };
 
     match config.action {
         ProfileAction::Export(OutputFormat::Shell) => {
-            output_shell_script(&generate_token_export_script(
-                &credential,
-                &source,
-                &managed,
-            ))?;
+            let exported = vars.last().map(|(_, names)| names.clone());
+            output_shell_script(&generate_auth_export_script(vars, &managed))?;
             progress!(
-                "# Token for '{}' exported into {}",
-                source.name(),
-                source.env_var()
+                "# {what} '{}' exported into {}",
+                config.profile_name,
+                exported.unwrap_or_default()
             );
         }
-        ProfileAction::Export(OutputFormat::Json) => {
-            println!("{}", generate_token_json(&credential));
-        }
-        ProfileAction::Exec(command) => {
-            let vars = token_env_vars(&credential, &source);
-            return Err(exec_command(&command, vars));
-        }
+        ProfileAction::Export(OutputFormat::Json) => println!("{json}"),
+        ProfileAction::Exec(command) => return Err(exec_command(&command, vars)),
         ProfileAction::OpenConsole => unreachable!("rejected above"),
     }
     Ok(())

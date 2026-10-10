@@ -1,10 +1,11 @@
 //! A `[auth.<name>]` credential source, whichever kind it is: an OAuth 2.0
-//! client that gets a token from a grant, or a credential issued elsewhere
-//! that is read from a secret store.
+//! client that gets a token from a grant, a credential issued elsewhere
+//! that is read from a secret store, or a set of secrets for the
+//! environment of a command.
 
 use serde::{Deserialize, Serialize};
 
-use super::{OAuthClientConfig, OAuthToken, TokenSourceConfig};
+use super::{OAuthClientConfig, OAuthToken, SecretsSourceConfig, TokenSourceConfig};
 
 /// What a `[auth.<name>]` section's `kind` says it is.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
@@ -15,6 +16,9 @@ pub enum AuthKind {
     OAuth,
     /// A credential issued elsewhere, read from a secret store each time.
     Token,
+    /// Several secrets, each read into a variable of its own for `env` /
+    /// `exec`; no request ever carries them.
+    Secrets,
 }
 
 impl AuthKind {
@@ -22,6 +26,7 @@ impl AuthKind {
         match self {
             Self::OAuth => "oauth",
             Self::Token => "token",
+            Self::Secrets => "secrets",
         }
     }
 }
@@ -31,9 +36,47 @@ impl AuthKind {
 pub enum AuthSource {
     OAuth(OAuthClientConfig),
     Token(TokenSourceConfig),
+    Secrets(SecretsSourceConfig),
 }
 
 impl AuthSource {
+    pub fn name(&self) -> &str {
+        match self {
+            Self::OAuth(client) => &client.name,
+            Self::Token(source) => &source.name,
+            Self::Secrets(source) => &source.name,
+        }
+    }
+
+    /// The variables `kurama env` / `kurama exec` put the credential in:
+    /// one for a token, one per secret for a `secrets` source.
+    pub fn env_vars(&self) -> Vec<&str> {
+        match self {
+            Self::OAuth(client) => vec![&client.env_var],
+            Self::Token(source) => vec![&source.env_var],
+            Self::Secrets(source) => source.variables().collect(),
+        }
+    }
+
+    pub fn kind(&self) -> AuthKind {
+        match self {
+            Self::OAuth(_) => AuthKind::OAuth,
+            Self::Token(_) => AuthKind::Token,
+            Self::Secrets(_) => AuthKind::Secrets,
+        }
+    }
+}
+
+/// A source whose one credential a request, `kurama token` and the token
+/// variables carry: every kind but `secrets`, which holds several values
+/// for the environment of a command and none for a request.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum RequestAuth {
+    OAuth(OAuthClientConfig),
+    Token(TokenSourceConfig),
+}
+
+impl RequestAuth {
     pub fn name(&self) -> &str {
         match self {
             Self::OAuth(client) => &client.name,
@@ -48,11 +91,16 @@ impl AuthSource {
             Self::Token(source) => &source.env_var,
         }
     }
+}
 
-    pub fn kind(&self) -> AuthKind {
+impl AuthSource {
+    /// The source as the one credential it holds, or the `secrets` source,
+    /// which holds none.
+    pub fn request_auth(self) -> Result<RequestAuth, SecretsSourceConfig> {
         match self {
-            Self::OAuth(_) => AuthKind::OAuth,
-            Self::Token(_) => AuthKind::Token,
+            Self::OAuth(client) => Ok(RequestAuth::OAuth(client)),
+            Self::Token(source) => Ok(RequestAuth::Token(source)),
+            Self::Secrets(source) => Err(source),
         }
     }
 }
@@ -129,17 +177,46 @@ mod tests {
         })
     }
 
+    fn secrets() -> AuthSource {
+        AuthSource::Secrets(SecretsSourceConfig {
+            name: "site".into(),
+            env: [
+                ("SITE_USER", "op://Agent/site/username"),
+                ("SITE_PASS", "op://Agent/site/password"),
+            ]
+            .into_iter()
+            .map(|(var, reference)| (var.into(), SecretRef::parse(reference).unwrap()))
+            .collect(),
+        })
+    }
+
     #[test]
-    fn both_kinds_answer_their_name_kind_and_variable() {
+    fn every_kind_answers_its_name_kind_and_variables() {
         assert_eq!(oauth().name(), "github");
-        assert_eq!(oauth().env_var(), "GITHUB_TOKEN");
+        assert_eq!(oauth().env_vars(), ["GITHUB_TOKEN"]);
         assert_eq!(oauth().kind(), AuthKind::OAuth);
         assert_eq!(oauth().kind().as_str(), "oauth");
         assert_eq!(issued().name(), "example");
-        assert_eq!(issued().env_var(), "KURAMA_TOKEN");
+        assert_eq!(issued().env_vars(), ["KURAMA_TOKEN"]);
         assert_eq!(issued().kind(), AuthKind::Token);
         assert_eq!(issued().kind().as_str(), "token");
+        assert_eq!(secrets().name(), "site");
+        assert_eq!(secrets().env_vars(), ["SITE_PASS", "SITE_USER"]);
+        assert_eq!(secrets().kind(), AuthKind::Secrets);
+        assert_eq!(secrets().kind().as_str(), "secrets");
         assert_eq!(AuthKind::default(), AuthKind::OAuth);
+    }
+
+    #[test]
+    fn only_a_secrets_source_has_no_request_credential() {
+        let oauth = oauth().request_auth().unwrap();
+        assert_eq!((oauth.name(), oauth.env_var()), ("github", "GITHUB_TOKEN"));
+        let issued = issued().request_auth().unwrap();
+        assert_eq!(
+            (issued.name(), issued.env_var()),
+            ("example", "KURAMA_TOKEN")
+        );
+        assert_eq!(secrets().request_auth().unwrap_err().name, "site");
     }
 
     #[test]

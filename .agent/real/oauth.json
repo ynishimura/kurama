@@ -3,9 +3,9 @@
   "feature": "oauth",
   "status": "verified",
   "reason": null,
-  "commit": "dfda49629bf72cd0d6411c8a1def4e5956d50593",
-  "feature_hash": "fc14c558ea3cb8dc",
-  "diff_hash": "eac7b9b7a7758642",
+  "commit": "846e05f0763cdf1c859c0e73de5bc982da93bdd0",
+  "feature_hash": "088c8a36c6dcc0db",
+  "diff_hash": "5e5fe19c4f3192e3",
   "environment": "real-services",
   "access": "read-only",
   "command": [
@@ -16,13 +16,20 @@
     "real",
     "oauth"
   ],
-  "generated_at": "2026-09-27T17:23:43.319914+00:00",
+  "generated_at": "2026-10-10T16:17:12.129322+00:00",
   "observed": [
     {
       "test": "oauth_real_client_credentials_grant_issues_a_token",
       "result": "passed",
       "mock": [
         "oauth_real_client_credentials_grant_issues_a_token"
+      ]
+    },
+    {
+      "test": "oauth_secrets_kind_real_exec_reads_onepassword_and_parameter_store",
+      "result": "passed",
+      "mock": [
+        "oauth_secrets_kind_real_exec_reads_onepassword_and_parameter_store"
       ]
     }
   ],

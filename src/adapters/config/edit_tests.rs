@@ -431,3 +431,38 @@ fn a_removed_section_before_an_array_entry_keeps_its_comment() {
         "# the lake\n[[data.lake.sources]]\nname = \"x\"\n"
     );
 }
+
+/// Every value of `[auth.<name>.env]` is a secret: one variable set to a
+/// literal is refused by its path, and so is the whole table set with a
+/// literal anywhere in it; references are written.
+#[test]
+fn a_secrets_table_takes_references_only_one_by_one_or_whole() {
+    let file = "[auth.site]\nkind = \"secrets\"\n[auth.site.env]\nSITE_USER = \"op://Agent/site/username\"\n";
+    let mut edit = Edit::new(Path::new("/c.toml"), file).unwrap();
+    match edit.set("auth.site.env.SITE_PASS", "\"hunter2\"") {
+        Err(error @ InputError::LiteralSecret { .. }) => {
+            assert!(
+                error
+                    .to_string()
+                    .starts_with("auth.site.env.SITE_PASS must be")
+            );
+            assert!(!error.to_string().contains("hunter2"));
+        }
+        other => panic!("{other:?}"),
+    }
+    assert!(matches!(
+        edit.set(
+            "auth.site.env",
+            "{ SITE_USER = \"op://Agent/site/username\", SITE_PASS = \"hunter2\" }"
+        ),
+        Err(InputError::LiteralSecret { .. })
+    ));
+    edit.set("auth.site.env.SITE_PASS", "\"op://Agent/site/password\"")
+        .unwrap();
+    assert!(
+        edit.text()
+            .contains("SITE_PASS = \"op://Agent/site/password\""),
+        "{}",
+        edit.text()
+    );
+}

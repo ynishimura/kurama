@@ -23,13 +23,13 @@ use crate::adapters::session_cache::create_session_cache;
 use crate::adapters::token_store::create_token_store;
 use crate::domain::Profile;
 use crate::domain::functions::auth_status::{
-    AuthStatus, TokenLookup, TokenState, auth_status, describe_token,
+    AuthDetail, AuthStatus, TokenLookup, TokenState, auth_status, describe_token,
 };
 use crate::domain::functions::export::{ACTIVE_AUTH_VAR, ACTIVE_AWS_PROFILE_VAR};
 use crate::domain::functions::profile_status::{
     ProfileStatus, SessionLookup, SessionState, StatusInputs, describe_session, profile_status,
 };
-use crate::domain::types::{AuthKind, AuthSource};
+use crate::domain::types::AuthSource;
 use crate::ports::{SessionCacheError, TokenStore, TokenStoreError};
 use crate::shell::cli::executor::CliExecutorError;
 
@@ -260,11 +260,12 @@ pub async fn gather_auth_statuses(
     let active_auth = std::env::var(ACTIVE_AUTH_VAR).ok();
     let mut statuses = BTreeMap::new();
     for client in clients {
-        // Only a grant writes a token store entry, so a `kind = "token"`
-        // source is not looked up: the store answers nothing for it, and
-        // asking would be a keychain read for an answer that is already known.
+        // Only a grant writes a token store entry, so a `kind = "token"` or
+        // `kind = "secrets"` source is not looked up: the store answers
+        // nothing for it, and asking would be a keychain read for an answer
+        // that is already known.
         let lookup = match client {
-            AuthSource::Token(_) => None,
+            AuthSource::Token(_) | AuthSource::Secrets(_) => None,
             AuthSource::OAuth(_) => match store.load(client.name()).await {
                 Ok(Some(token)) => Some(TokenLookup::Stored {
                     expires_at: token.expires_at,
@@ -416,13 +417,17 @@ pub fn render_status_table(rows: &[StatusRow], now: DateTime<Utc>) -> String {
 }
 
 /// The DETAIL column of an `auth` row: what the source is, and the one
-/// thing that differs between the kinds -- the grant it runs, or the header
-/// it presents its credential in.
+/// thing that differs between the kinds -- the grant it runs, the header it
+/// presents its credential in, or the variables it sets.
 fn describe_auth_source(status: &AuthStatus) -> String {
-    match (status.grant_type, &status.header) {
-        (Some(grant), _) => format!("{} {}", AuthKind::OAuth.as_str(), grant.as_str()),
-        (None, Some(header)) => format!("{} header={header}", AuthKind::Token.as_str()),
-        (None, None) => status.kind.as_str().to_string(),
+    let kind = status.detail.kind().as_str();
+    match &status.detail {
+        AuthDetail::OAuth { grant_type } => format!("{kind} {}", grant_type.as_str()),
+        AuthDetail::Token {
+            header: Some(header),
+        } => format!("{kind} header={header}"),
+        AuthDetail::Token { header: None } => kind.to_string(),
+        AuthDetail::Secrets => format!("{kind} env={}", status.env_vars.join(",")),
     }
 }
 
@@ -482,13 +487,22 @@ pub fn render_status_json(rows: &[StatusRow]) -> String {
                 let mut fields = serde_json::Map::new();
                 fields.insert("name".into(), status.name.clone().into());
                 fields.insert("kind".into(), kind.into());
-                fields.insert("auth_kind".into(), status.kind.as_str().into());
-                fields.insert(
-                    "grant_type".into(),
-                    status.grant_type.map(|grant| grant.as_str()).into(),
-                );
-                fields.insert("header".into(), status.header.clone().into());
-                fields.insert("env_var".into(), status.env_var.clone().into());
+                let (grant_type, header) = match &status.detail {
+                    AuthDetail::OAuth { grant_type } => (Some(grant_type.as_str()), None),
+                    AuthDetail::Token { header } => (None, header.clone()),
+                    AuthDetail::Secrets => (None, None),
+                };
+                // `env_var` is the one variable of a token; a `secrets`
+                // source has several, and `env_vars` lists them for both.
+                let env_var = match status.env_vars.as_slice() {
+                    [only] if status.detail != AuthDetail::Secrets => Some(only.clone()),
+                    _ => None,
+                };
+                fields.insert("auth_kind".into(), status.detail.kind().as_str().into());
+                fields.insert("grant_type".into(), grant_type.into());
+                fields.insert("header".into(), header.into());
+                fields.insert("env_var".into(), env_var.into());
+                fields.insert("env_vars".into(), status.env_vars.clone().into());
                 fields.insert("active".into(), status.active.into());
                 fields.extend(auth_json_fields(status));
                 serde_json::Value::Object(fields)
@@ -641,10 +655,10 @@ mod tests {
     fn github_status() -> AuthStatus {
         AuthStatus {
             name: "github".into(),
-            kind: AuthKind::OAuth,
-            grant_type: Some(GrantType::AuthorizationCode),
-            header: None,
-            env_var: "GITHUB_TOKEN".into(),
+            detail: AuthDetail::OAuth {
+                grant_type: GrantType::AuthorizationCode,
+            },
+            env_vars: vec!["GITHUB_TOKEN".into()],
             token: TokenState::Valid {
                 expires_at: Some(now() + Duration::minutes(112)),
             },
@@ -656,10 +670,10 @@ mod tests {
     fn issued_status() -> AuthStatus {
         AuthStatus {
             name: "example".into(),
-            kind: AuthKind::Token,
-            grant_type: None,
-            header: Some("X-API-Key".into()),
-            env_var: "EXAMPLE_TOKEN".into(),
+            detail: AuthDetail::Token {
+                header: Some("X-API-Key".into()),
+            },
+            env_vars: vec!["EXAMPLE_TOKEN".into()],
             token: TokenState::NotChecked,
             active: false,
             needs_human: false,

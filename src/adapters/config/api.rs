@@ -25,6 +25,13 @@
 //! format = "{token}"                    # default "Bearer {token}"
 //! env_var = "EXAMPLE_TOKEN"             # kurama env / exec; default KURAMA_TOKEN
 //!
+//! [auth.example-login]
+//! kind = "secrets"                      # values for the environment of `exec`
+//! [auth.example-login.env]              # variable -> reference, never a value
+//! SITE_USER = "op://Agent/<item-id>/username"
+//! SITE_PASS = "op://Agent/<item-id>/password"
+//! SITE_OTP = "op://Agent/<item-id>/one-time password?attribute=otp"
+//!
 //! [api.github]
 //! description = "GitHub REST API"
 //! base_url = "https://api.github.com"
@@ -43,9 +50,11 @@
 //! # openapi_auth = true                 # fetch it with the API's own credential: same origin as base_url
 //! ```
 //!
-//! `kind` decides which keys a source takes: a key of the other kind is a
+//! `kind` decides which keys a source takes: a key of another kind is a
 //! `CONFIG_INVALID` error naming it, because a `token` written under an
-//! OAuth source would be a credential nobody sends. `issuer` and explicit
+//! OAuth source would be a credential nobody sends. A `secrets` source puts
+//! values in the environment of a command and authenticates no request, so
+//! an `[api.*]` that names it is refused too. `issuer` and explicit
 //! `auth_url` / `token_url` / `device_auth_url` are
 //! exclusive, and so are `auth` and `aws_profile`. An `[auth.*]` name that
 //! is also an AWS profile name is a `CONFIG_INVALID` error when a command
@@ -68,7 +77,7 @@ use crate::domain::types::oauth_client::check_http_url;
 use crate::domain::types::{
     ApiHeaders, AuthKind, AuthSource, DEFAULT_TOKEN_ENV_VAR, DEFAULT_TOKEN_FORMAT,
     DEFAULT_TOKEN_HEADER, EndpointSource, GrantType, OAuthClientConfig, OAuthEndpoints, SecretRef,
-    TokenPlacement, TokenSourceConfig, check_env_var,
+    SecretsSourceConfig, TokenPlacement, TokenSourceConfig, check_env_var,
 };
 
 fn exclusive_with(key: &str, others: &[(&str, bool)]) -> Result<(), String> {
@@ -81,7 +90,8 @@ fn exclusive_with(key: &str, others: &[(&str, bool)]) -> Result<(), String> {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct AuthToml {
-    /// `"oauth"` (the default) or `"token"`; each kind takes its own keys.
+    /// `"oauth"` (the default), `"token"` or `"secrets"`; each kind takes
+    /// its own keys.
     #[serde(default)]
     pub kind: AuthKind,
     // `kind = "oauth"`
@@ -118,23 +128,64 @@ pub struct AuthToml {
     /// The query parameter the credential goes in instead of a header.
     #[serde(default)]
     pub query: Option<String>,
-    // Both kinds
+    // `kind = "oauth"` and `kind = "token"`
     #[serde(default)]
     pub env_var: Option<String>,
+    // `kind = "secrets"`
+    /// Variable name -> the reference its value is read from.
+    #[serde(default)]
+    pub env: Option<BTreeMap<String, SecretRef>>,
 }
 
 impl AuthToml {
     /// The validated source; the message names the offending key.
     pub fn typed(&self, name: &str) -> Result<AuthSource, String> {
+        match self.kind {
+            AuthKind::OAuth => self.oauth(name, self.env_var()?).map(AuthSource::OAuth),
+            AuthKind::Token => self.issued(name, self.env_var()?).map(AuthSource::Token),
+            AuthKind::Secrets => self.secrets(name).map(AuthSource::Secrets),
+        }
+    }
+
+    /// The one variable an `oauth` or `token` source exports into.
+    fn env_var(&self) -> Result<String, String> {
         let env_var = self
             .env_var
             .clone()
             .unwrap_or_else(|| DEFAULT_TOKEN_ENV_VAR.to_string());
         check_env_var(&env_var)?;
-        match self.kind {
-            AuthKind::OAuth => self.oauth(name, env_var).map(AuthSource::OAuth),
-            AuthKind::Token => self.issued(name, env_var).map(AuthSource::Token),
-        }
+        Ok(env_var)
+    }
+
+    fn secrets(&self, name: &str) -> Result<SecretsSourceConfig, String> {
+        self.reject_foreign_keys(
+            AuthKind::Secrets,
+            &[
+                ("grant_type", self.grant_type.is_some()),
+                ("issuer", self.issuer.is_some()),
+                ("auth_url", self.auth_url.is_some()),
+                ("token_url", self.token_url.is_some()),
+                ("device_auth_url", self.device_auth_url.is_some()),
+                ("client_id", self.client_id.is_some()),
+                ("client_secret", self.client_secret.is_some()),
+                ("scopes", !self.scopes.is_empty()),
+                ("redirect_port", self.redirect_port.is_some()),
+                ("token", self.token.is_some()),
+                ("header", self.header.is_some()),
+                ("format", self.format.is_some()),
+                ("username", self.username.is_some()),
+                ("query", self.query.is_some()),
+                ("env_var", self.env_var.is_some()),
+            ],
+        )?;
+        let config = SecretsSourceConfig {
+            name: name.to_string(),
+            env: self.env.clone().ok_or_else(|| {
+                "env is required: a table of variable = secret reference".to_string()
+            })?,
+        };
+        config.validate()?;
+        Ok(config)
     }
 
     /// The keys of the other kind, refused by name: a `token` written under
@@ -162,6 +213,7 @@ impl AuthToml {
                 ("client_secret", self.client_secret.is_some()),
                 ("scopes", !self.scopes.is_empty()),
                 ("redirect_port", self.redirect_port.is_some()),
+                ("env", self.env.is_some()),
             ],
         )?;
         let config = TokenSourceConfig {
@@ -223,6 +275,7 @@ impl AuthToml {
                 ("format", self.format.is_some()),
                 ("username", self.username.is_some()),
                 ("query", self.query.is_some()),
+                ("env", self.env.is_some()),
             ],
         )?;
         let grant_type = self
@@ -477,6 +530,18 @@ impl ApiToml {
             (None, Some(_)) => None,
             (None, None) => sources.contains_key(name).then(|| name.to_string()),
         };
+        // Its values go to the environment of a command; no request carries
+        // them, so an API that named it would be sent without a credential.
+        if let Some(source) = auth.as_deref().filter(|source| {
+            sources
+                .get(*source)
+                .is_some_and(|toml| toml.kind == AuthKind::Secrets)
+        }) {
+            return Err(format!(
+                "[auth.{source}] is kind = \"secrets\", which authenticates no request: \
+                 name a kind = \"oauth\" or \"token\" source in auth"
+            ));
+        }
         // The source puts its credential in this header and would replace
         // the configured value without a word.
         if let Some(header) = auth
@@ -1131,6 +1196,88 @@ env_var = "GITHUB_TOKEN"
             let section: ApiToml = toml::from_str(toml).unwrap();
             let message = section.typed("x", &sources).unwrap_err();
             assert!(message.contains(expected), "{toml}: {message}");
+        }
+    }
+
+    const SITE_LOGIN: &str = "kind = \"secrets\"\n[env]\nSITE_USER = \"op://Agent/site/username\"\nSITE_OTP = \"op://Agent/site/one-time password?attribute=otp\"\n";
+
+    /// The whole of a `kind = "secrets"` source: every variable and the
+    /// reference it is read from, in name order.
+    #[test]
+    fn a_secrets_source_maps_each_variable_to_its_reference() {
+        let AuthSource::Secrets(source) = auth(SITE_LOGIN).typed("site").unwrap() else {
+            panic!("expected a secrets source");
+        };
+        assert_eq!(source.name, "site");
+        assert_eq!(
+            source.env.keys().collect::<Vec<_>>(),
+            ["SITE_OTP", "SITE_USER"]
+        );
+        assert_eq!(
+            source.env["SITE_USER"],
+            SecretRef::parse("op://Agent/site/username").unwrap()
+        );
+    }
+
+    /// A key of another kind is refused by name, both ways: `env` under a
+    /// token source would be values nobody exports, and `env_var` or
+    /// `header` under a secrets source would be a place nothing is put.
+    #[rstest::rstest]
+    #[case(
+        "kind = \"secrets\"\nenv_var = \"X\"\n[env]\nA = \"op://v/i/f\"\n",
+        "env_var does not apply to kind = \"secrets\""
+    )]
+    #[case(
+        "kind = \"secrets\"\nheader = \"X\"\n[env]\nA = \"op://v/i/f\"\n",
+        "header does not apply to kind = \"secrets\""
+    )]
+    #[case(
+        "kind = \"secrets\"\ntoken = \"op://v/i/f\"\n[env]\nA = \"op://v/i/f\"\n",
+        "token does not apply to kind = \"secrets\""
+    )]
+    #[case(
+        "kind = \"secrets\"\nclient_id = \"id\"\n[env]\nA = \"op://v/i/f\"\n",
+        "client_id does not apply to kind = \"secrets\""
+    )]
+    #[case(
+        "kind = \"token\"\ntoken = \"op://v/i/f\"\n[env]\nA = \"op://v/i/f\"\n",
+        "env does not apply to kind = \"token\""
+    )]
+    #[case(
+        "grant_type = \"client_credentials\"\ntoken_url = \"https://x/token\"\nclient_id = \"id\"\n[env]\nA = \"op://v/i/f\"\n",
+        "env does not apply to kind = \"oauth\""
+    )]
+    #[case("kind = \"secrets\"\n", "env is required")]
+    #[case("kind = \"secrets\"\n[env]\n", "at least one variable")]
+    #[case(
+        "kind = \"secrets\"\n[env]\nA = \"plain\"\n",
+        "env.A must be a secret reference"
+    )]
+    #[case(
+        "kind = \"secrets\"\n[env]\nAWS_PROFILE = \"op://v/i/f\"\n",
+        "env.AWS_PROFILE: variables starting with AWS_"
+    )]
+    fn a_secrets_source_takes_its_own_keys_only(#[case] toml: &str, #[case] expected: &str) {
+        let message = auth(toml).typed("site").unwrap_err();
+        assert!(message.contains(expected), "{toml}: {message}");
+    }
+
+    /// An API cannot use a secrets source, whether it names it or shares
+    /// its name: the request would go without a credential.
+    #[test]
+    fn an_api_cannot_authenticate_with_a_secrets_source() {
+        let sources = BTreeMap::from([("site".to_string(), auth(SITE_LOGIN))]);
+        for toml in [
+            "base_url = \"https://x\"\nauth = \"site\"\n",
+            "base_url = \"https://x\"\n",
+        ] {
+            let section: ApiToml = toml::from_str(toml).unwrap();
+            let message = section.typed("site", &sources).unwrap_err();
+            assert!(
+                message
+                    .contains("[auth.site] is kind = \"secrets\", which authenticates no request"),
+                "{toml}: {message}"
+            );
         }
     }
 }

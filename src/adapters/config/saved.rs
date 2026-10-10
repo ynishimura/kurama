@@ -30,12 +30,21 @@ pub const FIXED: [&str; 8] = [
 /// The top-level tables whose entries are units of their own.
 pub const NAMED: [&str; 5] = ["auth", "api", "data", "db", "s3"];
 
-/// The keys that hold a secret, under the named table they belong to. A
-/// literal value there is the secret itself.
-pub(super) const SECRET_KEYS: [(&str, &str); 3] = [
-    ("auth", "client_secret"),
-    ("auth", "token"),
-    ("db", "password"),
+/// Where an entry of a named table keeps a secret: under one key, or as
+/// every value of a table (`[auth.<name>.env]`, one reference per variable).
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(super) enum SecretSlot {
+    Key(&'static str),
+    EveryValueOf(&'static str),
+}
+
+/// The secret slots, under the named table they belong to. A literal value
+/// there is the secret itself.
+pub(super) const SECRET_SLOTS: [(&str, SecretSlot); 4] = [
+    ("auth", SecretSlot::Key("client_secret")),
+    ("auth", SecretSlot::Key("token")),
+    ("auth", SecretSlot::EveryValueOf("env")),
+    ("db", SecretSlot::Key("password")),
 ];
 
 /// What a literal secret is shown as.
@@ -125,46 +134,62 @@ impl Saved {
         })
     }
 
-    /// Every secret key that holds anything but a secret reference -- the
-    /// secret itself, a number, a table -- as `auth.<name>.client_secret`.
+    /// Every secret that is anything but a secret reference -- the secret
+    /// itself, a number, a table -- as `auth.<name>.client_secret` or
+    /// `auth.<name>.env.<VAR>`.
     pub fn literal_secrets(&self) -> Vec<String> {
         let mut found = Vec::new();
-        for (kind, key) in SECRET_KEYS {
-            let Some(entries) = self.doc.get(kind).and_then(Item::as_table_like) else {
-                continue;
-            };
-            for (name, entry) in entries.iter() {
-                let item = entry.as_table_like().and_then(|entry| entry.get(key));
-                if item.is_some_and(|item| !is_reference(item)) {
-                    found.push(format!("{kind}.{}.{key}", Key::new(name).display_repr()));
-                }
+        self.clone().visit_secrets(|path, item| {
+            if !is_reference(item) {
+                found.push(path);
             }
-        }
+        });
         found
     }
 
-    /// Replace every secret key that holds no reference with [`REDACTED`],
-    /// keeping a value's comments.
+    /// Replace every secret that is no reference with [`REDACTED`], keeping
+    /// a value's comments.
     pub fn redact(&mut self) {
-        for (kind, key) in SECRET_KEYS {
+        self.visit_secrets(|_, item| {
+            if is_reference(item) {
+                return;
+            }
+            let mut redacted = Value::from(REDACTED);
+            if let Some(value) = item.as_value() {
+                *redacted.decor_mut() = value.decor().clone();
+            }
+            *item = Item::Value(redacted);
+        });
+    }
+
+    /// Call `visit` with the dotted path and the item of every secret the
+    /// [`SECRET_SLOTS`] name. A slot table that is not a table is visited
+    /// whole, so a literal written in its place is found too.
+    fn visit_secrets(&mut self, mut visit: impl FnMut(String, &mut Item)) {
+        for (kind, slot) in SECRET_SLOTS {
             let Some(entries) = self.doc.get_mut(kind).and_then(Item::as_table_like_mut) else {
                 continue;
             };
-            for (_, entry) in entries.iter_mut() {
+            for (name, entry) in entries.iter_mut() {
+                let (SecretSlot::Key(key) | SecretSlot::EveryValueOf(key)) = slot;
                 let Some(item) = entry
                     .as_table_like_mut()
                     .and_then(|entry| entry.get_mut(key))
                 else {
                     continue;
                 };
-                if is_reference(item) {
-                    continue;
+                let path = format!("{kind}.{}.{key}", Key::new(name.get()).display_repr());
+                match (slot, item.as_table_like_mut()) {
+                    (SecretSlot::EveryValueOf(_), Some(table)) => {
+                        for (var, value) in table.iter_mut() {
+                            visit(
+                                format!("{path}.{}", Key::new(var.get()).display_repr()),
+                                value,
+                            );
+                        }
+                    }
+                    _ => visit(path, item),
                 }
-                let mut redacted = Value::from(REDACTED);
-                if let Some(value) = item.as_value() {
-                    *redacted.decor_mut() = value.decor().clone();
-                }
-                *item = Item::Value(redacted);
             }
         }
     }
@@ -314,6 +339,33 @@ mod tests {
         assert_eq!(
             saved.json_of("auth.svc.client_secret"),
             Some(Json::from(REDACTED))
+        );
+    }
+
+    /// Every value of `[auth.<name>.env]` is a secret of its own: a literal
+    /// is found and redacted by its variable, a reference is kept, and a
+    /// literal written in place of the table is found whole.
+    #[test]
+    fn every_value_of_a_secrets_table_is_a_secret() {
+        let mut saved = Saved::parse(
+            "[auth.site]\nkind = \"secrets\"\n[auth.site.env]\nSITE_USER = \"op://Agent/site/username\"\n\
+             SITE_PASS = \"hunter2-literal\" # keep\n[auth.flat]\nkind = \"secrets\"\nenv = \"plain-literal\"\n",
+        )
+        .unwrap();
+        assert_eq!(
+            saved.literal_secrets(),
+            ["auth.site.env.SITE_PASS", "auth.flat.env"]
+        );
+        saved.redact();
+        let text = saved.text();
+        assert!(
+            !text.contains("hunter2-literal") && !text.contains("plain-literal"),
+            "{text}"
+        );
+        assert!(text.contains("SITE_PASS = \"<redacted>\" # keep"), "{text}");
+        assert!(
+            text.contains("SITE_USER = \"op://Agent/site/username\""),
+            "{text}"
         );
     }
 

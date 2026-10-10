@@ -8,8 +8,7 @@ use crossterm::event::{KeyCode, KeyEvent};
 use super::effects::TuiEffect;
 use super::update::{Handoff, Screen, TuiModel, UpdateResult};
 use crate::adapters::config::{ApiProfile, SpecSource};
-use crate::domain::functions::auth_status::{AuthStatus, TokenState, describe_token};
-use crate::domain::types::AuthKind;
+use crate::domain::functions::auth_status::{AuthDetail, AuthStatus, TokenState, describe_token};
 use crate::shell::cli::commands::data_contract::DataStatusRow;
 use crate::shell::cli::commands::db_contract::DbStatusRow;
 use crate::shell::cli::commands::s3_status::S3StatusRow;
@@ -139,22 +138,26 @@ fn describe_expiry(token: &TokenState) -> String {
 
 impl SourceRow {
     pub fn from_auth(status: &AuthStatus, now: DateTime<Utc>) -> Self {
-        let (grant_or_header, enter, next) = match status.kind {
-            AuthKind::OAuth => (
-                (
-                    "Grant",
-                    or_none(status.grant_type.map(|grant| grant.as_str())),
-                ),
+        let read_each_time =
+            |what: &str| format!("{} uses {what}; there is nothing to log in to", status.name);
+        let (grant_or_header, enter, next) = match &status.detail {
+            AuthDetail::OAuth { grant_type } => (
+                ("Grant", grant_type.as_str().to_string()),
                 Enter::Run(vec!["login".into(), status.name.clone()]),
                 format!("Enter runs kurama login {}", status.name),
             ),
-            AuthKind::Token => {
-                let why = format!(
-                    "{} uses a credential issued elsewhere; there is nothing to log in to",
-                    status.name
-                );
+            AuthDetail::Token { header } => {
+                let why = read_each_time("a credential issued elsewhere");
                 (
-                    ("Header", or_none(status.header.as_deref())),
+                    ("Header", or_none(header.as_deref())),
+                    Enter::Explain(why.clone()),
+                    why,
+                )
+            }
+            AuthDetail::Secrets => {
+                let why = read_each_time("secrets read on each use");
+                (
+                    ("Secrets", status.env_vars.len().to_string()),
                     Enter::Explain(why.clone()),
                     why,
                 )
@@ -168,9 +171,9 @@ impl SourceRow {
             active: status.active,
             details: vec![
                 ("Source", status.name.clone()),
-                ("Kind", status.kind.as_str().to_string()),
+                ("Kind", status.detail.kind().as_str().to_string()),
                 grant_or_header,
-                ("Env var", status.env_var.clone()),
+                ("Env var", status.env_vars.join(" ")),
                 ("Token", state),
                 ("Expires", describe_expiry(&status.token)),
                 (

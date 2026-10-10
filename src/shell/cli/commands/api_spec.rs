@@ -25,7 +25,7 @@ use crate::domain::functions::operation_request::build_operation_request;
 use crate::domain::functions::spec_output::{
     operation_json, operations_json, render_operation_description, render_operations_table,
 };
-use crate::domain::types::AuthSource;
+use crate::domain::types::RequestAuth;
 use crate::domain::types::api_spec::{ApiSpec, Operation, SpecFormat};
 use crate::ports::HttpRequest;
 use crate::shell::api_error::ApiError;
@@ -213,10 +213,10 @@ pub async fn render_api_skill(
             region: api.signing.region.as_deref(),
         },
         (None, None) => SkillAuth::None,
-        (None, Some(AuthSource::OAuth(client))) => SkillAuth::OAuth {
+        (None, Some(RequestAuth::OAuth(client))) => SkillAuth::OAuth {
             source: &client.name,
         },
-        (None, Some(AuthSource::Token(token))) => SkillAuth::Token {
+        (None, Some(RequestAuth::Token(token))) => SkillAuth::Token {
             source: &token.name,
             placement: &token.placement,
         },

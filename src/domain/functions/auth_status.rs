@@ -31,8 +31,8 @@ pub enum TokenState {
     },
     Missing,
     Unreadable,
-    /// Nothing was looked up: a `kind = "token"` source keeps its credential
-    /// in a secret store, which `status` does not read.
+    /// Nothing was looked up: a `kind = "token"` or `kind = "secrets"`
+    /// source keeps its values in secret stores, which `status` does not read.
     NotChecked,
 }
 
@@ -49,19 +49,37 @@ impl TokenState {
     }
 }
 
+/// What differs between the kinds of source, one variant per kind, so a
+/// row cannot claim a grant for a source that runs none.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum AuthDetail {
+    /// The grant an OAuth source gets its first token from.
+    OAuth { grant_type: GrantType },
+    /// The header a `kind = "token"` source presents its credential in;
+    /// `None` when it goes in a query parameter.
+    Token { header: Option<String> },
+    /// A `kind = "secrets"` source: its variables say all there is.
+    Secrets,
+}
+
+impl AuthDetail {
+    pub fn kind(&self) -> AuthKind {
+        match self {
+            Self::OAuth { .. } => AuthKind::OAuth,
+            Self::Token { .. } => AuthKind::Token,
+            Self::Secrets => AuthKind::Secrets,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AuthStatus {
     pub name: String,
-    pub kind: AuthKind,
-    /// The grant an OAuth source gets its first token from; `None` for a
-    /// `kind = "token"` source, which runs no grant.
-    pub grant_type: Option<GrantType>,
-    /// The header a `kind = "token"` source presents its credential in;
-    /// `None` for an OAuth source, which always sends `Authorization`.
-    pub header: Option<String>,
-    pub env_var: String,
+    pub detail: AuthDetail,
+    /// The variables `env` / `exec` set: one for a token, one per secret.
+    pub env_vars: Vec<String>,
     pub token: TokenState,
-    /// The shell holds this source's token (`KURAMA_AUTH`).
+    /// The shell holds this source's values (`KURAMA_AUTH`).
     pub active: bool,
     /// `kurama token` / `kurama api` would stop with exit code 3 without a
     /// terminal: no usable token, nothing to refresh, and the grant needs a
@@ -69,10 +87,10 @@ pub struct AuthStatus {
     pub needs_human: bool,
 }
 
-/// What `status` reports for one source. A `kind = "token"` source is
-/// reported without a lookup: its credential is in a secret store, and
-/// reading it would be the AWS or 1Password call `status` promises not to
-/// make.
+/// What `status` reports for one source. A `kind = "token"` or `kind =
+/// "secrets"` source is reported without a lookup: its values are in secret
+/// stores, and reading them would be the AWS or 1Password call `status`
+/// promises not to make.
 pub fn auth_status(
     source: &AuthSource,
     lookup: Option<&TokenLookup>,
@@ -80,19 +98,22 @@ pub fn auth_status(
     now: DateTime<Utc>,
 ) -> AuthStatus {
     let active = active_auth == Some(source.name());
+    let env_vars = source.env_vars().into_iter().map(str::to_string).collect();
+    let not_checked = |detail| AuthStatus {
+        name: source.name().to_string(),
+        detail,
+        env_vars,
+        token: TokenState::NotChecked,
+        active,
+        needs_human: false,
+    };
     let client = match source {
         AuthSource::Token(issued) => {
-            return AuthStatus {
-                name: issued.name.clone(),
-                kind: AuthKind::Token,
-                grant_type: None,
+            return not_checked(AuthDetail::Token {
                 header: issued.header_name().map(str::to_string),
-                env_var: issued.env_var.clone(),
-                token: TokenState::NotChecked,
-                active,
-                needs_human: false,
-            };
+            });
         }
+        AuthSource::Secrets(_) => return not_checked(AuthDetail::Secrets),
         AuthSource::OAuth(client) => client,
     };
     let token = match lookup {
@@ -116,10 +137,10 @@ pub fn auth_status(
     );
     AuthStatus {
         name: client.name.clone(),
-        kind: AuthKind::OAuth,
-        grant_type: Some(client.grant_type),
-        header: None,
-        env_var: client.env_var.clone(),
+        detail: AuthDetail::OAuth {
+            grant_type: client.grant_type,
+        },
+        env_vars: vec![client.env_var.clone()],
         active,
         needs_human: !headless && client.grant_type.needs_human(),
         token,
@@ -190,13 +211,40 @@ mod tests {
     #[test]
     fn a_token_source_is_reported_without_a_lookup() {
         let status = auth_status(&issued(), None, Some("example"), now());
-        assert_eq!(status.kind, AuthKind::Token);
-        assert_eq!(status.grant_type, None);
-        assert_eq!(status.header.as_deref(), Some("X-API-Key"));
-        assert_eq!(status.env_var, "EXAMPLE_TOKEN");
+        assert_eq!(
+            status.detail,
+            AuthDetail::Token {
+                header: Some("X-API-Key".into())
+            }
+        );
+        assert_eq!(status.detail.kind(), AuthKind::Token);
+        assert_eq!(status.env_vars, ["EXAMPLE_TOKEN"]);
         assert_eq!(status.token, TokenState::NotChecked);
         assert_eq!(status.token.as_str(), "not_checked");
         assert_eq!(describe_token(&status.token, now()), "not_checked");
+        assert!(status.active);
+        assert!(!status.needs_human);
+    }
+
+    /// A `kind = "secrets"` source is reported by its variable names, never
+    /// a value, and like a token source without a lookup.
+    #[test]
+    fn a_secrets_source_is_reported_by_its_variables_without_a_lookup() {
+        let source = AuthSource::Secrets(crate::domain::types::SecretsSourceConfig {
+            name: "site".into(),
+            env: [
+                ("SITE_USER", "op://Agent/site/username"),
+                ("SITE_OTP", "op://Agent/site/otp"),
+            ]
+            .into_iter()
+            .map(|(var, reference)| (var.into(), SecretRef::parse(reference).unwrap()))
+            .collect(),
+        });
+        let status = auth_status(&source, None, Some("site"), now());
+        assert_eq!(status.detail, AuthDetail::Secrets);
+        assert_eq!(status.detail.kind(), AuthKind::Secrets);
+        assert_eq!(status.env_vars, ["SITE_OTP", "SITE_USER"]);
+        assert_eq!(status.token, TokenState::NotChecked);
         assert!(status.active);
         assert!(!status.needs_human);
     }
@@ -238,10 +286,13 @@ mod tests {
         );
         assert!(status.active);
         assert!(!status.needs_human);
-        assert_eq!(status.env_var, "KURAMA_TOKEN");
-        assert_eq!(status.kind, AuthKind::OAuth);
-        assert_eq!(status.grant_type, Some(GrantType::AuthorizationCode));
-        assert_eq!(status.header, None);
+        assert_eq!(status.env_vars, ["KURAMA_TOKEN"]);
+        assert_eq!(
+            status.detail,
+            AuthDetail::OAuth {
+                grant_type: GrantType::AuthorizationCode
+            }
+        );
     }
 
     #[rstest::rstest]
