@@ -60,14 +60,13 @@ pub async fn execute_command(command: CliCommand, config: Config) -> Result<()> 
                 super::commands::s3_contract::print_status(&config, profile.as_deref(), json)
             }
         },
-        CliCommand::Init => {
+        CliCommand::Init { completion_only } => {
             let binary = std::env::current_exe()?;
-            print!("{}", zsh_init_script(&binary));
-            Ok(())
-        }
-        CliCommand::Completions => {
-            let binary = std::env::current_exe()?;
-            print!("{}", zsh_completions(&binary));
+            if completion_only {
+                print!("{}", zsh_completions(&binary));
+            } else {
+                print!("{}", zsh_init_script(&binary));
+            }
             Ok(())
         }
         CliCommand::AgentGuide => {

@@ -2,7 +2,7 @@
 
 After `compinit`, `eval "$(kurama init zsh)"` registers a wrapper and dynamic
 zsh completion bound to the generating binary's absolute path. Completion
-bypasses the wrapper. `kurama completions zsh` emits just the completer.
+bypasses the wrapper. `kurama init zsh --completion-only` emits just the completer.
 Tab offers the command's AWS/auth namespace, API names, and operation IDs
 for TARGET, `--describe` or the `--ops` query, and the HTTP methods for `-X`.
 An argument whose value cannot be completed offers nothing rather than files.

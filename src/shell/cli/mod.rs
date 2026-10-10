@@ -4,7 +4,7 @@
 //! ```text
 //! main -> build_command (args) -> run:
 //!   parser::parse_cli_command -> CliCommand
-//!   bootstrap::bootstrap        -> Config (skipped for init / completions)
+//!   bootstrap::bootstrap        -> Config (skipped for init)
 //!   dispatch::execute_command   -> commands::* -> effects -> executor
 //! ```
 //!
@@ -35,7 +35,7 @@ use crate::adapters::config::Config;
 pub async fn run(matches: &clap::ArgMatches) -> anyhow::Result<()> {
     let command = parser::parse_cli_command(matches);
 
-    // `init` / `completions` run at every shell startup, and `agent` is what an
+    // `init` runs at every shell startup, and `agent` is what an
     // agent reads to write the configuration: no config or logging for any.
     // A run under the JSON error contract keeps stderr to its error document
     // too, unless a person may have to read a login prompt there.

@@ -53,7 +53,6 @@ pub fn build_command() -> Command {
         )
         .subcommand(build_agent_command())
         .subcommand(build_init_command())
-        .subcommand(build_completions_command())
         .subcommand(build_inventory_command())
         .subcommand(super::commands::config::command())
         .subcommand(super::commands::preset::command())
@@ -283,12 +282,12 @@ fn build_init_command() -> Command {
     Command::new("init")
         .about("Print shell integration script (use: eval \"$(kurama init zsh)\")")
         .arg(build_shell_arg())
-}
-
-fn build_completions_command() -> Command {
-    Command::new("completions")
-        .about("Print shell completion script")
-        .arg(build_shell_arg())
+        .arg(
+            Arg::new("completion-only")
+                .long("completion-only")
+                .action(ArgAction::SetTrue)
+                .help("Print only the completion function, for a completer kept in fpath"),
+        )
 }
 
 fn build_agent_command() -> Command {

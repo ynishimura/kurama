@@ -3483,10 +3483,10 @@ fn uc11_second_run_reuses_the_cached_mfa_session() {
 }
 #[test]
 #[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
-fn completions_zsh_prints_the_completer_without_reading_config() {
+fn init_completion_only_prints_the_completer_without_reading_config() {
     crate::support::cases::run_case(
-        include_str!("../cases/shell-integration/completions_zsh_prints_the_completer_without_reading_config.toml"),
-        "tests/cases/shell-integration/completions_zsh_prints_the_completer_without_reading_config.toml",
+        include_str!("../cases/shell-integration/init_completion_only_prints_the_completer_without_reading_config.toml"),
+        "tests/cases/shell-integration/init_completion_only_prints_the_completer_without_reading_config.toml",
     );
 }
 #[test]

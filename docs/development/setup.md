@@ -301,7 +301,7 @@ The completion function uses that same absolute path directly, bypassing the
 wrapper and its temporary export file. Tab reads local configuration and
 local/cached OpenAPI descriptions only; it does not authenticate or refresh a
 URL. Re-evaluate `init zsh` to change the binary used by both functions.
-`kurama completions zsh` prints the completion function alone for `fpath`
+`kurama init zsh --completion-only` prints the completion function alone for `fpath`
 setups.
 
 ### Running the development build

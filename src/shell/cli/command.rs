@@ -9,10 +9,9 @@ use super::commands::status::StatusRowKind;
 /// Every CLI invocation, after parsing.
 #[derive(Debug, Clone)]
 pub enum CliCommand {
-    /// `init zsh`: the shell integration script
-    Init,
-    /// `completions zsh`: the completion script
-    Completions,
+    /// `init zsh [--completion-only]`: the shell integration script, or
+    /// only its completion function
+    Init { completion_only: bool },
     /// `agent`: the contract for agents and scripts
     AgentGuide,
     /// `agent --skill`: the Agent Skill that points at the contract
@@ -103,8 +102,7 @@ impl CliCommand {
     /// agent contract is read to write or fix the configuration.
     pub fn needs_bootstrap(&self) -> bool {
         match self {
-            Self::Init
-            | Self::Completions
+            Self::Init { .. }
             | Self::AgentGuide
             | Self::AgentSkill
             | Self::AgentContract(_)
@@ -180,8 +178,12 @@ mod tests {
 
     #[test]
     fn shell_integration_and_agent_commands_skip_bootstrap() {
-        assert!(!CliCommand::Init.needs_bootstrap());
-        assert!(!CliCommand::Completions.needs_bootstrap());
+        assert!(
+            !CliCommand::Init {
+                completion_only: false
+            }
+            .needs_bootstrap()
+        );
         assert!(!CliCommand::AgentGuide.needs_bootstrap());
         assert!(!CliCommand::AgentSkill.needs_bootstrap());
         assert!(!CliCommand::AgentContract(ClientKind::Data).needs_bootstrap());

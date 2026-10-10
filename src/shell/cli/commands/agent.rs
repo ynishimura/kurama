@@ -66,10 +66,8 @@ mod tests {
         // out, by name and with the reason.
         let not_for_agents = [
             // clap's own; it prints the same help the binary already has.
-            "help",
-            // Shell setup for a person's rc file, covered in prose instead.
+            "help", // Shell setup for a person's rc file, covered in prose instead.
             "init",
-            "completions",
             // Opens a browser and prints no URL: there is nothing for a
             // script to consume. The Rules section still says it needs `op`.
             "console",
