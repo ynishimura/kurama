@@ -1,11 +1,13 @@
 [status]
-summary = "`kurama status`: every AWS profile, [auth.*] source and [api.*] profile, [data.*] workspace and [s3.*] connection with its session or token state and what the shell holds (KURAMA_AWS, KURAMA_AUTH), as a table or JSON"
+summary = "`kurama status`: every AWS profile, [auth.*] source and [api.*] profile, [data.*] workspace and [s3.*] connection with its session or token state and what the shell holds (KURAMA_AWS, KURAMA_AUTH), as a table or JSON; `kurama status --ready`: each source's state (ready, will_prompt, needs_human, misconfigured) from the same reads, calling nothing"
 entry = "src/shell/cli/commands/status.rs"
 docs = ["docs/development/flows/cli.md"]
 files = [
   "src/shell/cli/commands/status.rs",
   "src/domain/functions/profile_status.rs",
   "src/shell/cli/commands/s3_status.rs",
+  "src/shell/cli/commands/status_ready.rs",
+  "src/domain/functions/source_readiness.rs",
 ]
 tests = ["status"]
 scenarios = [
@@ -15,7 +17,7 @@ scenarios = [
   "profile_loading_honors_aws_config_file_without_default_aws_directory",
   "tui_home_switches_between_the_source_tabs",
 ]
-depends_on = ["cli-entry", "profile-loading", "session-cache", "assume-role", "oauth", "config", "database", "export-output", "local-analytics"]
+depends_on = ["cli-entry", "profile-loading", "session-cache", "assume-role", "oauth", "config", "database", "export-output", "local-analytics", "secrets"]
 notes = "Reads the session cache and the token store but never STS, 1Password, a secret store or a token endpoint; an unreadable keychain entry is reported as `unreadable` instead of failing, and a kind = \"token\" source as `not_checked` because its credential is only ever read when it is used"
 
 [status.real]

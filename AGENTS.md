@@ -72,8 +72,7 @@ Every command, with its options: `cargo xtask --help`, or
 6. Every failure is one `error[CODE]: message` line (no newline), an
    optional `hint:`, and exit 1 tool / 2 usage / 3 human action / 4 remote
    rejected. Without a terminal nothing prompts or waits.
-7. `init zsh`, `completions` and `agent` read no configuration
-   (`agent ready` reads what `status` reads).
+7. `init zsh`, `completions` and `agent` read no configuration.
 
 ## Conventions no test enforces
 

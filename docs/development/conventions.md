@@ -46,7 +46,7 @@ The full text, with the reasons, of what AGENTS.md lists in one line each.
 7. `kurama init zsh`, `completions` and `agent` never read configuration or
    the AWS environment: the first two run at every shell start, and the
    agent contract is what an agent reads to write or fix the configuration.
-   `kurama agent ready` is the one exception, a separate subcommand: it
+   Whether each source can be used now is `kurama status --ready`, which
    reads what `status` reads (config.toml, `~/.aws/config`, the session
    cache, the token store) and nothing more.
 

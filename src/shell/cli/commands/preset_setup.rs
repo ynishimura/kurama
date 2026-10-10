@@ -33,9 +33,9 @@ use serde::Serialize;
 
 use super::agent::AGENT_SKILL;
 use super::agent_install::place;
-use super::agent_ready::readiness_rows;
 use super::api::http_error;
 use super::preset::{check_plan, plan_against_file};
+use super::status_ready::readiness_rows;
 use crate::adapters::config::writer::ConfigFile;
 use crate::adapters::config::{ApiProfile, Config};
 use crate::adapters::utils::path::get_home_dir;

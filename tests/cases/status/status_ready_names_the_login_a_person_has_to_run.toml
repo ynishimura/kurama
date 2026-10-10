@@ -4,17 +4,17 @@
 # session and no MFA provider needs `kurama login <profile>`; an [api.*] that
 # goes through either says so with the same command; one naming an AWS
 # profile that does not exist is misconfigured.
-id = "agent_ready_names_the_login_a_person_has_to_run"
-feature = "agent-guide"
+id = "status_ready_names_the_login_a_person_has_to_run"
+feature = "status"
 
 [combination]
-command = "agent-ready"
+command = "status"
 grant = "authorization_code"
 token = "expired"
 
 [input]
-args = ["agent", "ready", "--json"]
-then_run = [["agent", "ready"]]
+args = ["status", "--ready", "--json"]
+then_run = [["status", "--ready"]]
 stored_tokens = [{ source = "old", access_token = "{stored_access_token}", expires_in = -60, refreshable = false }]
 config = """
 [auth.github]

@@ -125,7 +125,7 @@ pub async fn execute_command(command: CliCommand, config: Config) -> Result<()> 
             handle_tui_command(config).await
         }
         CliCommand::S3(command) => super::commands::s3::run(*command, config).await,
-        CliCommand::AgentReady { json } => super::commands::agent_ready::run(json, &config).await,
+        CliCommand::StatusReady { json } => super::commands::status_ready::run(json, &config).await,
         CliCommand::Audit { watch: true, .. } => {
             crate::shell::tui::activity::watch_audit_log().await
         }

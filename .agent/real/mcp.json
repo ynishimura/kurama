@@ -3,9 +3,9 @@
   "feature": "mcp",
   "status": "verified",
   "reason": null,
-  "commit": "f45c3f0c4886ea690057be529e8210e8af9c9a3d",
-  "feature_hash": "ad22c412068af796",
-  "diff_hash": "3711007e320eefea",
+  "commit": "0fa5d867a064ca16e068af1ddb7e35b2e993b1e8",
+  "feature_hash": "a5362d1725855237",
+  "diff_hash": "cbf29ce484222325",
   "environment": "real-services",
   "access": "read-only",
   "command": [
@@ -16,7 +16,7 @@
     "real",
     "mcp"
   ],
-  "generated_at": "2026-10-10T12:08:27.354850+00:00",
+  "generated_at": "2026-10-10T17:25:51.365285+00:00",
   "observed": [
     {
       "test": "mcp_http_serves_an_api_to_a_client_holding_the_token",

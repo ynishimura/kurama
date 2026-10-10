@@ -235,9 +235,16 @@ fn build_status_command() -> Command {
                 })),
         )
         .arg(
+            Arg::new("ready")
+                .long("ready")
+                .action(ArgAction::SetTrue)
+                .conflicts_with_all(["kind", "only", "profile"])
+                .help("Say whether each source can be used right now (ready, will_prompt, needs_human, misconfigured) and what a person runs when not"),
+        )
+        .arg(
             Arg::new("json")
                 .long("json")
-                .help("Print one JSON array")
+                .help("Print one JSON array (with --ready, one JSON document)")
                 .action(ArgAction::SetTrue),
         )
 }
@@ -305,23 +312,6 @@ fn build_agent_command() -> Command {
                 .action(ArgAction::SetTrue),
         )
         .args_conflicts_with_subcommands(true)
-        .subcommand(
-            Command::new("ready")
-                .about("Say whether each AWS profile, [auth.*], [api.*] and [db.*] can be used right now")
-                .long_about(
-                    "Say whether each AWS profile, [auth.*], [api.*] and [db.*] can be used right now:\n\
-                     state ready, will_prompt (1Password asks a person first), needs_human (exit 3\n\
-                     until a person runs next_actions) or misconfigured, with the reason. Reads the\n\
-                     configuration, the session cache and the token store as `status` does; calls no\n\
-                     STS, token endpoint, API or 1Password, and prints no secret or reference.",
-                )
-                .arg(
-                    Arg::new("json")
-                        .long("json")
-                        .action(ArgAction::SetTrue)
-                        .help("Print one JSON document"),
-                ),
-        )
         .subcommand(
             Command::new("install")
                 .about("Write kurama's Agent Skill and one per [api.*] with a description under ~/.claude/skills")

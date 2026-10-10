@@ -6,7 +6,7 @@ the command `kurama mcp`. stdout carries the protocol only.
 
 | Tool | Arguments | Runs |
 | --- | --- | --- |
-| `ready` | none | `kurama agent ready --json` |
+| `ready` | none | `kurama status --ready --json` |
 | `list_apis` | none | `kurama status --only api --json` |
 | `list_operations` | `api`, `query`? | `kurama api API --ops [QUERY] --json` |
 | `describe_operation` | `api`, `operation` | `kurama api API --schema OPERATION` |

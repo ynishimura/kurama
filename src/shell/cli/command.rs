@@ -24,9 +24,9 @@ pub enum CliCommand {
     AgentCatalog,
     /// `inventory` (hidden): what this binary has, for `cargo xtask inventory`
     Inventory,
-    /// `agent ready [--json]`: whether each source can be used right now; the
+    /// `status --ready [--json]`: whether each source can be used right now; the
     /// one `agent` mode that reads configuration, as `status` does
-    AgentReady { json: bool },
+    StatusReady { json: bool },
     /// `env`, `exec` and `console`: get the source's credentials, then use them
     Profile(ProfileCommandConfig),
     /// `login <PROFILE> [--force] [--no-browser] [-v]`
@@ -125,7 +125,7 @@ impl CliCommand {
             | Self::Unset
             | Self::Tui
             | Self::S3(_)
-            | Self::AgentReady { .. }
+            | Self::StatusReady { .. }
             | Self::Mcp { .. }
             | Self::AgentInstall(_)
             | Self::Obsidian(_) => true,
@@ -141,7 +141,7 @@ impl CliCommand {
             Self::Config(command) => command.json(),
             Self::Preset(command) => command.json(),
             Self::S3(command) => command.json,
-            Self::AgentReady { json } => *json,
+            Self::StatusReady { json } => *json,
             Self::AgentInstall(install) => install.json,
             Self::Obsidian(command) => command.json,
             // Over HTTP stdout carries nothing, and stderr is the request log.
@@ -187,7 +187,7 @@ mod tests {
         assert!(!CliCommand::AgentContract(ClientKind::Data).needs_bootstrap());
         assert!(!CliCommand::AgentCatalog.needs_bootstrap());
         assert!(!CliCommand::Inventory.needs_bootstrap());
-        assert!(CliCommand::AgentReady { json: true }.needs_bootstrap());
+        assert!(CliCommand::StatusReady { json: true }.needs_bootstrap());
         assert!(
             CliCommand::ClientStatus {
                 kind: ClientKind::Data,

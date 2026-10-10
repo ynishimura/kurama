@@ -22,7 +22,7 @@ pub enum Readiness {
     Misconfigured,
 }
 
-/// One row of `kurama agent ready`.
+/// One row of `kurama status --ready`.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
 pub struct SourceReadiness {
     pub name: String,

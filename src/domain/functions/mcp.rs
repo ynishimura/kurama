@@ -171,7 +171,7 @@ fn every_tool() -> Value {
         {
             "name": "ready",
             "description": "Whether each AWS profile, [auth.*], [api.*] and [db.*] can be used \
-                            right now, and what a person has to run when not (kurama agent ready --json).",
+                            right now, and what a person has to run when not (kurama status --ready --json).",
             "inputSchema": object(json!({}), &[]),
         },
         {
@@ -283,7 +283,7 @@ pub fn tool_run(name: &str, arguments: &Value) -> Result<ToolRun, String> {
     let run = |args: Vec<String>| ToolRun { args, stdin: None };
     let owned = |args: &[&str]| args.iter().map(|arg| (*arg).to_owned()).collect::<Vec<_>>();
     Ok(match name {
-        "ready" => run(owned(&["agent", "ready", "--json"])),
+        "ready" => run(owned(&["status", "--ready", "--json"])),
         "list_apis" => run(owned(&["status", "--only", "api", "--json"])),
         "list_operations" => {
             let ops = match optional("query") {
