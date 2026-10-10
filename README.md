@@ -502,7 +502,8 @@ is `CONFIG_WRITE_FAILED` (exit 1).
 - ElevenLabs, OpenAI and Fireworks, with an API key;
 - Slack, with a bot token;
 - Contentful, with a personal access token;
-- Jira and Zendesk, with an API token over HTTP Basic;
+- Jira, with an API token over HTTP Basic;
+- Zendesk, with an OAuth client credentials grant;
 - Backlog, with an API key in the query string.
 
 `kurama preset show <ID> --set <key>=<value>...` prints one preset as TOML on

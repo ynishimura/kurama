@@ -641,6 +641,50 @@ fn a_scope_shortfall_is_a_step_before_the_login() {
     assert!(add < login, "{:#?}", plan.setup);
 }
 
+/// A client credentials grant needs no person: a new auth goes from the
+/// append straight to the first call, which gets the token; a reused one
+/// whose scopes grew still logs in again to replace the stored token.
+#[test]
+fn a_client_credentials_auth_logs_in_only_to_replace_a_token() {
+    let apis = [];
+    let plan = planned(
+        "zendesk",
+        &full_request(find_preset("zendesk").unwrap()),
+        &existing(&apis, None),
+    );
+    let next = &plan.setup[plan.after_append..];
+    assert_eq!(next.len(), 1, "{next:?}");
+    assert!(next[0].contains("kurama api zendesk "), "{next:?}");
+
+    let held = AuthSource::OAuth(OAuthClientConfig {
+        name: "zendesk".into(),
+        grant_type: GrantType::ClientCredentials,
+        endpoints: EndpointSource::Explicit(crate::domain::types::OAuthEndpoints {
+            auth_url: None,
+            token_url: "https://example.zendesk.com/oauth/tokens".into(),
+            device_auth_url: None,
+        }),
+        client_id: "id-1".into(),
+        client_secret: Some(SecretRef::parse("op://Agent/kurama-zendesk/client_secret").unwrap()),
+        scopes: vec![],
+        env_var: "ZENDESK_ACCESS_TOKEN".into(),
+        redirect_port: None,
+    });
+    let plan = planned(
+        "zendesk",
+        &request(None, &[("subdomain", "example")]),
+        &existing(&apis, Some(&held)),
+    );
+    assert_eq!(plan.auth_action, AuthAction::Reuse);
+    assert!(
+        plan.setup
+            .iter()
+            .any(|step| step.ends_with("kurama login --force zendesk")),
+        "{:#?}",
+        plan.setup
+    );
+}
+
 /// Another grant, or other explicit endpoints, is another auth contract.
 #[test]
 fn a_grant_or_endpoint_mismatch_is_refused() {

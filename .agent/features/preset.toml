@@ -19,7 +19,7 @@ scenarios = [
   "preset_show_fireworks_sends_the_key_as_a_bearer_token",
   "preset_show_jira_sends_the_email_and_token_as_basic",
   "preset_setup_commands_shell_quote_dynamic_values",
-  "preset_show_zendesk_sends_email_slash_token_as_basic",
+  "preset_show_zendesk_gets_a_client_credentials_token",
   "preset_show_backlog_puts_the_key_in_the_api_key_parameter",
   "preset_show_open_without_a_terminal_prints_the_url_and_opens_nothing",
   "preset_show_missing_input_exits_2_lists_the_keys",
@@ -45,7 +45,7 @@ scenarios = [
   "config_remove_api_keeps_a_shared_auth",
 ]
 depends_on = ["config", "cli-entry", "errors", "oauth", "api-explorer", "secrets", "profile-loading", "tui"]
-notes = "The catalog's endpoints, scopes, headers and base URLs were taken from the providers' documentation on 2026-09-26; only Linear's personal API key header (`Authorization: <key>`, refused with `Bearer`) was checked against the real service. Logging in and calling each provider is a manual check."
+notes = "The catalog's endpoints, scopes, headers and base URLs were taken from the providers' documentation on 2026-09-26; only Linear's personal API key header (`Authorization: <key>`, refused with `Bearer`) and, on 2026-10-10, Zendesk's client credentials grant (`/oauth/tokens`, then `/api/v2/users/me` on two accounts) were checked against the real service. Logging in and calling each provider is a manual check."
 
 [preset.real]
 not_applicable = "prints configuration from data compiled into the binary, checks it against local files and `preset add` appends it to config.toml; nothing it does reaches a provider, and the providers the data names are verified by hand"

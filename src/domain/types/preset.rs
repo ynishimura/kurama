@@ -626,21 +626,30 @@ pub static PRESETS: &[Preset] = &[
     },
     Preset {
         id: "zendesk",
-        title: "Zendesk Support API with an API token",
-        docs_url: "https://support.zendesk.com/hc/en-us/articles/4408889192858",
+        title: "Zendesk Support API with an OAuth client credentials grant",
+        docs_url: "https://support.zendesk.com/hc/en-us/articles/4408845965210",
         auth: AuthPreset {
             name: "zendesk",
-            // Zendesk reads `<email>/token` as the username of an API token.
-            kind: AuthPresetKind::Token {
-                token: "{secret}",
-                placement: PresetPlacement::Basic {
-                    username: "{email}/token",
+            // Zendesk retires API tokens on 2027-04-30; a confidential client's
+            // token acts as the admin who created the client and has no
+            // refresh token, so kurama asks again when it expires.
+            kind: AuthPresetKind::OAuth {
+                grant_type: GrantType::ClientCredentials,
+                endpoints: PresetEndpoints::Explicit {
+                    auth_url: None,
+                    token_url: "https://{subdomain}.zendesk.com/oauth/tokens",
+                    device_auth_url: None,
                 },
+                client_id: "{client_id}",
+                client_secret: Some("{client_secret}"),
+                scopes: &["read"],
+                redirect_port: None,
             },
-            env_var: Some("ZENDESK_API_TOKEN"),
+            env_var: Some("ZENDESK_ACCESS_TOKEN"),
             setup: &[
-                "Enable token access and add an API token in the Admin Center: {docs_url}",
-                STORE_TOKEN,
+                "Add an OAuth client of kind Confidential under Admin Center > Apps and integrations > APIs > OAuth clients: {docs_url}\n\
+                 Its secret is shown once, when the client is saved; the token acts as the admin who created the client",
+                STORE_CLIENT,
             ],
         },
         api: ApiPreset {
@@ -654,13 +663,13 @@ pub static PRESETS: &[Preset] = &[
             example: "/api/v2/users/me",
         },
         inputs: &[
-            SECRET,
+            CLIENT_ID,
+            CLIENT_SECRET,
             Input {
                 key: "subdomain",
                 help: "the account's subdomain, as in <subdomain>.zendesk.com",
                 secret_field: None,
             },
-            EMAIL,
         ],
         setup: &[],
     },
