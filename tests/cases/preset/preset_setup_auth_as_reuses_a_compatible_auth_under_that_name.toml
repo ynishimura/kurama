@@ -1,0 +1,42 @@
+# The reuse rule applies to the `--auth-as` name: an [auth.gh-pat] with the
+# preset's contract is reused and not written again, and the API points at
+# it, while the incompatible [auth.github] is left out of it. The dry run
+# writes nothing.
+id = "preset_setup_auth_as_reuses_a_compatible_auth_under_that_name"
+feature = "preset"
+
+[combination]
+command = "preset-setup"
+rename = "auth-as"
+
+[input]
+args = ["preset", "setup", "github", "--as", "gh-pat", "--auth-as", "gh-pat", "--dry-run"]
+then_run = [["preset", "setup", "github", "--as", "gh-pat", "--auth-as", "gh-pat", "--dry-run", "--json"]]
+config = """
+[auth.github]
+kind = "oauth"
+grant_type = "device_code"
+token_url = "https://github.com/login/oauth/access_token"
+device_auth_url = "https://github.com/login/device/code"
+client_id = "Iv1.x"
+
+[auth.gh-pat]
+kind = "token"
+token = "op://Agent/kurama-github/credential"
+"""
+
+[expect]
+exit_code = 0
+stderr_empty = true
+stdout_json = { "/api" = "gh-pat", "/auth/name" = "gh-pat", "/auth/action" = "reuse", "/toml" = { contains = "[api.gh-pat]" }, "/warnings" = { length = 0 } }
+stdout_excludes = ["\\n[auth."]
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stderr_empty = true
+stdout = { contains = ["configure    planned       would add [api.gh-pat] (reuses [auth.gh-pat]) to ", "[api.gh-pat]\ndescription = \"GitHub REST API\"\nbase_url = \"https://api.github.com\"\nauth = \"gh-pat\"\n"] }
+stdout_excludes = ["\n[auth.", "op item create"]

@@ -3,9 +3,9 @@
 `~/.config/kurama/config.toml` holds the `[auth.*]` sources and the
 `[api.*]` profiles; `KURAMA_CONFIG_PATH` names another file, which must
 exist (`CONFIG_INVALID` otherwise) -- except for `kurama config add` and
-`kurama preset add`, which create it. AWS profiles come from `~/.aws/config`
+`kurama preset setup`, which create it. AWS profiles come from `~/.aws/config`
 and are not configured here. For GitHub, Google Sheets / Docs / Drive,
-Linear, ElevenLabs, OpenAI, Slack, Contentful, Fireworks, Jira, Zendesk and Backlog, `kurama preset add <ID> --set <key>=<value>... --json` writes the
+Linear, ElevenLabs, OpenAI, Slack, Contentful, Fireworks, Jira, Zendesk and Backlog, `kurama preset setup <ID> --set <key>=<value>... --json` writes the
 sections (see **Presets** below). Otherwise add sections with
 `kurama config add` (see **Adding sections** below), change or remove them
 with `kurama config set` / `unset` / `remove` (see **Changing and removing
@@ -27,7 +27,7 @@ below).
    every `env` value take nothing else.
    Three stores are read (see **Secret references** below); ask the person
    to create the item, secret or parameter if it does not exist yet.
-2. Append the sections, with `kurama preset add <ID> --set <key>=<value>...
+2. Append the sections, with `kurama preset setup <ID> --set <key>=<value>...
    --json` when a preset covers the provider (see **Presets**), else with
    `kurama config add --file - --json` (see **Adding sections**). Names are
    one namespace with the AWS profiles: an
@@ -213,36 +213,53 @@ error message.
 
 ### Presets
 
-For GitHub, Google Sheets / Docs / Drive and Linear, kurama carries the
-sections itself. `kurama preset --json` lists the presets (`id`, `title`,
-`auth` with its `name` and `kind`, `api`, the `inputs` each needs, and the
-`setup` page) and reads no configuration.
-`kurama preset show <ID> --set <key>=<value>... [--as NAME] [--auth-as NAME] --json` prints
-one preset expanded against config.toml as `{id, path, api, auth: {name,
-action}, toml, setup, warnings}`; without `--json` stdout is the TOML alone
-and the setup steps go to stderr. It writes nothing and resolves nothing.
+For GitHub, Google Sheets / Docs / Drive, Linear and the other presets,
+kurama carries the sections itself. `kurama preset --json` lists the presets
+(`id`, `title`, `auth` with its `name` and `kind`, `api`, the `inputs` each
+needs, and the `setup` page) and reads no configuration.
 
-`kurama preset add <ID> --set <key>=<value>... [--as NAME] [--auth-as NAME] [--dry-run] --json`
-appends that same TOML to the file and prints the save result of
-`kurama config add` plus the steps left: `{path, changed, applied, changes:
-[{section, action}], warnings, next_steps}`, where `action` is `add`, or
-`reuse` for the existing `[auth.*]` the new API uses unchanged, and
-`next_steps` are the remaining setup steps as text -- adding scopes,
-`kurama login`, a first `kurama api` call. Without `--json` stdout is empty
-and stderr says what was added, then those steps. `--dry-run` prints the
-TOML `preset show` prints and writes nothing (`applied` is false); its steps
-start with the `kurama preset add` that would append it. The file's own bytes, comments and
-order are kept, the whole result is checked before the one write, and a
-save that fails is `CONFIG_WRITE_FAILED` (exit 1) with the path in the hint,
-as for `config add`. It resolves nothing: `kurama api <API>` is the first
-use of the credential. For example:
+`kurama preset setup <ID> [--set <key>=<value>...] [--as NAME] [--auth-as NAME] [--dry-run | --offline] [--json]`
+takes a preset from nothing to a first answer and says, for each step,
+whether it is `done`, `planned`, `needs_action`, `failed` or `skipped`, and
+what to run next (`next`). Run it again after any stop: it resumes.
+
+1. `configure`: the preset expanded against config.toml and appended through
+   the config writer (the file's own bytes, comments and order are kept; the
+   whole result is checked before the one write) -- unless config.toml
+   already has the `[api.*]`, which is kept as it is. Missing inputs stop
+   here with the preset's own steps, the last one the
+   `kurama preset setup <ID> --set <key>=op://<vault>/<item>/<field>` to rerun
+   (exit 2).
+2. `check`: config.toml is read again and the `[api.*]` typed.
+3. `credential`: whether the API can be used now, from what `status` reads --
+   whether it is configured is not whether it can connect; a login a person
+   must run is `needs_action` with the `kurama login <source>` to run.
+4. `agent`: kurama's Agent Skill written to `~/.claude/skills/kurama/SKILL.md`
+   (`kurama agent install` adds one per `[api.*]` with a description).
+5. `first_read`: the preset's example (`/user` for GitHub) as one GET -- the
+   only request the command sends, held to the `[agent]` policy and audited
+   like `kurama api`. On a terminal a grant that needs a person runs here.
+
+`--dry-run` plans and checks `configure` only: nothing is written, no secret
+is read and nothing is sent; the TOML that would be appended is in the
+report (text: after `# would append to <path>:`). `--offline` runs every step
+but the first read. The report goes to stdout whatever happened (`--json`:
+`{kind: "preset_setup", preset, api, auth: {name, action}, path, dry_run,
+complete, steps: [{step, state, detail, next}], toml, warnings}`, where
+`auth.action` is `add`, `reuse` for a compatible `[auth.*]` the file had, or
+`kept` when the `[api.*]` was already there). The first failed step is the
+run's error, with the code, exit code and hint the same failure has anywhere
+else (`SECRET_UNAVAILABLE` for a locked 1Password, `OAUTH_LOGIN_REQUIRED`
+for a missing login, `API_HTTP_ERROR` for a rejected credential,
+`API_REQUEST_FAILED` for the network, `CONFIG_WRITE_FAILED` for a file that
+cannot be saved). For GitHub and Claude Code:
 
 ```sh
-kurama preset add linear --set secret=op://Agent/kurama-linear/credential --json
-kurama api linear /graphql -d '{"query":"{ viewer { id name } }"}'
+kurama preset setup github --set secret=op://Agent/kurama-github/credential
 ```
 
-Every rule below holds for `show` and `add` alike; a refusal writes nothing.
+Every rule below holds for the `configure` step, `--dry-run` included; a
+refusal writes nothing.
 
 - Every input is given with `--set`; secret inputs (`secret`,
   `client_secret`) take a reference, and a value that is not one is

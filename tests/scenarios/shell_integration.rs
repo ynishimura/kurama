@@ -157,19 +157,19 @@ fn completion_config_sections_come_from_the_saved_file() {
     }
     v.finish();
 }
-/// `preset show` and `preset add` complete the preset ids from the catalog
-/// compiled into the binary: a config.toml that is not TOML, which empties
-/// every completion that reads it, leaves them all, each with its title.
+/// `preset setup` completes the preset ids from the catalog compiled into
+/// the binary: a config.toml that is not TOML, which empties every
+/// completion that reads it, leaves them all, each with its title.
 #[test]
 fn completion_preset_completes_ids_without_reading_config() {
     let mut v = run(Scenario::completion(
         "completion_preset_completes_ids_without_reading_config",
-        &["--", "kurama", "preset", "show", ""],
+        &["--", "kurama", "preset", "setup", ""],
         "3",
     )
     .with_config("[invalid TOML")
-    .then_run(&["--", "kurama", "preset", "show", "goo"])
-    .then_run(&["--", "kurama", "preset", "add", "lin"]));
+    .then_run(&["--", "kurama", "preset", "setup", "goo"])
+    .then_run(&["--", "kurama", "preset", "setup", "lin"]));
     let all = v.observed.runs[0].stdout.clone();
     v.check(
         "an id carries its title",
@@ -206,7 +206,7 @@ fn completion_preset_completes_ids_without_reading_config() {
     );
     let added = v.observed.last().stdout.clone();
     v.check(
-        "`preset add` completes the same ids",
+        "another word, another set of ids",
         completion_values(&added) == ["linear", "linear-oauth"],
         added,
     );

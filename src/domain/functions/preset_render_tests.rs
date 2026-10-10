@@ -176,11 +176,11 @@ fn missing_inputs_are_listed_and_the_setup_is_still_planned() {
         })
     );
     assert!(plan.setup.iter().any(|step| step.contains(
-        "kurama preset add google-sheets --set client_id=x --set client_secret=op://Agent/kurama-google/client_secret"
+        "kurama preset setup google-sheets --set client_id=x --set client_secret=op://Agent/kurama-google/client_secret"
     )));
     // What is left after the append: the login and a first call.
     let next = &plan.setup[plan.after_append..];
-    assert!(plan.setup[plan.after_append - 1].contains("kurama preset add google-sheets"));
+    assert!(plan.setup[plan.after_append - 1].contains("kurama preset setup google-sheets"));
     assert_eq!(next.len(), 2, "{next:?}");
     assert!(next[0].ends_with("kurama login google"), "{next:?}");
     assert!(next[1].contains("kurama api google-sheets "), "{next:?}");
@@ -304,7 +304,7 @@ fn auth_as_renames_the_auth_and_every_reference_to_it() {
     assert!(!text.contains("[auth.google]"), "{text}");
     assert!(
         plan.setup.iter().any(|step| step
-            .contains("kurama preset add google-docs --as docs-work --auth-as google-work ")),
+            .contains("kurama preset setup google-docs --as docs-work --auth-as google-work ")),
         "{:#?}",
         plan.setup
     );
@@ -772,7 +772,7 @@ fn the_setup_says_what_the_provider_forms_need() {
     }
 }
 
-/// The missing-input hint is true with and without `--json`.
+/// The missing-input hint names where the inputs and the steps are listed.
 #[test]
 fn the_missing_input_hint_names_both_outputs() {
     let hint = PresetError::MissingInputs {
@@ -781,7 +781,7 @@ fn the_missing_input_hint_names_both_outputs() {
     }
     .hint();
     assert!(!hint.contains("above"), "{hint}");
-    assert!(hint.contains("without --json"), "{hint}");
+    assert!(hint.contains("kurama preset setup <ID>"), "{hint}");
 }
 
 /// Each value a setup command carries from `--set`, `--as` or the file's
@@ -813,7 +813,7 @@ fn setup_commands_shell_quote_dynamic_values() {
         store.windows(2).any(|pair| pair == ["--vault", vault]),
         "{store:?}"
     );
-    let add = words("kurama preset add");
+    let add = words("kurama preset setup");
     for (flag, value) in [
         ("--as", "work".to_owned()),
         ("--set", format!("site={site}")),

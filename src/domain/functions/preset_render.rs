@@ -1,4 +1,4 @@
-//! A preset expanded against the configuration: the names, whether an existing `[auth.*]` is reused, the TOML to append, the setup steps and the warnings, the same for `preset show` and `preset add`.
+//! A preset expanded against the configuration: the names, whether an existing `[auth.*]` is reused, the TOML to append, the setup steps and the warnings, for `preset setup`.
 //!
 //! [`plan_preset`] decides everything from the preset, what was given with
 //! `--as` / `--auth-as` / `--set` and what the configuration already has,
@@ -85,7 +85,7 @@ impl PresetError {
         match self {
             Self::NotFound(_) => "run `kurama preset` to list the presets",
             Self::UnknownInput { .. } | Self::MissingInputs { .. } => {
-                "`kurama preset --json` lists each preset's inputs and its setup page; without --json, `kurama preset show <ID>` prints the setup steps on stderr"
+                "`kurama preset --json` lists each preset's inputs and its setup page; the `next` of `kurama preset setup <ID>`'s configure step says how to make the missing ones"
             }
             Self::AuthNamedLikeAwsProfile(_) => {
                 "give the auth another name with --auth-as <name>, or rename that AWS profile in ~/.aws/config; the file was not changed"
@@ -127,7 +127,7 @@ pub struct PresetPlan {
     /// Numbered in the text output; a step may span lines.
     pub setup: Vec<String>,
     /// Where the steps after appending the sections start: what is left to
-    /// do once `preset add` saved them.
+    /// do once `preset setup` saved them.
     pub after_append: usize,
     /// Scopes a reused auth lacks.
     pub warnings: Vec<String>,
@@ -470,7 +470,7 @@ fn setup_steps(
         steps.extend(preset.auth.setup.iter().map(|step| fill(step, variables)));
     }
     steps.extend(preset.setup.iter().map(|step| fill(step, variables)));
-    let mut command = format!("kurama preset add {}", preset.id);
+    let mut command = format!("kurama preset setup {}", preset.id);
     if names.renamed {
         command.push_str(&format!(" --as {}", shell_quote(names.api)));
     }
@@ -495,7 +495,7 @@ fn setup_steps(
         ));
     }
     steps.push(format!(
-        "Append the sections to {}:\n{command}",
+        "Set it up -- append the sections to {}, check them and try the credential:\n{command}",
         existing.config_path
     ));
     let after_append = steps.len();

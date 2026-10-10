@@ -1,13 +1,14 @@
-# An id the catalog does not have is a usage error that points at the list.
+# An id the catalog does not have is a usage error that points at the list,
+# before any step is reported.
 id = "preset_unknown_id_exits_2_with_hint"
 feature = "preset"
 
 [combination]
-command = "preset-show"
+command = "preset-setup"
 preset = "unknown"
 
 [input]
-args = ["preset", "show", "gitlab"]
+args = ["preset", "setup", "gitlab", "--dry-run"]
 
 [expect]
 error = { code = "PRESET_NOT_FOUND", exit = 2, message = "no preset is named gitlab" }

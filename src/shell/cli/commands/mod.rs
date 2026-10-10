@@ -39,7 +39,7 @@ pub mod logout;
 pub mod mcp;
 pub mod obsidian;
 pub mod preset;
-pub mod preset_add;
+pub mod preset_setup;
 pub mod profile;
 pub mod s3;
 pub mod s3_command;

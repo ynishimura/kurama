@@ -1,0 +1,31 @@
+# `preset setup --dry-run --json` is the plan as one document: the preset,
+# the file it would be added to, the API name, the auth and whether it is
+# added or reused, each step and its state, the TOML to append, and the
+# warnings. Nothing goes to stderr, and nothing is resolved, contacted or
+# written.
+id = "preset_setup_dry_run_json_reports_the_plan"
+feature = "preset"
+
+[combination]
+command = "preset-setup"
+output = "json"
+
+[input]
+args = ["preset", "setup", "github", "--set", "secret=op://Agent/kurama-github/credential", "--dry-run", "--json"]
+replace_config = """
+[core]
+log_level = "info"
+"""
+
+[fakes]
+op = "enabled"
+
+[expect]
+exit_code = 0
+stderr_empty = true
+stdout_json = { "" = { length = 11 }, "/schema_version" = 1, "/kind" = "preset_setup", "/preset" = "github", "/path" = { contains = "/kurama-config.toml" }, "/api" = "github", "/auth" = { name = "github", action = "add" }, "/dry_run" = true, "/complete" = false, "/steps" = { length = 5 }, "/steps/0/step" = "configure", "/steps/0/state" = "planned", "/toml" = { contains = ["# kurama preset: github (kurama ", "\n# setup: https://github.com/settings/personal-access-tokens/new\n[auth.github]\nkind = \"token\"\ntoken = \"op://Agent/kurama-github/credential\"\nenv_var = \"GITHUB_TOKEN\"\n\n[api.github]\ndescription = \"GitHub REST API\"\nbase_url = \"https://api.github.com\"\nauth = \"github\"\n"] }, "/warnings" = [] }
+sts_actions = []
+op_calls = 0
+secret_reads = []
+api_calls = { count = 0 }
+no_files_written = true

@@ -1,0 +1,53 @@
+# `preset setup --offline` appends the preset's auth and API to the file in
+# one write: the text form says what it added and what is left to do, the
+# JSON form reports each step, and `status` lists both sources and both APIs
+# from the saved file. Only the config file and the Skill are written, and
+# nothing is resolved or contacted on the way.
+id = "preset_setup_offline_writes_the_sections_and_status_lists_them"
+feature = "preset"
+
+[combination]
+command = "preset-setup"
+output = "json"
+
+[input]
+args = ["preset", "setup", "linear", "--set", "secret=op://Agent/kurama-linear/credential", "--offline"]
+then_run = [
+  ["preset", "setup", "github", "--set", "secret=op://Agent/kurama-github/credential", "--offline", "--json"],
+  ["status", "--only", "auth", "--json"],
+  ["status", "--only", "api", "--json"],
+]
+config = """
+[core]
+log_level = "info"
+"""
+
+[fakes]
+op = "enabled"
+
+[expect]
+exit_code = 0
+stdout_json = { "/0/name" = "github", "/0/kind" = "api", "/0/auth" = "github", "/0/base_url" = "https://api.github.com", "/1/name" = "linear", "/1/auth" = "linear", "/1/base_url" = "https://api.linear.app", "" = { length = 2 } }
+sts_actions = []
+op_calls = 0
+secret_reads = []
+api_calls = { count = 0 }
+files_written = ["home/.claude/skills/kurama/SKILL.md", "kurama-config.toml"]
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stderr_empty = true
+stdout = { starts_with = "# kurama preset setup linear ([api.linear])\n", contains = ["configure    done          added [auth.linear], [api.linear] to ", "/kurama-config.toml\n", "first_read   skipped       --offline reads no secret and sends nothing\n", "next: kurama preset setup linear\n", "# not complete: run the next step shown, then this command again\n"] }
+stdout_excludes = ["op item create", "# would append"]
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+stderr_empty = true
+stdout_json = { "/dry_run" = false, "/auth" = { name = "github", action = "add" }, "/steps/0/state" = "done", "/steps/0/detail" = { contains = ["added [auth.github], [api.github] to ", "/kurama-config.toml"] }, "/steps/1/state" = "done", "/warnings" = { length = 0 } }
+
+[[expect.runs]]
+run = 2
+exit_code = 0
+stdout_json = { "/0/name" = "github", "/0/kind" = "auth", "/0/auth_kind" = "token", "/0/env_var" = "GITHUB_TOKEN", "/1/name" = "linear", "/1/auth_kind" = "token", "/1/env_var" = "LINEAR_API_KEY", "" = { length = 2 } }

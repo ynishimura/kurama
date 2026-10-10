@@ -1,0 +1,27 @@
+# The text dry run is the step lines, then `# would append to <path>:` and
+# the TOML to append -- the provenance comment, then the sections with the
+# reference as given -- all on stdout, with nothing on stderr. Nothing is
+# resolved, contacted or written.
+id = "preset_setup_dry_run_prints_the_steps_then_the_toml"
+feature = "preset"
+
+[combination]
+command = "preset-setup"
+output = "text"
+
+[input]
+args = ["preset", "setup", "github", "--set", "secret=op://Agent/kurama-github/credential", "--dry-run"]
+
+[fakes]
+op = "enabled"
+
+[expect]
+exit_code = 0
+stderr_empty = true
+stdout = { starts_with = "# kurama preset setup github ([api.github])\nconfigure    planned       would add [auth.github], [api.github] to ", contains = ["\nfirst_read   skipped       --dry-run writes nothing and sends nothing\n# would append to ", "/kurama-config.toml:\n# kurama preset: github (kurama ", "# setup: https://github.com/settings/personal-access-tokens/new\n[auth.github]\nkind = \"token\"\ntoken = \"op://Agent/kurama-github/credential\"\nenv_var = \"GITHUB_TOKEN\"\n\n[api.github]\ndescription = \"GitHub REST API\"\nbase_url = \"https://api.github.com\"\nauth = \"github\"\n", "headers = { \"Accept\" = \"application/vnd.github+json\", \"X-GitHub-Api-Version\" = \"2026-03-10\" }\n"] }
+stdout_excludes = ["op item create", "# complete", "# not complete"]
+sts_actions = []
+op_calls = 0
+secret_reads = []
+api_calls = { count = 0 }
+no_files_written = true

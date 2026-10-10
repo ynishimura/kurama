@@ -34,6 +34,24 @@ struct ReadyOutput {
 }
 
 pub async fn run(json: bool, config: &Config) -> Result<()> {
+    let rows = readiness_rows(config).await?;
+    let output = ReadyOutput {
+        schema_version: 1,
+        kind: "agent_ready",
+        ready: rows.iter().all(|row| row.state == Readiness::Ready),
+        sources: rows,
+    };
+    if json {
+        println!("{}", json_line(&output));
+    } else {
+        print!("{}", render_table(&output.sources));
+    }
+    Ok(())
+}
+
+/// One row per AWS profile, `[auth.*]`, `[api.*]` and `[db.*]`, from the
+/// reads `status` makes; `preset setup` reads its API's row from here too.
+pub(super) async fn readiness_rows(config: &Config) -> Result<Vec<SourceReadiness>> {
     let mut profiles = load_profiles().await?;
     check_name_collisions(&profiles, config)?;
     profiles.sort_by(|a, b| a.name().cmp(b.name()));
@@ -91,19 +109,7 @@ pub async fn run(json: bool, config: &Config) -> Result<()> {
             "a local file, opened without a credential",
         ));
     }
-
-    let output = ReadyOutput {
-        schema_version: 1,
-        kind: "agent_ready",
-        ready: rows.iter().all(|row| row.state == Readiness::Ready),
-        sources: rows,
-    };
-    if json {
-        println!("{}", json_line(&output));
-    } else {
-        print!("{}", render_table(&output.sources));
-    }
-    Ok(())
+    Ok(rows)
 }
 
 fn render_table(rows: &[SourceReadiness]) -> String {

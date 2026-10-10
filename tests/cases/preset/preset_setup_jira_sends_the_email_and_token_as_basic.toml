@@ -1,0 +1,25 @@
+# Jira Cloud takes HTTP Basic with the account's email as the username and
+# an API token as the password, on the site's own host. The dry run resolves,
+# contacts and writes nothing.
+id = "preset_setup_jira_sends_the_email_and_token_as_basic"
+feature = "preset"
+
+[combination]
+command = "preset-setup"
+output = "text"
+
+[input]
+args = ["preset", "setup", "jira", "--set", "secret=op://Agent/kurama-jira/credential", "--set", "site=example", "--set", "email=me@example.com", "--dry-run"]
+
+[fakes]
+op = "enabled"
+
+[expect]
+exit_code = 0
+stdout = { starts_with = "# kurama preset setup jira ([api.jira])\nconfigure    planned       would add [auth.jira], [api.jira] to ", contains = ["kurama-config.toml:\n# kurama preset: jira (kurama ", "# setup: https://id.atlassian.com/manage-profile/security/api-tokens\n", "[auth.jira]\nkind = \"token\"\ntoken = \"op://Agent/kurama-jira/credential\"\nusername = \"me@example.com\"\nenv_var = \"JIRA_API_TOKEN\"\n", "[api.jira]\ndescription = \"Jira Cloud REST API\"\nbase_url = \"https://example.atlassian.net\"\nauth = \"jira\"\nopenapi = \"https://developer.atlassian.com/cloud/jira/platform/swagger-v3.v3.json\"\n"] }
+stderr_empty = true
+sts_actions = []
+op_calls = 0
+secret_reads = []
+api_calls = { count = 0 }
+no_files_written = true

@@ -1,0 +1,40 @@
+# An OAuth source whose grant needs a person, with no token yet and no
+# terminal: the credential step says a login is needed and which one, and
+# the first read stops with the login hint before any request.
+id = "preset_setup_oauth_without_a_login_names_the_login_to_run"
+feature = "preset"
+
+[combination]
+command = "preset-setup"
+preset = "github-oauth"
+grant = "device_code"
+setup_stop = "credential"
+
+[input]
+args = ["preset", "setup", "github-oauth"]
+config = """
+[auth.github]
+kind = "oauth"
+grant_type = "device_code"
+token_url = "{server}/oauth/token"
+device_auth_url = "{server}/oauth/device"
+client_id = "gh-client"
+scopes = ["read:user"]
+
+[api.github]
+base_url = "{server}/api"
+"""
+
+[fakes]
+token_store = true
+
+[expect]
+error = { code = "OAUTH_LOGIN_REQUIRED", exit = 3 }
+hint = "run `kurama login github` in a terminal"
+token_grants = []
+api_calls = { count = 0 }
+stdout = { contains = [
+  "credential   needs_action ",
+  "next: kurama login github",
+  "first_read   failed        GET /user failed: error[OAUTH_LOGIN_REQUIRED]",
+] }

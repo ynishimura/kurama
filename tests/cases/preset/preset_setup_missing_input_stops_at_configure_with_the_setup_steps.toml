@@ -1,0 +1,49 @@
+# A first run with nothing configured and no input: the setup stops at
+# `configure` with the preset's own steps (where to create the token, how to
+# keep it) and the command to run next, every later step reported as
+# skipped. Nothing is written, resolved or contacted; the exit code is the
+# missing input's.
+id = "preset_setup_missing_input_stops_at_configure_with_the_setup_steps"
+feature = "preset"
+
+[combination]
+command = "preset-setup"
+preset = "github"
+setup_stop = "configure"
+
+[input]
+args = ["preset", "setup", "github"]
+then_run = [["preset", "setup", "github", "--json"]]
+config = """
+[core]
+log_level = "info"
+"""
+
+[fakes]
+op = "enabled"
+
+[expect]
+op_calls = 0
+secret_reads = []
+api_calls = { count = 0 }
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+exit_code = 2
+stderr_contains = ["error[ARGUMENT_INVALID]: preset github needs secret; give each with --set <key>=<value>"]
+stdout_excludes = ["kurama preset add"]
+stdout = { contains = [
+  "configure    needs_action  preset github needs secret",
+  "next: Create a fine-grained personal access token",
+  "next: Set it up -- append the sections to ",
+  "kurama preset setup github --set 'secret=op://<vault>/kurama-github/credential'\n",
+  "check        skipped",
+  "first_read   skipped",
+  "# not complete",
+] }
+
+[[expect.runs]]
+run = 1
+json_error = { code = "ARGUMENT_INVALID", exit = 2 }
+stdout_json = { "/kind" = "preset_setup", "/preset" = "github", "/api" = "github", "/complete" = false, "/steps" = { length = 5 }, "/steps/0/step" = "configure", "/steps/0/state" = "needs_action", "/steps/0/next" = { length = 3 }, "/steps/0/next/2" = { contains = ["Set it up -- append the sections to ", "\nkurama preset setup github --set 'secret=op://<vault>/kurama-github/credential'"] }, "/steps/1/state" = "skipped", "/steps/4/step" = "first_read", "/steps/4/state" = "skipped" }

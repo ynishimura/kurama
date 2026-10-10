@@ -1,0 +1,49 @@
+# An [api.*] name the file already has is kept as it is, not refused: a run
+# after a stop resumes. `configure` says it is already there, the auth is
+# reported as `kept` (here the API names none), nothing is appended -- the
+# section keeps its own base_url -- and the later steps run against it. Only
+# the Skill is written.
+id = "preset_setup_keeps_an_existing_api_as_it_is"
+feature = "preset"
+
+[combination]
+command = "preset-setup"
+config = "existing-api"
+
+[input]
+args = ["preset", "setup", "linear", "--set", "secret=op://Agent/kurama-linear/credential", "--offline"]
+then_run = [
+  ["preset", "setup", "linear", "--set", "secret=op://Agent/kurama-linear/credential", "--offline", "--json"],
+  ["config", "list", "--json"],
+  ["config", "show", "api.linear", "--json"],
+]
+config = """
+[api.linear]
+base_url = "https://old.example.com"
+"""
+
+[expect]
+exit_code = 0
+stdout_json = { "/key" = "api.linear", "/value/base_url" = "https://old.example.com" }
+sts_actions = []
+op_calls = 0
+api_calls = { count = 0 }
+files_written = ["home/.claude/skills/kurama/SKILL.md"]
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stderr_empty = true
+stdout = { contains = ["configure    done          [api.linear] is already in ", "kurama-config.toml; kept as it is\n", "check        done          config.toml loads; [api.linear] sends no credential\n"] }
+stdout_excludes = ["added", "[auth.linear]"]
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+stderr_empty = true
+stdout_json = { "/auth" = { name = "<null>", action = "kept" }, "/toml" = "<null>", "/steps/0/state" = "done", "/steps/0/detail" = { contains = "[api.linear] is already in " } }
+
+[[expect.runs]]
+run = 2
+exit_code = 0
+stdout_json = { "/sections" = { length = 3 }, "/sections/2/name" = "api.linear" }

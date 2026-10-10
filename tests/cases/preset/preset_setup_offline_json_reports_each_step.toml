@@ -1,0 +1,38 @@
+# `preset setup --offline --json` appends the sections and reports each step:
+# configured and checked, the credential usable once 1Password approves, the
+# Skill written, and the first read skipped with the command that sends it.
+# `config list` then reads both sections from the saved file. Only the config
+# file and the Skill are written, and nothing is resolved or contacted.
+id = "preset_setup_offline_json_reports_each_step"
+feature = "preset"
+
+[combination]
+command = "preset-setup"
+output = "json"
+
+[input]
+args = ["preset", "setup", "openai", "--set", "secret=op://Agent/kurama-openai/credential", "--offline", "--json"]
+then_run = [["config", "list", "--json"]]
+replace_config = """
+[core]
+log_level = "info"
+"""
+
+[fakes]
+op = "enabled"
+
+[expect]
+exit_code = 0
+stderr_empty = true
+stdout_json = { "/sections" = [{ name = "core", keys = ["log_level"] }, { name = "auth.openai", keys = ["kind", "token", "env_var"] }, { name = "api.openai", keys = ["description", "base_url", "auth", "openapi"] }] }
+sts_actions = []
+op_calls = 0
+secret_reads = []
+api_calls = { count = 0 }
+files_written = ["home/.claude/skills/kurama/SKILL.md", "kurama-config.toml"]
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stderr_empty = true
+stdout_json = { "" = { length = 11 }, "/path" = { contains = "/kurama-config.toml" }, "/dry_run" = false, "/complete" = false, "/auth" = { name = "openai", action = "add" }, "/warnings" = [], "/toml" = { contains = "[api.openai]\n" }, "/steps" = { length = 5 }, "/steps/0/step" = "configure", "/steps/0/state" = "done", "/steps/0/detail" = { contains = "added [auth.openai], [api.openai] to " }, "/steps/1" = { step = "check", state = "done", detail = "config.toml loads; [api.openai] uses [auth.openai]", next = [] }, "/steps/2/step" = "credential", "/steps/2/state" = "done", "/steps/3/step" = "agent", "/steps/3/state" = "done", "/steps/3/detail" = { contains = ["wrote kurama's Skill for Claude Code: ", "/.claude/skills/kurama/SKILL.md"] }, "/steps/4" = { step = "first_read", state = "skipped", detail = "--offline reads no secret and sends nothing", next = ["kurama preset setup openai"] } }

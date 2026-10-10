@@ -9,8 +9,8 @@
 | `kurama config add --file - [--dry-run] --json` | `{path, changed, applied, changes, warnings}` | Add new `[auth.*]` / `[api.*]` / ... sections, checked whole before the file is written |
 | `kurama config set PATH VALUE --json` / `config set --file - --json` / `config unset KEY... --json` / `config remove SECTION... --json` (each with `--dry-run`) | `{path, changed, applied, changes, warnings}` | Change a key, replace whole sections, remove keys or sections in place; the result is checked whole first |
 | `kurama config show [PATH] --json` / `config list [SECTION] --json` / `config path --json` | the saved values (literal secrets redacted), the sections and keys, the file in use | See what config.toml holds without resolving anything |
-| `kurama preset --json` / `preset show <ID> --set k=v... --json` | the bundled provider presets; one expanded as `{api, auth, toml, setup, warnings}` | Add GitHub, Google, Linear, ElevenLabs, OpenAI, Slack, Contentful, Fireworks, Jira, Zendesk or Backlog without looking up endpoints, scopes and headers |
-| `kurama preset add <ID> --set k=v... [--as NAME] [--auth-as NAME] [--dry-run] --json` | `{path, changed, applied, changes, warnings}` as `config add`, plus `next_steps` | Append a preset's sections to config.toml, reusing a compatible `[auth.*]` |
+| `kurama preset --json` | the bundled provider presets: `[{id, title, auth, api, inputs, setup}]`; reads no configuration |
+| `kurama preset setup <ID> --set k=v... [--as NAME] [--auth-as NAME] [--dry-run \| --offline] --json` | `{kind: "preset_setup", preset, api, auth, path, dry_run, complete, steps: [{step, state, detail, next}], toml, warnings}`; see Setup |
 | `kurama exec <profile> -- <cmd>...` | the command's output | Run tools with the credentials or the token in their environment |
 | `kurama env <profile> --json` | credential_process JSON (AWS) or `{access_token, ...}` (auth) | A program needs the credentials as JSON |
 | `kurama unset` | `unset` lines for every variable `env` exports | Clear the credentials from a shell you exported them into |

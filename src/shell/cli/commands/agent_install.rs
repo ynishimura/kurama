@@ -137,7 +137,7 @@ pub async fn run(options: &AgentInstall, config: Config) -> Result<()> {
 
 /// `<dir>/<directory>/SKILL.md` holding `content`: written when it holds
 /// anything else, unless this is a dry run.
-fn place(
+pub(super) fn place(
     dir: &Path,
     directory: &str,
     api: Option<&str>,

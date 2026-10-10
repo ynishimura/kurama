@@ -1,0 +1,42 @@
+# An [auth.github] whose contract is not the preset's is refused naming the
+# auth and the cause, and --as is not offered: renaming the API would not
+# change the auth it uses, so the refusal stands under --as too; the hint
+# offers --auth-as instead. Nothing is written.
+id = "preset_setup_refuses_an_incompatible_existing_auth"
+feature = "preset"
+
+[combination]
+command = "preset-setup"
+auth = "incompatible"
+
+[input]
+args = ["preset", "setup", "github", "--set", "secret=op://Agent/kurama-github/credential", "--offline"]
+then_run = [["preset", "setup", "github", "--as", "gh-work", "--set", "secret=op://Agent/kurama-github/credential", "--offline", "--json"]]
+config = """
+[auth.github]
+kind = "oauth"
+grant_type = "device_code"
+token_url = "https://github.com/login/oauth/access_token"
+device_auth_url = "https://github.com/login/device/code"
+client_id = "Iv1.x"
+"""
+
+[expect]
+json_error = { code = "ARGUMENT_INVALID", exit = 2 }
+stderr_lines = 1
+stderr_json = { "/error/message" = { contains = "cannot be reused by preset github: it is kind = \"oauth\", the preset token" } }
+stderr_excludes = ["--as"]
+stdout_json = { "/api" = "gh-work", "/steps/0/state" = "failed", "/steps/0/detail" = "error[ARGUMENT_INVALID]" }
+stdout_excludes = ["--as"]
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+error = { code = "ARGUMENT_INVALID", exit = 2 }
+stderr_contains = ["[auth.github] in ", "cannot be reused by preset github: it is kind = \"oauth\", the preset token"]
+hint = "give the auth another name with --auth-as <name>, replace that [auth.*] with `kurama config set --file`, or remove it with `kurama config remove`"
+stderr_excludes = ["--as"]
+stdout = { contains = ["configure    failed        error[ARGUMENT_INVALID]\n"] }
+stdout_excludes = ["--as"]
