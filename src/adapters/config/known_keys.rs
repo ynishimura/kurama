@@ -20,6 +20,8 @@ pub(super) const ANY_NAME: &str = "*";
 pub(super) const SAMPLE: &str = r#"
 [auth."*"]
 
+[auth."*".env]
+
 [api."*"]
 base_url = ""
 

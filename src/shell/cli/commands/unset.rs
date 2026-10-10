@@ -2,10 +2,11 @@
 //!
 //! Follows the "Effects as Data" pattern: `plan_unset_command` is pure and
 //! `shell/cli/executor.rs` performs the I/O. The AWS variables are fixed;
-//! the token variables come from the `env_var` of every `[auth.*]` source,
-//! of either kind: `kurama env` exports both, so `unset` clears both. The
-//! variable the shell's `KURAMA_AUTH_VAR` names is cleared too, because the
-//! configuration may have renamed or removed it since `env` exported it.
+//! the token variables are every variable an `[auth.*]` source exports, of
+//! any kind: the `env_var` of an `oauth` or `token` source and each `env`
+//! name of a `secrets` source. The variables the shell's `KURAMA_AUTH_VAR`
+//! names are cleared too, because the configuration may have renamed or
+//! removed them since `env` exported them.
 
 use anyhow::Result;
 
@@ -26,15 +27,15 @@ pub fn plan_unset_command(token_vars: Vec<String>) -> Vec<UnsetEffect> {
     ]
 }
 
-/// The token variables `env` and `unset` clear: every configured `env_var`,
-/// and the one the shell recorded an earlier `env` exporting into.
+/// The token variables `env` and `unset` clear: every configured variable,
+/// and the ones the shell recorded an earlier `env` exporting into.
 pub fn managed_token_vars(config: &Config) -> Result<Vec<String>> {
     let previous = std::env::var(ACTIVE_AUTH_ENV_VAR).ok();
     Ok(token_managed_vars(
         config
             .auth_sources()?
             .iter()
-            .map(AuthSource::env_var)
+            .flat_map(AuthSource::env_vars)
             .collect::<Vec<_>>(),
         previous.as_deref(),
     ))

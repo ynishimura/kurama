@@ -229,7 +229,7 @@ mod tests {
     #[case("the top level", "api", "table", &[])]
     #[case("[core]", "log_level", "string", &[])]
     #[case("[api.*]", "base_url", "string", &[])]
-    #[case("[auth.*]", "kind", "enum", &["oauth", "token"])]
+    #[case("[auth.*]", "kind", "enum", &["oauth", "token", "secrets"])]
     #[case("[auth.*]", "grant_type", "enum", &["authorization_code", "device_code", "client_credentials"])]
     #[case("[auth.*]", "client_secret", "secret", &[])]
     #[case("[auth.*]", "token", "secret", &[])]

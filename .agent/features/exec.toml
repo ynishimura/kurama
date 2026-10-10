@@ -8,6 +8,8 @@ files = [
 ]
 tests = ["exec"]
 scenarios = [
+  "oauth_secrets_kind_exec_sets_every_variable",
+  "oauth_secrets_kind_unavailable_secret_exits_3_before_the_command_runs",
   "oauth_token_kind_sends_the_configured_header",
 ]
 depends_on = ["assume-role", "oauth", "agent-policy", "audit"]

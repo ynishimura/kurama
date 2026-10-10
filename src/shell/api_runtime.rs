@@ -31,8 +31,8 @@ use crate::console::progress;
 use crate::domain::functions::oauth::base64url;
 use crate::domain::functions::signing_target::{SigningTarget, resolve_signing_target};
 use crate::domain::types::{
-    AuthSource, Credentials, OAuthClientConfig, OAuthToken, Profile, SourceCredential,
-    TokenSourceConfig,
+    Credentials, OAuthClientConfig, OAuthToken, Profile, RequestAuth, SecretsSourceConfig,
+    SourceCredential, TokenSourceConfig,
 };
 use crate::ports::{
     AwsProfileCredentials, HttpClient, HttpError, HttpRequest, HttpResponse, SecretResolver,
@@ -235,14 +235,22 @@ impl ApiRuntime {
         self.token_http = http;
     }
 
-    /// The `[auth.*]` source an API profile refers to.
-    pub fn auth_source(&self, api: &ApiProfile) -> Result<Option<AuthSource>> {
+    /// The `[auth.*]` source an API profile refers to. An `ApiProfile`
+    /// never names a `secrets` source -- loading it refuses one -- so that
+    /// kind is the same configuration error here.
+    pub fn auth_source(&self, api: &ApiProfile) -> Result<Option<RequestAuth>> {
         let Some(name) = &api.auth else {
             return Ok(None);
         };
-        self.config.auth_source(name)?.map(Some).ok_or_else(|| {
+        let source = self.config.auth_source(name)?.ok_or_else(|| {
             CoreError::config(format!(
                 "[api.{}] auth = \"{name}\" names no [auth.{name}] section",
+                api.name
+            ))
+        })?;
+        source.request_auth().map(Some).map_err(|_| {
+            CoreError::config(format!(
+                "[api.{}]: [auth.{name}] is kind = \"secrets\", which authenticates no request",
                 api.name
             ))
             .into()
@@ -263,8 +271,8 @@ impl ApiRuntime {
         }
         Ok(match self.auth_source(api)? {
             None => ApiCredential::None,
-            Some(AuthSource::OAuth(client)) => ApiCredential::OAuth(client),
-            Some(AuthSource::Token(source)) => ApiCredential::Token(source),
+            Some(RequestAuth::OAuth(client)) => ApiCredential::OAuth(client),
+            Some(RequestAuth::Token(source)) => ApiCredential::Token(source),
         })
     }
 
@@ -279,18 +287,43 @@ impl ApiRuntime {
     /// again next time, and there is no token store entry to go stale.
     pub async fn ensure_credential(
         &self,
-        source: &AuthSource,
+        source: &RequestAuth,
         mode: TokenMode,
     ) -> Result<SourceCredential> {
         match source {
-            AuthSource::OAuth(client) => self
+            RequestAuth::OAuth(client) => self
                 .ensure_token(client, mode)
                 .await
                 .map(|output| SourceCredential::OAuth(output.token)),
-            AuthSource::Token(issued) => {
+            RequestAuth::Token(issued) => {
                 Ok(SourceCredential::Issued(self.issued_value(issued).await?))
             }
         }
+    }
+
+    /// Every variable of a `kind = "secrets"` source with its value, in
+    /// name order, read when this runs: nothing is stored, so a one-time
+    /// password is as fresh as the command it is for. The first reference
+    /// that cannot be read fails the whole, so no command starts with part
+    /// of them; fields of one 1Password item, or keys of one managed secret,
+    /// are one read through the process's secret cache.
+    pub async fn resolve_secrets(
+        &self,
+        source: &SecretsSourceConfig,
+    ) -> Result<Vec<(String, String)>> {
+        progress!(
+            "# Reading the secrets of '{}' from their secret stores",
+            source.name
+        );
+        let mut values = Vec::with_capacity(source.env.len());
+        for (var, reference) in &source.env {
+            let value = self
+                .resolve_secret(reference)
+                .await
+                .with_context(|| format!("Failed to read {var} of '{}'", source.name))?;
+            values.push((var.clone(), value));
+        }
+        Ok(values)
     }
 
     /// The value behind a `kind = "token"` source's reference.

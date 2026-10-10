@@ -191,6 +191,18 @@ pub fn auth_readiness(
                 .and(secret_condition(&issued.token, one_password, aws))
                 .row(name, "auth", None);
         }
+        AuthSource::Secrets(secrets) => {
+            return secrets
+                .env
+                .values()
+                .fold(
+                    Condition::ready("the secrets are read from their references on each exec"),
+                    |condition, reference| {
+                        condition.and(secret_condition(reference, one_password, aws))
+                    },
+                )
+                .row(name, "auth", None);
+        }
         AuthSource::OAuth(client) => client,
     };
     let secret = || match &client.client_secret {
@@ -342,10 +354,10 @@ mod tests {
     fn status(token: TokenState) -> AuthStatus {
         AuthStatus {
             name: "gh".into(),
-            kind: crate::domain::types::AuthKind::OAuth,
-            grant_type: None,
-            header: None,
-            env_var: "GH".into(),
+            detail: super::super::auth_status::AuthDetail::OAuth {
+                grant_type: GrantType::AuthorizationCode,
+            },
+            env_vars: vec!["GH".into()],
             token,
             active: false,
             needs_human: false,

@@ -11,6 +11,8 @@ files = [
 ]
 tests = ["export"]
 scenarios = [
+  "oauth_secrets_kind_env_prints_every_variable",
+  "oauth_secrets_kind_unset_lists_every_variable",
   "uc01_assume_role_exports_credentials_to_shell",
   "uc06_output_json_prints_credential_process_document",
   "uc12_readonly_attaches_policy_and_marks_the_session",

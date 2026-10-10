@@ -4,7 +4,7 @@
 
 use sha2::{Digest, Sha256};
 
-use crate::domain::types::{AuthSource, Credentials, Profile, SourceCredential, check_env_var};
+use crate::domain::types::{Credentials, Profile, RequestAuth, SourceCredential, check_env_var};
 
 /// Environment variables that hold AWS credentials or select an AWS profile.
 ///
@@ -34,9 +34,10 @@ pub const ACTIVE_AWS_PROFILE_VAR: &str = "KURAMA_AWS";
 /// the token by `kurama env <auth>`.
 pub const ACTIVE_AUTH_VAR: &str = "KURAMA_AUTH";
 
-/// Name of the variable `kurama env <auth>` exported the token into, exported
-/// with it, so `unset` clears that variable after the configuration stopped
-/// naming it.
+/// Names of the variables `kurama env <auth>` exported into, space
+/// separated (one for a token, one per secret of a `secrets` source),
+/// exported with them, so `unset` clears those variables after the
+/// configuration stopped naming them.
 pub const ACTIVE_AUTH_ENV_VAR: &str = "KURAMA_AUTH_VAR";
 
 /// Every variable the export script sets or unsets.
@@ -140,15 +141,22 @@ pub fn generate_unset_script(token_vars: &[String]) -> String {
         .join("\n")
 }
 
-/// Every variable `kurama env <auth>` manages: each configured `env_var`
-/// once, in order, then `previous` -- the shell's `KURAMA_AUTH_VAR`, which
-/// the configuration may no longer name -- when it is a variable name, then
-/// `KURAMA_AUTH` and `KURAMA_AUTH_VAR`.
+/// Every variable `kurama env <auth>` manages: each configured variable
+/// once, in order, then the names in `previous` -- the shell's
+/// `KURAMA_AUTH_VAR`, which the configuration may no longer name -- when
+/// every one of them is a variable name (the value comes from the shell and
+/// ends up in a script the shell runs, so a value that is not a list of
+/// names is not read in part), then `KURAMA_AUTH` and `KURAMA_AUTH_VAR`.
 pub fn token_managed_vars<'a>(
     env_vars: impl IntoIterator<Item = &'a str>,
     previous: Option<&'a str>,
 ) -> Vec<String> {
-    let previous = previous.filter(|var| check_env_var(var).is_ok());
+    let mut previous: Vec<&str> = previous
+        .map(|names| names.split_whitespace().collect())
+        .unwrap_or_default();
+    if !previous.iter().all(|var| check_env_var(var).is_ok()) {
+        previous.clear();
+    }
     let mut vars: Vec<String> = Vec::new();
     for var in env_vars.into_iter().chain(previous) {
         if !vars.iter().any(|known| known == var) {
@@ -160,36 +168,58 @@ pub fn token_managed_vars<'a>(
     vars
 }
 
-/// The variables that carry an auth source's credential, in export order.
-pub fn token_env_vars(credential: &SourceCredential, source: &AuthSource) -> Vec<(String, String)> {
-    vec![
-        (source.env_var().to_string(), credential.value().to_string()),
-        (ACTIVE_AUTH_VAR.to_string(), source.name().to_string()),
-        (
-            ACTIVE_AUTH_ENV_VAR.to_string(),
-            source.env_var().to_string(),
-        ),
-    ]
+/// The variables `env` / `exec` set for the source `name`, in export order:
+/// each of `values`, then the source name in `KURAMA_AUTH` and the names of
+/// `values`, space separated, in `KURAMA_AUTH_VAR`.
+pub fn auth_env_vars(name: &str, values: Vec<(String, String)>) -> Vec<(String, String)> {
+    let names = values
+        .iter()
+        .map(|(var, _)| var.as_str())
+        .collect::<Vec<_>>()
+        .join(" ");
+    values
+        .into_iter()
+        .chain([
+            (ACTIVE_AUTH_VAR.to_string(), name.to_string()),
+            (ACTIVE_AUTH_ENV_VAR.to_string(), names),
+        ])
+        .collect()
 }
 
-/// Shell script that unsets every token variable, then exports the source's
-/// credential into its `env_var`, the source name into `KURAMA_AUTH` and the
-/// `env_var` into `KURAMA_AUTH_VAR`.
-pub fn generate_token_export_script(
+/// The variables that carry a source's one credential, in export order.
+pub fn token_env_vars(
     credential: &SourceCredential,
-    source: &AuthSource,
-    managed: &[String],
-) -> String {
+    source: &RequestAuth,
+) -> Vec<(String, String)> {
+    auth_env_vars(
+        source.name(),
+        vec![(source.env_var().to_string(), credential.value().to_string())],
+    )
+}
+
+/// Shell script that unsets every managed token variable, then exports
+/// `vars` (from `auth_env_vars`).
+pub fn generate_auth_export_script(vars: Vec<(String, String)>, managed: &[String]) -> String {
     managed
         .iter()
         .map(|var| format!("unset {var}"))
         .chain(
-            token_env_vars(credential, source)
-                .into_iter()
+            vars.into_iter()
                 .map(|(name, value)| export_var(&name, &value)),
         )
         .collect::<Vec<_>>()
         .join("\n")
+}
+
+/// The values of a `secrets` source as `kurama env <source> --json` prints
+/// them: `{"env": {"<VAR>": "<value>", ...}}`, the shape of the `env` table
+/// they are configured in.
+pub fn generate_secrets_json(values: &[(String, String)]) -> String {
+    let env: serde_json::Map<String, serde_json::Value> = values
+        .iter()
+        .map(|(var, value)| (var.clone(), value.as_str().into()))
+        .collect();
+    serde_json::json!({ "env": env }).to_string()
 }
 
 /// The credential as `kurama token --json` and `kurama env <auth> --json`
@@ -328,9 +358,9 @@ mod tests {
         assert!(script.ends_with("unset GITHUB_TOKEN"));
     }
 
-    fn oauth_client() -> AuthSource {
+    fn oauth_client() -> RequestAuth {
         use crate::domain::types::{EndpointSource, GrantType, OAuthClientConfig, OAuthEndpoints};
-        AuthSource::OAuth(OAuthClientConfig {
+        RequestAuth::OAuth(OAuthClientConfig {
             name: "github".into(),
             grant_type: GrantType::AuthorizationCode,
             endpoints: EndpointSource::Explicit(OAuthEndpoints {
@@ -346,9 +376,9 @@ mod tests {
         })
     }
 
-    fn issued_source() -> AuthSource {
+    fn issued_source() -> RequestAuth {
         use crate::domain::types::{SecretRef, TokenSourceConfig};
-        AuthSource::Token(TokenSourceConfig {
+        RequestAuth::Token(TokenSourceConfig {
             name: "example".into(),
             token: SecretRef::parse("op://Agent/Example/credential").unwrap(),
             placement: crate::domain::types::TokenPlacement::Header {
@@ -394,6 +424,21 @@ mod tests {
             token_managed_vars(["GITHUB_TOKEN"], Some("GITHUB_TOKEN")),
             ["GITHUB_TOKEN", "KURAMA_AUTH", "KURAMA_AUTH_VAR"]
         );
+        // A `secrets` source recorded several names; each is cleared.
+        assert_eq!(
+            token_managed_vars(["GITHUB_TOKEN"], Some("SITE_USER SITE_PASS")),
+            [
+                "GITHUB_TOKEN",
+                "SITE_USER",
+                "SITE_PASS",
+                "KURAMA_AUTH",
+                "KURAMA_AUTH_VAR"
+            ]
+        );
+        assert_eq!(
+            token_managed_vars([], Some("SITE_USER $(rm -rf ~) 1X")),
+            ["KURAMA_AUTH", "KURAMA_AUTH_VAR"]
+        );
         for hostile in ["X; rm -rf ~", "", "1X"] {
             assert_eq!(
                 token_managed_vars(["GITHUB_TOKEN"], Some(hostile)),
@@ -407,7 +452,7 @@ mod tests {
     fn token_export_script_unsets_every_token_variable_then_exports_the_source() {
         let token = SourceCredential::OAuth(OAuthToken::bearer("gho_secret'quote"));
         let managed = token_managed_vars(["GITHUB_TOKEN", "OTHER_TOKEN"], None);
-        let script = generate_token_export_script(&token, &oauth_client(), &managed);
+        let script = generate_auth_export_script(token_env_vars(&token, &oauth_client()), &managed);
         assert_eq!(
             script,
             "unset GITHUB_TOKEN\nunset OTHER_TOKEN\nunset KURAMA_AUTH\nunset KURAMA_AUTH_VAR\n\
@@ -422,9 +467,8 @@ mod tests {
     #[test]
     fn an_issued_credential_exports_the_same_three_variables() {
         let credential = SourceCredential::Issued("api-key".into());
-        let script = generate_token_export_script(
-            &credential,
-            &issued_source(),
+        let script = generate_auth_export_script(
+            token_env_vars(&credential, &issued_source()),
             &token_managed_vars(["EXAMPLE_TOKEN"], None),
         );
         assert_eq!(
@@ -432,6 +476,37 @@ mod tests {
             "unset EXAMPLE_TOKEN\nunset KURAMA_AUTH\nunset KURAMA_AUTH_VAR\n\
              export EXAMPLE_TOKEN='api-key'\nexport KURAMA_AUTH='example'\n\
              export KURAMA_AUTH_VAR='EXAMPLE_TOKEN'"
+        );
+    }
+
+    /// A `secrets` source exports every variable, its name, and the
+    /// variables' names, so `unset` clears all of them after a rename.
+    #[test]
+    fn a_secrets_source_exports_every_variable_and_records_their_names() {
+        let vars = auth_env_vars(
+            "site",
+            vec![
+                ("SITE_PASS".into(), "p'w".into()),
+                ("SITE_USER".into(), "me".into()),
+            ],
+        );
+        assert_eq!(
+            generate_auth_export_script(
+                vars,
+                &token_managed_vars(["SITE_PASS", "SITE_USER"], None)
+            ),
+            "unset SITE_PASS\nunset SITE_USER\nunset KURAMA_AUTH\nunset KURAMA_AUTH_VAR\n\
+             export SITE_PASS='p'\"'\"'w'\nexport SITE_USER='me'\nexport KURAMA_AUTH='site'\n\
+             export KURAMA_AUTH_VAR='SITE_PASS SITE_USER'"
+        );
+        let json: serde_json::Value = serde_json::from_str(&generate_secrets_json(&[
+            ("SITE_PASS".into(), "pw".into()),
+            ("SITE_USER".into(), "me".into()),
+        ]))
+        .unwrap();
+        assert_eq!(
+            json,
+            serde_json::json!({"env": {"SITE_PASS": "pw", "SITE_USER": "me"}})
         );
     }
 

@@ -3,9 +3,9 @@
   "feature": "api-explorer",
   "status": "verified",
   "reason": null,
-  "commit": "70c239f17652f7f6e0db2d440b7df9fa19c513ac",
-  "feature_hash": "a7786e7fd66f0d12",
-  "diff_hash": "95500fcda8119129",
+  "commit": "846e05f0763cdf1c859c0e73de5bc982da93bdd0",
+  "feature_hash": "131d89c86878bae6",
+  "diff_hash": "03d6347347ba77ff",
   "environment": "real-services",
   "access": "read-only",
   "command": [
@@ -16,7 +16,7 @@
     "real",
     "api-explorer"
   ],
-  "generated_at": "2026-10-05T08:34:17.382251+00:00",
+  "generated_at": "2026-10-10T16:18:25.518780+00:00",
   "observed": [
     {
       "test": "api_graphql_call_sends_the_default_selection",

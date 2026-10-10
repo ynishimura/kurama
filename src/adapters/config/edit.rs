@@ -22,7 +22,7 @@ use super::input::{InputError, check_input};
 use super::layout::{
     clear_positions, first_header, first_header_mut, first_position, next_position, remove_unit,
 };
-use super::saved::{FIXED, NAMED, SECRET_KEYS, Saved, SyntaxError, is_reference};
+use super::saved::{FIXED, NAMED, SECRET_SLOTS, Saved, SecretSlot, SyntaxError, is_reference};
 
 /// One unit a save changes, as the `--json` save report lists it.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -90,12 +90,24 @@ impl Target {
         self.keys.len() == self.depth
     }
 
-    /// Whether this is a key that holds a secret (`auth.<name>.token`).
-    fn is_secret(&self) -> bool {
-        let [table, _, key] = self.keys.as_slice() else {
-            return false;
+    /// The secret slot this key is (`auth.<name>.token`), is in
+    /// (`auth.<name>.env.<VAR>`) or is the table of (`auth.<name>.env`).
+    fn secret_slot(&self) -> Option<SecretSlot> {
+        let (table, slot, inside) = match self.keys.as_slice() {
+            [table, _, key] => (table, key, false),
+            [table, _, slot, _] => (table, slot, true),
+            _ => return None,
         };
-        SECRET_KEYS.contains(&(table.get(), key.get()))
+        SECRET_SLOTS
+            .iter()
+            .find(|(kind, secret)| {
+                *kind == table.get()
+                    && match secret {
+                        SecretSlot::Key(key) => !inside && *key == slot.get(),
+                        SecretSlot::EveryValueOf(key) => *key == slot.get(),
+                    }
+            })
+            .map(|(_, secret)| *secret)
     }
 }
 
@@ -163,7 +175,17 @@ impl Edit {
                 error.message().trim().replace(['\r', '\n'], " ")
             ))
         })?;
-        if target.is_secret() && !is_reference(&Item::Value(value.clone())) {
+        let literal = |value: &Value| !is_reference(&Item::Value(value.clone()));
+        // A table of secrets set whole holds a literal when any value in it
+        // is one.
+        let holds_literal = match (target.secret_slot(), value.as_inline_table()) {
+            (Some(SecretSlot::EveryValueOf(_)), Some(table)) if target.keys.len() == 3 => {
+                table.iter().any(|(_, value)| literal(value))
+            }
+            (Some(_), _) => literal(&value),
+            (None, _) => false,
+        };
+        if holds_literal {
             return Err(InputError::LiteralSecret {
                 keys: vec![target.dotted()],
             });

@@ -4,7 +4,7 @@
 # kurama calls `op --version`, `op item get <item> --otp [--vault v]`,
 # `op item get <item> --format json [--vault v]` (an AWS access key item, or
 # the item an `op://<vault>/<item>/<field>` reference names) and
-# `op read <op://ref>`.
+# `op read <op://ref>` (a `?attribute=otp` read answers `otp-of-<item>`).
 # Every invocation is appended to $KURAMA_FAKE_OP_LOG so a scenario can assert
 # how often 1Password was consulted. Values are synthetic and only ever reach
 # the fake STS and OAuth servers.
@@ -69,6 +69,12 @@ esac
 case "$*" in
   --version)
     echo "2.30.0-fake"
+    ;;
+  "read op://"*"?attribute=otp")
+    # The current code of the item's one-time password, named after the
+    # item, so a scenario can tell it from every other field.
+    item="${2#op://*/}"
+    echo "otp-of-${item%%/*}"
     ;;
   "read op://"*)
     secret_value

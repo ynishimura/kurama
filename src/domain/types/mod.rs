@@ -32,11 +32,12 @@ pub mod request_history;
 pub mod s3_browse;
 pub mod s3_object;
 pub mod secret_ref;
+pub mod secrets_source;
 pub mod session_duration;
 pub mod token_source;
 
 // Re-export types
-pub use auth_source::{AuthKind, AuthSource, SourceCredential, check_env_var};
+pub use auth_source::{AuthKind, AuthSource, RequestAuth, SourceCredential, check_env_var};
 pub use credentials::Credentials;
 pub use http::{ApiHeaders, HttpRequest};
 pub use oauth_client::{
@@ -46,6 +47,7 @@ pub use oauth_token::OAuthToken;
 pub use output_format::OutputFormat;
 pub use profile::Profile;
 pub use secret_ref::{AwsSecretRef, AwsSecretStore, SecretFailure, SecretRef};
+pub use secrets_source::SecretsSourceConfig;
 pub use session_duration::SessionDuration;
 pub use token_source::{
     DEFAULT_TOKEN_FORMAT, DEFAULT_TOKEN_HEADER, TokenPlacement, TokenSourceConfig,

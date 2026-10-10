@@ -3,9 +3,9 @@
   "feature": "assume-role",
   "status": "verified",
   "reason": null,
-  "commit": "f25350f48a14513d94b3e46e7710d6fb399b16c6",
-  "feature_hash": "9b166988b8cf6622",
-  "diff_hash": "176597806f149d9d",
+  "commit": "846e05f0763cdf1c859c0e73de5bc982da93bdd0",
+  "feature_hash": "4740a6ffcde1b281",
+  "diff_hash": "0855cd44d1d40d0b",
   "environment": "real-services",
   "access": "read-only",
   "command": [
@@ -16,7 +16,7 @@
     "real",
     "assume-role"
   ],
-  "generated_at": "2026-09-27T08:31:32.849739+00:00",
+  "generated_at": "2026-10-10T16:19:03.700243+00:00",
   "observed": [
     {
       "test": "assume_role_real_env_exports_the_real_profile",

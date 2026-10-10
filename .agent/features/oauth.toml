@@ -1,5 +1,5 @@
 [oauth]
-summary = "[auth.*] credential sources that are not AWS profiles: kind = \"oauth\" (the token workflow -- authorization code + PKCE, device code, client credentials, refresh, discovery -- the keychain token store with a per-source lock, client secrets from any store kurama reads) and kind = \"token\" (a credential issued elsewhere, read from its secret store and sent in the header the source names, stored nowhere), with login / logout / token / status / env / exec on a source"
+summary = "[auth.*] credential sources that are not AWS profiles: kind = \"oauth\" (the token workflow -- authorization code + PKCE, device code, client credentials, refresh, discovery -- the keychain token store with a per-source lock, client secrets from any store kurama reads) kind = \"token\" (a credential issued elsewhere, read from its secret store and sent in the header the source names, stored nowhere) and kind = \"secrets\" (several references, each read into its own variable for env / exec, never sent in a request), with login / logout / token / status / env / exec on a source"
 entry = "src/workflows/oauth_token/transitions.rs"
 docs = ["docs/development/flows/auth-and-api.md", "docs/development/flows/secrets.md"]
 files = [
@@ -7,6 +7,7 @@ files = [
   "src/domain/types/oauth_token.rs",
   "src/domain/types/oauth_client.rs",
   "src/domain/types/token_source.rs",
+  "src/domain/types/secrets_source.rs",
   "src/domain/types/auth_source.rs",
   "src/domain/functions/oauth.rs",
   "src/domain/functions/auth_status.rs",
@@ -46,4 +47,4 @@ depends_on = ["cli-entry", "config", "errors", "secrets", "session-cache", "onep
 notes = "kind = \"token\" is verified against the fake Parameter Store (the value is built from the parameter name, so a scenario can say which reference it came from) and the fake API, and by hand against the real ElevenLabs API on 2026-09-22 with the key in 1Password. The fake authorization server and API are the scenario wiremock (tests/support/mod.rs: /oauth/token, /oauth/device, discovery, /api/...); tests/fakes/open answers an authorization request with the redirect, so the authorization code login runs end to end on a pseudo terminal (tests/support/tui.rs launch_command). Scenarios use the file token store (--features test-fakes); the real keychain store shares src/adapters/keychain.rs with the session cache. Not verified against a real provider yet: GitHub, Google and an OIDC issuer remain a manual check"
 
 [oauth.real]
-cases = "a token from the real client_credentials grant of [auth.kurama-real-oauth], printed as its fingerprint"
+cases = "a token from the real client_credentials grant of [auth.kurama-real-oauth], printed as its fingerprint; a kind = \"secrets\" exec reading the ElevenLabs key from 1Password and from Parameter Store (kurama-sandbox) and comparing them"

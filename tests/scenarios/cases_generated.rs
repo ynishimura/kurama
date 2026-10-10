@@ -2499,6 +2499,94 @@ fn oauth_secret_unavailable_exits_3_with_hint() {
 }
 #[test]
 #[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn oauth_secrets_kind_api_auth_exits_2() {
+    crate::support::cases::run_case(
+        include_str!("../cases/oauth/oauth_secrets_kind_api_auth_exits_2.toml"),
+        "tests/cases/oauth/oauth_secrets_kind_api_auth_exits_2.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn oauth_secrets_kind_env_prints_every_variable() {
+    crate::support::cases::run_case(
+        include_str!("../cases/oauth/oauth_secrets_kind_env_prints_every_variable.toml"),
+        "tests/cases/oauth/oauth_secrets_kind_env_prints_every_variable.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn oauth_secrets_kind_exec_sets_every_variable() {
+    crate::support::cases::run_case(
+        include_str!("../cases/oauth/oauth_secrets_kind_exec_sets_every_variable.toml"),
+        "tests/cases/oauth/oauth_secrets_kind_exec_sets_every_variable.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn oauth_secrets_kind_literal_value_exits_2() {
+    crate::support::cases::run_case(
+        include_str!("../cases/oauth/oauth_secrets_kind_literal_value_exits_2.toml"),
+        "tests/cases/oauth/oauth_secrets_kind_literal_value_exits_2.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn oauth_secrets_kind_reads_two_fields_of_one_item_with_one_op_call() {
+    crate::support::cases::run_case(
+        include_str!("../cases/oauth/oauth_secrets_kind_reads_two_fields_of_one_item_with_one_op_call.toml"),
+        "tests/cases/oauth/oauth_secrets_kind_reads_two_fields_of_one_item_with_one_op_call.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn oauth_secrets_kind_real_exec_reads_onepassword_and_parameter_store() {
+    crate::support::cases::run_case(
+        include_str!("../cases/oauth/oauth_secrets_kind_real_exec_reads_onepassword_and_parameter_store.toml"),
+        "tests/cases/oauth/oauth_secrets_kind_real_exec_reads_onepassword_and_parameter_store.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn oauth_secrets_kind_reserved_variable_name_exits_2() {
+    crate::support::cases::run_case(
+        include_str!("../cases/oauth/oauth_secrets_kind_reserved_variable_name_exits_2.toml"),
+        "tests/cases/oauth/oauth_secrets_kind_reserved_variable_name_exits_2.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn oauth_secrets_kind_status_lists_variable_names_only() {
+    crate::support::cases::run_case(
+        include_str!("../cases/oauth/oauth_secrets_kind_status_lists_variable_names_only.toml"),
+        "tests/cases/oauth/oauth_secrets_kind_status_lists_variable_names_only.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn oauth_secrets_kind_token_verb_exits_2() {
+    crate::support::cases::run_case(
+        include_str!("../cases/oauth/oauth_secrets_kind_token_verb_exits_2.toml"),
+        "tests/cases/oauth/oauth_secrets_kind_token_verb_exits_2.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn oauth_secrets_kind_unavailable_secret_exits_3_before_the_command_runs() {
+    crate::support::cases::run_case(
+        include_str!("../cases/oauth/oauth_secrets_kind_unavailable_secret_exits_3_before_the_command_runs.toml"),
+        "tests/cases/oauth/oauth_secrets_kind_unavailable_secret_exits_3_before_the_command_runs.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn oauth_secrets_kind_unset_lists_every_variable() {
+    crate::support::cases::run_case(
+        include_str!("../cases/oauth/oauth_secrets_kind_unset_lists_every_variable.toml"),
+        "tests/cases/oauth/oauth_secrets_kind_unset_lists_every_variable.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
 fn oauth_server_error_exits_4() {
     crate::support::cases::run_case(
         include_str!("../cases/oauth/oauth_server_error_exits_4.toml"),

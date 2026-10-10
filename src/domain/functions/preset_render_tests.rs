@@ -495,7 +495,7 @@ fn an_incompatible_auth_is_refused_with_its_reason() {
         name: "linear".into(),
         ..match token.clone() {
             AuthSource::Token(source) => source,
-            AuthSource::OAuth(_) => unreachable!(),
+            AuthSource::OAuth(_) | AuthSource::Secrets(_) => unreachable!(),
         }
     });
     assert!(refuse("linear", &PresetRequest::default(), &linear).contains("Bearer {token}"));
@@ -520,7 +520,7 @@ fn an_incompatible_auth_is_refused_with_its_reason() {
             client.endpoints = EndpointSource::Issuer("https://login.example.com".into());
             AuthSource::OAuth(client)
         }
-        AuthSource::Token(_) => unreachable!(),
+        AuthSource::Token(_) | AuthSource::Secrets(_) => unreachable!(),
     };
     assert!(refuse("google-drive", &PresetRequest::default(), &other).contains("issuer"));
 }
@@ -573,7 +573,7 @@ fn a_token_auth_is_reused_only_with_the_same_placement() {
         name: "backlog".into(),
         ..match jira("me@example.com") {
             AuthSource::Token(source) => source,
-            AuthSource::OAuth(_) => unreachable!(),
+            AuthSource::OAuth(_) | AuthSource::Secrets(_) => unreachable!(),
         }
     });
     assert!(
@@ -704,7 +704,7 @@ fn a_grant_or_endpoint_mismatch_is_refused() {
             client.grant_type = GrantType::DeviceCode;
             AuthSource::OAuth(client)
         }
-        AuthSource::Token(_) => unreachable!(),
+        AuthSource::Token(_) | AuthSource::Secrets(_) => unreachable!(),
     };
     assert!(
         refuse("google-sheets", &device)

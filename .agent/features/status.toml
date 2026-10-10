@@ -9,6 +9,7 @@ files = [
 ]
 tests = ["status"]
 scenarios = [
+  "oauth_secrets_kind_status_lists_variable_names_only",
   "status_lists_auth_sources_and_apis_with_their_token_state",
   "status_only_lists_one_kind_of_row",
   "profile_loading_honors_aws_config_file_without_default_aws_directory",

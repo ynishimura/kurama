@@ -19,8 +19,12 @@ below).
    (`kind = "oauth"`): the provider, the grant type, the client id, the
    scopes, and where the client secret is kept. For an API key that was
    issued elsewhere (`kind = "token"`): where the key is kept, and which
-   header the API reads it from. Never write a secret literally:
-   `client_secret` takes a reference and `token` takes nothing else.
+   header the API reads it from. For values a command needs in its
+   environment rather than a request (`kind = "secrets"`: a login screen's
+   username, password and one-time password for a browser automation tool):
+   where each value is kept, and the variable it goes in. Never write a
+   secret literally: `client_secret` takes a reference, and `token` and
+   every `env` value take nothing else.
    Three stores are read (see **Secret references** below); ask the person
    to create the item, secret or parameter if it does not exist yet.
 2. Append the sections, with `kurama preset add <ID> --set <key>=<value>...
@@ -52,6 +56,13 @@ below).
    # query = "apiKey"                   # instead of header/format/username: the credential in this query parameter
    env_var = "EXAMPLE_TOKEN"            # kurama env / exec put the credential here; default KURAMA_TOKEN
 
+   [auth.example-login]                 # the third kind: values for the environment of `exec`
+   kind = "secrets"                     # no request, no grant, nothing cached; an [api.*] cannot use it
+   [auth.example-login.env]             # VARIABLE = reference; [A-Z_][A-Z0-9_]*, not AWS_* or KURAMA_*
+   SITE_USER = "op://Agent/<item-id>/username"
+   SITE_PASS = "op://Agent/<item-id>/password"
+   SITE_OTP = "op://Agent/<item-id>/one-time password?attribute=otp"
+
    [api.<name>]
    description = "..."
    base_url = "https://api.example.com"
@@ -71,12 +82,13 @@ below).
    on stderr with `code` `CONFIG_INVALID`: its `message` names the key (and
    line) to fix and its `hint` the file in use. On success the new source is
    listed with
-   `"token": "missing"` (`"not_checked"` for `kind = "token"`, whose
-   credential `status` does not read) and the API with its `auth` or
-   `aws_profile`.
-4. Get the first token. `kind = "token"` has nothing to get: the credential
-   is read from its reference on every use, `kurama login <name>` says so
-   and does nothing, and `kurama logout <name>` has nothing to remove. For
+   `"token": "missing"` (`"not_checked"` for `kind = "token"` and
+   `kind = "secrets"`, whose values `status` does not read) and the API with
+   its `auth` or `aws_profile`.
+4. Get the first token. `kind = "token"` and `kind = "secrets"` have nothing
+   to get: the values are read from their references on every use,
+   `kurama login <name>` says so and does nothing, and `kurama logout
+   <name>` has nothing to remove. For
    `kind = "oauth"`, `client_credentials` needs nobody: the first
    `kurama api` or `kurama token <name>` fetches it. `authorization_code`
    and `device_code` need a person: ask them to run `kurama login <name>`
@@ -92,6 +104,32 @@ below).
 An API signed with `aws_profile` needs no login of its own: it follows the
 AWS profile it names (`needs_human` of that profile in `kurama status
 --json`).
+
+### Secrets for a command: `kind = "secrets"`
+
+A `kind = "secrets"` source exists for `kurama exec`: every reference under
+its `env` table is read when `exec` (or `env`) runs, each into its own
+variable, and the command starts only after every value was read -- the
+first reference that cannot be read fails the run with its `SECRET_*` code
+and the command never starts. Fields of one 1Password item are one
+`op item get`, so one biometric prompt; an `?attribute=otp` reference is its
+own `op read`, as fresh as the command. Nothing is cached or stored.
+
+```bash
+kurama exec example-login -- bash -c 'playwright-cli fill e3 "$SITE_USER" && playwright-cli fill e5 "$SITE_PASS" && playwright-cli fill e7 "$SITE_OTP"'
+```
+
+- The command line names the variables, never the values, so nothing
+  reaches the transcript, the shell history or a file. The command itself
+  can still print them: the environment of a command an agent runs is not a
+  boundary it cannot read.
+- `kurama env <name>` exports every variable (`--json`: `{"env": {...}}`),
+  and `kurama unset` clears them; `KURAMA_AUTH_VAR` lists the variable names,
+  space separated, so a renamed one is still cleared.
+- `kurama token <name>`, `console` and `--readonly` are `KIND_UNSUPPORTED`
+  (exit 2), and an `[api.*]` that names the source (or shares its name) is
+  `CONFIG_INVALID`: none of them has one credential to use.
+- `-v` names each secret store read on stderr, never a value.
 
 ### An API without a description
 

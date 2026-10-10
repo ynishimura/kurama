@@ -16,6 +16,9 @@ files = [
 ]
 tests = ["config"]
 scenarios = [
+  "oauth_secrets_kind_literal_value_exits_2",
+  "oauth_secrets_kind_reserved_variable_name_exits_2",
+  "oauth_secrets_kind_api_auth_exits_2",
   "config_auth_name_collides_with_aws_profile_exits_2",
   "config_api_auth_reference_unknown_exits_2",
   "secrets_a_reference_that_is_not_usable_is_refused_by_the_configuration",

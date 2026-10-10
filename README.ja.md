@@ -234,7 +234,7 @@ brew uninstall kurama    # or: cargo uninstall kurama, or rm ~/.cargo/bin/kurama
 
 </details>
 ## 使い方
-<!-- en: 6e2ae7447b12 -->
+<!-- en: 3712c8041527 -->
 
 ```bash
 kurama                       # TUI: pick a profile (needs a terminal)
@@ -305,7 +305,7 @@ AWS プロファイルの場合、`kurama env` は `AWS_ACCESS_KEY_ID`、`AWS_SE
 
 切り替えのたびに、まず古い認証情報とプロファイルの変数を削除します。旧来の `AWS_CREDENTIAL_EXPIRATION` と `AWS_DEFAULT_PROFILE` も対象です。`AWS_CA_BUNDLE` は TLS を制御する変数なので残します。
 
-`[auth.*]` ソースの場合、`kurama env` はトークンをソースの `env_var` にエクスポートします。あわせて `KURAMA_AUTH` にソース名を、`KURAMA_AUTH_VAR` に変数名を設定します。こうしておくと、設定で `env_var` の名前を変えたり削除したりした後でも、`kurama unset` でトークンを消せます。
+`[auth.*]` ソースの場合、`kurama env` はトークンをソースの `env_var` にエクスポートします。`kind = "secrets"` のソースでは、各シークレットをそれぞれの変数にエクスポートします。あわせて `KURAMA_AUTH` にソース名を、`KURAMA_AUTH_VAR` に変数名を（空白区切りで）設定します。こうしておくと、設定で変数の名前を変えたり削除したりした後でも、`kurama unset` で消せます。
 
 `kurama exec` は同じ変数を 1 つのコマンドにだけ設定し、自身をそのコマンドに置き換えます。終了コードとシグナルはコマンド自身のものになります。
 
@@ -365,7 +365,7 @@ Enter を押すと、`kurama env` と同じように選択中のプロファイ�
 | <kbd>q</kbd> / <kbd>Ctrl-C</kbd> | 終了 |
 
 ## 設定
-<!-- en: b3d2cc12862b -->
+<!-- en: e52875efeb97 -->
 
 kurama は `~/.config/kurama/config.toml` を読みます。別のファイルを使うには `KURAMA_CONFIG_PATH` を設定します。キーはすべて省略できます。ファイルには次のセクションがあります。
 
@@ -481,6 +481,13 @@ token = "op://Agent/kurama-backlog/credential"
 query = "apiKey"               # instead of header/format/username: the credential in this query parameter;
                                # an error message names the URL without its query
 
+[auth.example-login]           # values for the environment of `kurama exec`: no request, no grant, nothing cached
+kind = "secrets"
+[auth.example-login.env]       # VARIABLE = reference; a literal, AWS_* and KURAMA_* are refused
+SITE_USER = "op://Agent/<item-id>/username"
+SITE_PASS = "op://Agent/<item-id>/password"
+SITE_OTP = "op://Agent/<item-id>/one-time password?attribute=otp"
+
 [api.github]
 description = "GitHub REST API"
 base_url = "https://api.github.com"
@@ -516,6 +523,15 @@ aws_profile = "dev"            # exclusive with auth
 - `kurama env` と `kurama exec` は値を `env_var` に入れます。
 - `kurama login` と `kurama logout` は何もしません。
 - `kurama status` はシークレットを解決しないため、`not_checked` と報告します。
+
+`kind = "secrets"` のソースは、複数のシークレットを環境変数で受け取るコマンドのためのものです。たとえば、ブラウザー自動化ツールがログイン画面を通過する場合に使います。`kurama exec` か `kurama env` の実行時に `env` 配下の参照をすべて読み、すべて読めてからコマンドを起動します。読めない参照があれば、最初の 1 つの `SECRET_*` コードで失敗します。1 つの 1Password アイテムのフィールドは 1 回の `op` 呼び出しで読み、`?attribute=otp` の参照は実行のたびに新しく読みます。このソースでは次のようになります。
+
+- `kurama exec <source> -- <cmd>` はすべての変数を設定して `<cmd>` を実行し、`kurama env` はそれらをエクスポートします（`--json` は `{"env": {...}}`）。
+- `kurama token`、`console`、`--readonly` は拒否され（`KIND_UNSUPPORTED`）、`[api.*]` の `auth` にも使えません（`CONFIG_INVALID`）。
+- `kurama login` と `kurama logout` は何もしません。
+- `kurama status` は変数名だけを `not_checked` として表示し、値は表示しません。
+
+コマンドの環境変数は隔離境界ではありません。エージェントが実行するコマンドは、受け取った値を出力できます。kurama が防ぐのは、会話記録、シェル履歴、ファイルに値が残ることです。
 
 ### エージェント向けのガードレール（`[agent]`）
 <!-- en: 1028510ab395 -->

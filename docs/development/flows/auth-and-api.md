@@ -13,7 +13,12 @@ and no store: `ApiRuntime::ensure_credential` reads its `token` reference,
 `with_credential_header` puts the value in the `header` the source names
 through its `format`, and the request is sent once -- a retry would read
 the same value again. `AuthSource` (`src/domain/types/auth_source.rs`) is
-the enum both kinds resolve to, so each verb matches on it once. `call`
+the enum every kind resolves to, so each verb matches on it once. A
+`kind = "secrets"` source (`src/domain/types/secrets_source.rs`) holds
+several references for the environment of `env` / `exec` and no request
+credential: `AuthSource::request_auth` narrows to `RequestAuth` (the other
+two kinds) for `token`, `api` and `ApiRuntime`, and an `[api.*]` that
+names one is `CONFIG_INVALID` when the file is read. `call`
 instead
 signs the request with SigV4 when the `[api.*]` names an `aws_profile`
 (service and region from `--service` / `--region`, the profile, the host,

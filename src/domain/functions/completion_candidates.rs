@@ -70,6 +70,12 @@ pub fn profile_candidates(
             // names a vault, a profile and an item.
             let help = match source {
                 AuthSource::Token(issued) => format!("token {}", issued.placement.summary()),
+                AuthSource::Secrets(secrets) => {
+                    format!(
+                        "secrets {}",
+                        secrets.variables().collect::<Vec<_>>().join(",")
+                    )
+                }
                 AuthSource::OAuth(client) => {
                     let endpoint = match &client.endpoints {
                         EndpointSource::Explicit(endpoints) => &endpoints.token_url,

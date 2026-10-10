@@ -24,7 +24,7 @@ use crate::adapters::error::CoreError;
 use crate::adapters::jq::{ParsedInput, apply_filter_parsed, apply_filter_until, parse_input};
 use crate::adapters::request_history::{append_history, history_file, read_history};
 use crate::domain::functions::api_request::body_as_json;
-use crate::domain::types::auth_source::AuthSource;
+use crate::domain::types::RequestAuth;
 use crate::domain::types::request_history::HistoryEntry;
 use crate::shell::api_runtime::ApiRuntime;
 use crate::shell::cli::ErrorCode;
@@ -346,7 +346,7 @@ async fn token_expiry(
     runtime: &ApiRuntime,
     api: &ApiProfile,
 ) -> Option<chrono::DateTime<chrono::Utc>> {
-    let Ok(Some(AuthSource::OAuth(client))) = runtime.auth_source(api) else {
+    let Ok(Some(RequestAuth::OAuth(client))) = runtime.auth_source(api) else {
         return None;
     };
     runtime
