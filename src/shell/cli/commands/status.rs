@@ -112,8 +112,8 @@ pub async fn handle_status_command(
 ) -> Result<()> {
     let mut profiles = load_profiles().await?;
     check_name_collisions(&profiles, config)?;
-    let mut clients = config.auth_sources()?;
-    let mut apis = config.api_profiles()?;
+    let mut clients = config.auth_sources();
+    let mut apis = config.api_profiles();
     if let Some(name) = profile {
         apis.retain(|a| a.name == name);
         profiles.retain(|p| {

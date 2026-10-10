@@ -218,10 +218,9 @@ async fn run_steps(
         Ok(config) => config,
         Err(error) => return Some(failed(steps, "check", error)),
     };
-    let api = match config.api_profile(api_name) {
-        Ok(Some(api)) => api,
-        Ok(None) => unreachable!("configure found or added [api.{api_name}]"),
-        Err(error) => return Some(failed(steps, "check", error)),
+    // The configuration loaded, so every `[api.*]` in it typed.
+    let Some(api) = config.api_profile(api_name).cloned() else {
+        unreachable!("configure found or added [api.{api_name}]");
     };
     steps.push(Step::new(
         "check",

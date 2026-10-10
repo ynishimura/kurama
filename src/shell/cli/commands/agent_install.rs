@@ -65,7 +65,7 @@ pub async fn run(options: &AgentInstall, config: Config) -> Result<()> {
         Some(dir) => dir.clone(),
         None => get_home_dir()?.join(".claude").join("skills"),
     };
-    let apis = config.api_profiles()?;
+    let apis = config.api_profiles();
     let runtime = ApiRuntime::from_config(
         Arc::new(config),
         ApiRuntimeOptions {

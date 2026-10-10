@@ -288,10 +288,9 @@ pub fn resolve(name: &str, config: &Config) -> Result<DbConnection, DbError> {
         return Ok(DbConnection::ad_hoc_sqlite(name));
     }
     config
-        .db
-        .get(name)
-        .ok_or(InvalidDb::UnknownDatabase)?
-        .connection()
+        .db_connection(name)
+        .cloned()
+        .ok_or_else(|| InvalidDb::UnknownDatabase.into())
 }
 
 #[cfg(test)]

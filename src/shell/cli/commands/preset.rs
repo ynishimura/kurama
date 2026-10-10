@@ -278,12 +278,12 @@ pub fn plan_against_file(id: &str, request: &PresetRequest) -> Result<(ConfigFil
     let preset = find_preset(id).ok_or_else(|| PresetError::NotFound(id.to_owned()))?;
     let file = ConfigFile::open()?;
     let config = Config::parse(file.content())?;
-    let auth = config.auth_source(request.auth_name(preset))?;
+    let auth = config.auth_source(request.auth_name(preset));
     let apis: Vec<String> = config.api.keys().cloned().collect();
     let path = file.path().display().to_string();
     let existing = Existing {
         apis: &apis,
-        auth: auth.as_ref(),
+        auth,
         vault: config.onepassword.vault.as_deref(),
         config_path: &path,
     };
@@ -326,7 +326,6 @@ pub async fn check_plan(file: &ConfigFile, plan: &PresetPlan) -> Result<(Appende
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::types::AuthSource;
 
     fn parse(args: &[&str]) -> PresetCommand {
         let matches = crate::build_command()
@@ -357,13 +356,13 @@ mod tests {
 
     fn plan_for(preset: &'static Preset, request: &PresetRequest, config: &Config) -> PresetPlan {
         let apis: Vec<String> = config.api.keys().cloned().collect();
-        let auth: Option<AuthSource> = config.auth_source(preset.auth.name).unwrap();
+        let auth = config.auth_source(preset.auth.name);
         plan_preset(
             preset,
             request,
             &Existing {
                 apis: &apis,
-                auth: auth.as_ref(),
+                auth,
                 vault: Some("Agent"),
                 config_path: "/c.toml",
             },
@@ -445,8 +444,8 @@ mod tests {
             let text = plan.fragment.unwrap();
             let config = Config::parse(&text)
                 .unwrap_or_else(|error| panic!("{}: {error:#}\n{text}", preset.id));
-            assert!(config.auth_source(preset.auth.name).unwrap().is_some());
-            let api = config.api_profile(preset.api.name).unwrap().unwrap();
+            assert!(config.auth_source(preset.auth.name).is_some());
+            let api = config.api_profile(preset.api.name).cloned().unwrap();
             assert_eq!(api.auth.as_deref(), Some(preset.auth.name));
         }
     }

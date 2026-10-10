@@ -55,8 +55,8 @@ pub(super) async fn readiness_rows(config: &Config) -> Result<Vec<SourceReadines
     let mut profiles = load_profiles().await?;
     check_name_collisions(&profiles, config)?;
     profiles.sort_by(|a, b| a.name().cmp(b.name()));
-    let sources = config.auth_sources()?;
-    let apis = config.api_profiles()?;
+    let sources = config.auth_sources();
+    let apis = config.api_profiles();
     let now = Utc::now();
     let one_password = OnePassword {
         mfa_enabled: config.onepassword.enabled,
@@ -89,9 +89,9 @@ pub(super) async fn readiness_rows(config: &Config) -> Result<Vec<SourceReadines
             "the API is called without a credential",
         ));
     }
-    for (name, section) in &config.db {
-        let needs = match section.connection() {
-            Ok(DbConnection::Server(server)) => {
+    for (name, connection) in config.db_connections() {
+        let needs = match connection {
+            DbConnection::Server(server) => {
                 let mut needs = vec![secret_condition(&server.username, one_password, &aws)];
                 needs.push(match &server.auth {
                     DbAuth::Password(password) => secret_condition(password, one_password, &aws),
@@ -100,7 +100,7 @@ pub(super) async fn readiness_rows(config: &Config) -> Result<Vec<SourceReadines
                 needs.extend(server.tunnel.iter().map(|tunnel| aws(&tunnel.aws_profile)));
                 needs
             }
-            _ => vec![],
+            DbConnection::Sqlite(_) => vec![],
         };
         rows.push(dependent_readiness(
             name,

@@ -290,10 +290,8 @@ fn check_openapi(
 ) -> Result<Vec<SpecState>> {
     let cache = SpecCache::new(default_cache_dir()?);
     let mut states = Vec::new();
-    for name in config.api.keys() {
-        let Ok(Some(api)) = config.api_profile(name) else {
-            continue;
-        };
+    for api in config.api_profiles() {
+        let name = &api.name;
         let Some(source) = api.spec.as_ref().map(|spec| &spec.source) else {
             continue;
         };

@@ -38,7 +38,7 @@ pub fn profiles(scope: ProfileScope) -> Vec<Candidate> {
         .and_then(|loader| fs::read_to_string(loader.resolve_config_path()).ok())
         .map(|content| parse_aws_config(&content).into_values().collect::<Vec<_>>())
         .unwrap_or_default();
-    let auth = config.auth_sources().unwrap_or_default();
+    let auth = config.auth_sources();
     completion_candidates::profile_candidates(&aws, &auth, scope)
 }
 
@@ -48,12 +48,11 @@ pub fn databases() -> Vec<Candidate> {
     let Some(config) = read_config() else {
         return Vec::new();
     };
-    completion_candidates::named_candidates(config.db.iter().filter_map(|(name, section)| {
-        let connection = section.connection().ok()?;
-        Some((
+    completion_candidates::named_candidates(config.db_connections().map(|(name, connection)| {
+        (
             name.clone(),
             format!("{} {}", connection.engine().as_str(), connection.database()),
-        ))
+        )
     }))
 }
 
@@ -115,7 +114,6 @@ pub fn apis() -> Vec<Candidate> {
     completion_candidates::named_candidates(
         config
             .api_profiles()
-            .unwrap_or_default()
             .into_iter()
             .map(|api| (api.name, api.description.unwrap_or(api.base_url))),
     )
@@ -123,8 +121,7 @@ pub fn apis() -> Vec<Candidate> {
 
 /// Completion never refreshes a URL: an old cached description is still useful offline.
 pub fn read_api_spec(name: &str) -> Option<ApiSpec> {
-    let api = read_config()?.api_profile(name).ok()??;
-    let spec_source = api.spec?;
+    let spec_source = read_config()?.api_profile(name)?.spec.clone()?;
     let bytes = read_offline(&spec_source)?;
     let memo = SPEC_MEMO.get_or_init(|| Mutex::new(None));
     if let Some(spec) = memo

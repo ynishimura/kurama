@@ -37,6 +37,7 @@
 pub mod agent;
 pub mod api;
 pub mod audit;
+pub mod auth;
 pub mod aws;
 pub mod check;
 pub mod constants;
@@ -59,7 +60,8 @@ pub mod references;
 pub mod saved;
 pub mod writer;
 
-pub use api::{ApiDescription, ApiProfile, ApiToml, AuthToml, SpecSource};
+pub use api::{ApiDescription, ApiProfile, ApiToml, SpecSource};
+pub use auth::AuthToml;
 pub use aws::AwsConfig;
 pub use onepassword::OnePasswordConfig;
 
@@ -70,6 +72,7 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
+use std::sync::OnceLock;
 use tracing::debug;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -108,6 +111,65 @@ pub struct Config {
     /// The vault `kurama obsidian` reads, and the folders it may read.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub obsidian: Option<obsidian::ObsidianConfig>,
+    /// `auth`, `api` and `db` typed, the first time anything asks:
+    /// `Config::parse` does, through `validate`, so a loaded configuration
+    /// is typed where the file is read and never again. Whatever builds a
+    /// `Config` -- `parse`, `config check` reading sections one by one, the
+    /// writer's candidate -- gets the same values without a step to forget.
+    /// A section inserted after the first read is not seen: only tests
+    /// build a `Config` by hand, and they insert before they read.
+    #[serde(skip)]
+    typed: OnceLock<Typed>,
+}
+
+/// Each `[auth.*]`, `[api.*]` and `[db.*]` section as its typed value, or
+/// the message that says why it has none. A configuration `Config::parse`
+/// accepted holds no message; one `config check` read section by section
+/// may.
+#[derive(Debug, Clone)]
+struct Typed {
+    auth: BTreeMap<String, std::result::Result<AuthSource, String>>,
+    api: BTreeMap<String, std::result::Result<ApiProfile, String>>,
+    db: BTreeMap<String, std::result::Result<DbConnection, String>>,
+}
+
+impl Typed {
+    fn of(config: &Config) -> Self {
+        Self {
+            auth: config
+                .auth
+                .iter()
+                .map(|(name, auth)| (name.clone(), auth.typed(name)))
+                .collect(),
+            // The cross-section rules read what each `[auth.*]` declares --
+            // its `kind`, typed by serde, and its `header` -- so an API that
+            // names a `secrets` source is a problem of its own even while
+            // that source has another.
+            api: config
+                .api
+                .iter()
+                .map(|(name, api)| (name.clone(), api.typed(name, &config.auth)))
+                .collect(),
+            db: config
+                .db
+                .iter()
+                .map(|(name, section)| {
+                    let connection = section.connection().map_err(|error| error.to_string());
+                    (name.clone(), connection)
+                })
+                .collect(),
+        }
+    }
+}
+
+/// The typed values of one kind of section, without the ones that did not
+/// type.
+fn valid<T>(
+    sections: &BTreeMap<String, std::result::Result<T, String>>,
+) -> impl Iterator<Item = (&String, &T)> {
+    sections
+        .iter()
+        .filter_map(|(name, typed)| typed.as_ref().ok().map(|typed| (name, typed)))
 }
 
 /// Settings that do not depend on a provider.
@@ -259,16 +321,17 @@ impl Config {
                 CoreError::config(format!("[obsidian] {error}")),
             ));
         }
+        let typed = self.typed();
         let mut check = |kind: &str, name: &str, result: std::result::Result<(), String>| {
             if let Err(error) = result {
                 problems.push((format!("{kind}.{name}"), in_section(kind, name)(error)));
             }
         };
-        for (name, auth) in &self.auth {
-            check("auth", name, auth.typed(name).map(drop));
+        for (name, auth) in &typed.auth {
+            check("auth", name, failure(auth));
         }
-        for (name, api) in &self.api {
-            check("api", name, api.typed(name, &self.auth).map(drop));
+        for (name, api) in &typed.api {
+            check("api", name, failure(api));
         }
         for (name, workspace) in &self.data {
             let result = workspace
@@ -289,60 +352,54 @@ impl Config {
                 connection.validate().map_err(|error| error.to_string()),
             );
         }
-        for (name, section) in &self.db {
-            check(
-                "db",
-                name,
-                section
-                    .connection()
-                    .map(drop)
-                    .map_err(|error| error.to_string()),
-            );
+        for (name, connection) in &typed.db {
+            check("db", name, failure(connection));
         }
         problems
     }
 
-    /// The `[auth.<name>]` source, validated; `None` when there is none.
-    pub fn auth_source(&self, name: &str) -> Result<Option<AuthSource>> {
-        self.auth
-            .get(name)
-            .map(|auth| self.typed_auth(name, auth))
-            .transpose()
+    fn typed(&self) -> &Typed {
+        self.typed.get_or_init(|| Typed::of(self))
     }
 
-    /// Every `[auth.*]` source, validated, sorted by name.
-    pub fn auth_sources(&self) -> Result<Vec<AuthSource>> {
-        self.auth
-            .iter()
-            .map(|(name, auth)| self.typed_auth(name, auth))
+    /// The `[auth.<name>]` source; `None` when there is none.
+    pub fn auth_source(&self, name: &str) -> Option<&AuthSource> {
+        self.typed().auth.get(name)?.as_ref().ok()
+    }
+
+    /// Every `[auth.*]` source, sorted by name.
+    pub fn auth_sources(&self) -> Vec<AuthSource> {
+        valid(&self.typed().auth)
+            .map(|(_, source)| source.clone())
             .collect()
     }
 
-    /// The `[api.<name>]` profile, validated; `None` when there is none.
-    pub fn api_profile(&self, name: &str) -> Result<Option<ApiProfile>> {
-        self.api
-            .get(name)
-            .map(|api| self.typed_api(name, api))
-            .transpose()
+    /// The `[api.<name>]` profile; `None` when there is none.
+    pub fn api_profile(&self, name: &str) -> Option<&ApiProfile> {
+        self.typed().api.get(name)?.as_ref().ok()
     }
 
-    /// Every `[api.*]` profile, validated, sorted by name.
-    pub fn api_profiles(&self) -> Result<Vec<ApiProfile>> {
-        self.api
-            .iter()
-            .map(|(name, api)| self.typed_api(name, api))
+    /// Every `[api.*]` profile, sorted by name.
+    pub fn api_profiles(&self) -> Vec<ApiProfile> {
+        valid(&self.typed().api)
+            .map(|(_, api)| api.clone())
             .collect()
     }
 
-    fn typed_auth(&self, name: &str, auth: &AuthToml) -> Result<AuthSource> {
-        Ok(auth.typed(name).map_err(in_section("auth", name))?)
+    /// The `[db.<name>]` connection; `None` when there is none.
+    pub fn db_connection(&self, name: &str) -> Option<&DbConnection> {
+        self.typed().db.get(name)?.as_ref().ok()
     }
 
-    fn typed_api(&self, name: &str, api: &ApiToml) -> Result<ApiProfile> {
-        Ok(api
-            .typed(name, &self.auth)
-            .map_err(in_section("api", name))?)
+    /// Every `[db.*]` connection with its name, sorted by name.
+    pub fn db_connections(&self) -> impl Iterator<Item = (&String, &DbConnection)> {
+        valid(&self.typed().db)
     }
+}
+
+/// Why a section did not type, if it did not.
+fn failure<T>(typed: &std::result::Result<T, String>) -> std::result::Result<(), String> {
+    typed.as_ref().map(drop).map_err(Clone::clone)
 }
 
 /// A validation failure inside `[<kind>.<name>]`, prefixed with the section.
@@ -660,16 +717,38 @@ mod tests {
         #[test]
         fn sections_parse_and_resolve_each_other() {
             let config = Config::parse(SECTIONS).unwrap();
-            let AuthSource::OAuth(client) = config.auth_source("github").unwrap().unwrap() else {
+            let AuthSource::OAuth(client) = config.auth_source("github").cloned().unwrap() else {
                 panic!("expected an oauth source");
             };
             assert_eq!(client.client_id, "Iv1.abc");
-            let api = config.api_profile("github").unwrap().unwrap();
+            let api = config.api_profile("github").cloned().unwrap();
             assert_eq!(api.auth.as_deref(), Some("github"));
-            assert!(config.auth_source("missing").unwrap().is_none());
-            assert!(config.api_profile("missing").unwrap().is_none());
-            assert_eq!(config.auth_sources().unwrap().len(), 1);
-            assert_eq!(config.api_profiles().unwrap().len(), 1);
+            assert!(config.auth_source("missing").is_none());
+            assert!(config.api_profile("missing").is_none());
+            assert_eq!(config.auth_sources().len(), 1);
+            assert_eq!(config.api_profiles().len(), 1);
+        }
+
+        /// The sections are typed when the file is read: a second read is
+        /// the same value, not the section typed again.
+        #[test]
+        fn sections_are_typed_once() {
+            let config = Config::parse(&format!(
+                "{SECTIONS}\n[db.local]\nengine = \"sqlite\"\npath = \"/tmp/x.db\"\n"
+            ))
+            .unwrap();
+            assert!(std::ptr::eq(
+                config.auth_source("github").unwrap(),
+                config.auth_source("github").unwrap()
+            ));
+            assert!(std::ptr::eq(
+                config.api_profile("github").unwrap(),
+                config.api_profile("github").unwrap()
+            ));
+            assert!(std::ptr::eq(
+                config.db_connection("local").unwrap(),
+                config.db_connections().next().unwrap().1
+            ));
         }
 
         #[test]

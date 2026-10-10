@@ -29,21 +29,21 @@ pub fn plan_unset_command(token_vars: Vec<String>) -> Vec<UnsetEffect> {
 
 /// The token variables `env` and `unset` clear: every configured variable,
 /// and the ones the shell recorded an earlier `env` exporting into.
-pub fn managed_token_vars(config: &Config) -> Result<Vec<String>> {
+pub fn managed_token_vars(config: &Config) -> Vec<String> {
     let previous = std::env::var(ACTIVE_AUTH_ENV_VAR).ok();
-    Ok(token_managed_vars(
+    token_managed_vars(
         config
-            .auth_sources()?
+            .auth_sources()
             .iter()
             .flat_map(AuthSource::env_vars)
             .collect::<Vec<_>>(),
         previous.as_deref(),
-    ))
+    )
 }
 
 /// Handle the unset command (entry point)
 pub fn handle_unset_command(config: &Config) -> Result<()> {
-    let token_vars = managed_token_vars(config)?;
+    let token_vars = managed_token_vars(config);
     let effects = plan_unset_command(token_vars);
     execute_unset_effects(effects)
 }

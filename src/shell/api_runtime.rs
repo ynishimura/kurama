@@ -242,7 +242,7 @@ impl ApiRuntime {
         let Some(name) = &api.auth else {
             return Ok(None);
         };
-        let source = self.config.auth_source(name)?.ok_or_else(|| {
+        let source = self.config.auth_source(name).cloned().ok_or_else(|| {
             CoreError::config(format!(
                 "[api.{}] auth = \"{name}\" names no [auth.{name}] section",
                 api.name

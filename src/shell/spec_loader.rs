@@ -606,7 +606,7 @@ auth = "pets"
 "#
         ))
         .unwrap();
-        let api = config.api_profile("pets").unwrap().unwrap();
+        let api = config.api_profile("pets").cloned().unwrap();
         // Empty mock expectations fail on any token, secret, AWS or HTTP access.
         let (runtime, _guard) = with_cache_dir(ApiRuntime::test(
             config,
@@ -945,7 +945,7 @@ auth = "pets"
             ))
             .unwrap(),
         );
-        let api = config.api_profile("pets").unwrap().unwrap();
+        let api = config.api_profile("pets").cloned().unwrap();
         let (runtime, _cache) = with_cache_dir(ApiRuntime::test(
             config,
             http,
@@ -1014,7 +1014,7 @@ graphql = "/graphql"
 "#,
         )
         .unwrap();
-        let api = config.api_profile("linear").unwrap().unwrap();
+        let api = config.api_profile("linear").cloned().unwrap();
         let (runtime, _cache) = with_cache_dir(ApiRuntime::test(
             config,
             http,
@@ -1077,7 +1077,7 @@ graphql = "/graphql"
             ))
             .unwrap(),
         );
-        let api = config.api_profile("pets").unwrap().unwrap();
+        let api = config.api_profile("pets").cloned().unwrap();
         let (runtime, _cache) = with_cache_dir(ApiRuntime::test(
             config,
             http,

@@ -12,6 +12,16 @@ goes to stdout whatever it found; any `error` fails the run as
 `CONFIG_INVALID` (exit 2) under the JSON error contract. It resolves no
 secret and fetches nothing: a URL `openapi` is read from its cache only.
 
+Typed sections: `Config` types its `[auth.*]`, `[api.*]` and `[db.*]`
+sections the first time anything reads them, and `Config::parse` does,
+through `validate`. `auth_source`, `api_profile`, `db_connection` and their
+plurals return those values without a `Result`, and leave out a section
+that did not type -- which only the configuration `config check` reads
+section by section can hold; `problems` reports it from the same values.
+Which kinds of `[auth.*]` own each key is one table, `AuthToml::keys` in
+`src/adapters/config/auth.rs`, and every kind's refusal of a foreign key
+reads it.
+
 Config writes: `src/adapters/config/writer.rs` is the one place that saves
 config.toml. `ConfigFile::open` reads it (absent is empty), the caller
 builds the whole candidate (`ConfigFile::append` for new units, keeping

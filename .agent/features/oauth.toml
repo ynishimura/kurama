@@ -13,6 +13,7 @@ files = [
   "src/domain/functions/auth_status.rs",
   "src/ports/token_store.rs",
   "src/adapters/config/api.rs",
+  "src/adapters/config/auth.rs",
   "src/adapters/token_store/",
   "src/adapters/oauth/",
   "src/adapters/browser.rs",

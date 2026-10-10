@@ -387,7 +387,7 @@ mod tests {
 /// explorer's history of each, at most `MAX_ITEMS`.
 fn palette_items(config: &Config) -> Vec<PaletteItem> {
     let mut items = Vec::new();
-    for api in config.api_profiles().unwrap_or_default() {
+    for api in config.api_profiles() {
         if let Ok(path) = history_file(&api.name) {
             for entry in listed(&read_history(&path).unwrap_or_default()) {
                 let mut detail = api.name.clone();
@@ -437,8 +437,8 @@ async fn load_sources(
     sessions: &std::collections::HashMap<String, String>,
     now: chrono::DateTime<chrono::Utc>,
 ) -> Sources {
-    let clients = config.auth_sources().unwrap_or_default();
-    let apis = config.api_profiles().unwrap_or_default();
+    let clients = config.auth_sources();
+    let apis = config.api_profiles();
     let auth = gather_auth_statuses(&clients, create_token_store().as_ref(), now).await;
     let list = |rows: Vec<SourceRow>| SourceList { rows, selected: 0 };
     Sources {

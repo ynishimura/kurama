@@ -3,9 +3,9 @@
   "feature": "database",
   "status": "verified",
   "reason": null,
-  "commit": "dda561c955d77835448535b7120a3d0ebd926117",
-  "feature_hash": "2b431ec029e04e10",
-  "diff_hash": "39c87fb1c4054a4d",
+  "commit": "e06669bca47f6e857d43fa9f9deaafcd397f0aa2",
+  "feature_hash": "168bb265a4fd85e5",
+  "diff_hash": "d1d7e87a10485790",
   "environment": "local-docker",
   "access": "throwaway",
   "command": [
@@ -19,7 +19,7 @@
     "--",
     "--show-output"
   ],
-  "generated_at": "2026-10-10T18:38:56.748813+00:00",
+  "generated_at": "2026-10-10T19:12:56.220704+00:00",
   "observed": [
     {
       "test": "db_real_reads_every_value_as_the_server_stored_it",
