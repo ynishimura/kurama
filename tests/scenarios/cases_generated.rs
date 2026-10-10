@@ -2963,10 +2963,10 @@ fn preset_show_with_a_broken_config_stays_config_invalid() {
 }
 #[test]
 #[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
-fn preset_show_zendesk_sends_email_slash_token_as_basic() {
+fn preset_show_zendesk_gets_a_client_credentials_token() {
     crate::support::cases::run_case(
-        include_str!("../cases/preset/preset_show_zendesk_sends_email_slash_token_as_basic.toml"),
-        "tests/cases/preset/preset_show_zendesk_sends_email_slash_token_as_basic.toml",
+        include_str!("../cases/preset/preset_show_zendesk_gets_a_client_credentials_token.toml"),
+        "tests/cases/preset/preset_show_zendesk_gets_a_client_credentials_token.toml",
     );
 }
 #[test]

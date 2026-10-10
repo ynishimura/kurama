@@ -507,8 +507,14 @@ fn setup_steps(
             names.auth,
         ));
     }
+    // A client credentials grant needs no person, so the first call gets its
+    // token; only a token stored before the scopes grew has to be replaced.
+    let first_login = match preset.auth.kind {
+        AuthPresetKind::OAuth { grant_type, .. } => grant_type.needs_human(),
+        AuthPresetKind::Token { .. } => false,
+    };
     if matches!(preset.auth.kind, AuthPresetKind::OAuth { .. })
-        && (names.auth_action == AuthAction::Add || scopes_short)
+        && ((first_login && names.auth_action == AuthAction::Add) || scopes_short)
     {
         let force = if scopes_short { " --force" } else { "" };
         steps.push(format!(

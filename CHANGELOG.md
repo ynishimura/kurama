@@ -11,6 +11,17 @@ format. Internal changes need none.
 
 ## Unreleased
 
+### Changed
+
+- The `zendesk` preset gets a token through an OAuth client credentials grant
+  (`--set client_id=... --set client_secret=... --set subdomain=...`) instead
+  of an API token over HTTP Basic: Zendesk stops creating API tokens on
+  2026-10-27 and rejects every one after 2027-04-30. A section an earlier
+  `preset add` wrote keeps working until then.
+- The next steps `preset show` / `preset add` print for a client credentials
+  preset no longer ask for `kurama login`: the first `kurama api` call gets
+  the token.
+
 ## 0.1.1 - 2026-10-01
 
 ### Security

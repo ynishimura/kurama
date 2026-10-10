@@ -397,7 +397,8 @@ kurama は `~/.config/kurama/config.toml` を読みます。別のファイル�
 - ElevenLabs、OpenAI、Fireworks（API キー）
 - Slack（ボットトークン）
 - Contentful（個人用アクセストークン）
-- Jira、Zendesk（HTTP Basic による API トークン）
+- Jira（HTTP Basic による API トークン）
+- Zendesk（OAuth の client credentials グラント）
 - Backlog（クエリ文字列に入れる API キー）
 
 `kurama preset show <ID> --set <key>=<value>...` は、プリセットを 1 つ TOML として stdout に出力し、認証情報を作成する手順を stderr に出力します（端末では `--open` でセットアップページを開けます）。TOML はプリセット名を記したコメント付きで完全に展開されるので、認証情報の送信先の URL がすべてファイル自体に現れます。ファイルにすでにある `[auth.*]` は、その取り決めがプリセットと一致するときだけ再利用し、そのソースに足りないスコープがあれば警告します。`--as` で API の名前を、`--auth-as` で auth の名前を変えられます。結果は `config add` と同じ方法でファイルに対して検査され、何も書き込まれません。
