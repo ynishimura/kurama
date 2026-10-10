@@ -1,0 +1,37 @@
+# `preset setup --dry-run --json` is the report with `dry_run` true, the
+# sections it would add and their TOML, so it cannot be mistaken for a run
+# that saved; the file is not touched, and `config list` still shows only
+# what was there.
+id = "preset_setup_json_dry_run_leaves_the_file_as_it_was"
+feature = "preset"
+
+[combination]
+command = "preset-setup"
+output = "dry-run"
+
+[input]
+args = ["preset", "setup", "openai", "--set", "secret=op://Agent/kurama-openai/credential", "--dry-run", "--json"]
+then_run = [["config", "list", "--json"]]
+replace_config = """
+[core]
+log_level = "info"
+"""
+
+[fakes]
+op = "enabled"
+
+[expect]
+exit_code = 0
+stderr_empty = true
+stdout_json = { "/sections" = [{ name = "core", keys = ["log_level"] }] }
+sts_actions = []
+op_calls = 0
+secret_reads = []
+api_calls = { count = 0 }
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stderr_empty = true
+stdout_json = { "" = { length = 11 }, "/kind" = "preset_setup", "/preset" = "openai", "/api" = "openai", "/path" = { contains = "/kurama-config.toml" }, "/dry_run" = true, "/complete" = false, "/auth" = { name = "openai", action = "add" }, "/steps/0/state" = "planned", "/steps/0/detail" = { contains = "would add [auth.openai], [api.openai] to " }, "/toml" = { contains = ["[auth.openai]\n", "[api.openai]\n"] }, "/warnings" = [] }

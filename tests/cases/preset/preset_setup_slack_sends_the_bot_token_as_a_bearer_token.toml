@@ -1,0 +1,25 @@
+# Slack's Web API takes a bot token as a Bearer token in Authorization,
+# kurama's default. Its published description was archived in 2021, so the
+# preset names none. The dry run resolves, contacts and writes nothing.
+id = "preset_setup_slack_sends_the_bot_token_as_a_bearer_token"
+feature = "preset"
+
+[combination]
+command = "preset-setup"
+output = "text"
+
+[input]
+args = ["preset", "setup", "slack", "--set", "secret=op://Agent/kurama-slack/credential", "--dry-run"]
+
+[fakes]
+op = "enabled"
+
+[expect]
+exit_code = 0
+stdout = { starts_with = "# kurama preset setup slack ([api.slack])\nconfigure    planned       would add [auth.slack], [api.slack] to ", contains = ["kurama-config.toml:\n# kurama preset: slack (kurama ", "# setup: https://api.slack.com/apps\n", "[auth.slack]\nkind = \"token\"\ntoken = \"op://Agent/kurama-slack/credential\"\nenv_var = \"SLACK_BOT_TOKEN\"\n", "[api.slack]\ndescription = \"Slack Web API\"\nbase_url = \"https://slack.com/api\"\nauth = \"slack\"\n"] }
+stderr_empty = true
+sts_actions = []
+op_calls = 0
+secret_reads = []
+api_calls = { count = 0 }
+no_files_written = true

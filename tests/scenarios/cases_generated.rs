@@ -2771,118 +2771,6 @@ fn onepassword_version_probe_that_waits_for_a_person_times_out_exit_3() {
 }
 #[test]
 #[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
-fn preset_add_as_reuses_the_default_auth_without_renaming_it() {
-    crate::support::cases::run_case(
-        include_str!("../cases/preset/preset_add_as_reuses_the_default_auth_without_renaming_it.toml"),
-        "tests/cases/preset/preset_add_as_reuses_the_default_auth_without_renaming_it.toml",
-    );
-}
-#[test]
-#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
-fn preset_add_auth_as_renames_the_auth_and_the_api_reference() {
-    crate::support::cases::run_case(
-        include_str!("../cases/preset/preset_add_auth_as_renames_the_auth_and_the_api_reference.toml"),
-        "tests/cases/preset/preset_add_auth_as_renames_the_auth_and_the_api_reference.toml",
-    );
-}
-#[test]
-#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
-fn preset_add_checks_auth_names_against_aws_profiles() {
-    crate::support::cases::run_case(
-        include_str!("../cases/preset/preset_add_checks_auth_names_against_aws_profiles.toml"),
-        "tests/cases/preset/preset_add_checks_auth_names_against_aws_profiles.toml",
-    );
-}
-#[test]
-#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
-fn preset_add_dry_run_reports_pending_steps() {
-    crate::support::cases::run_case(
-        include_str!("../cases/preset/preset_add_dry_run_reports_pending_steps.toml"),
-        "tests/cases/preset/preset_add_dry_run_reports_pending_steps.toml",
-    );
-}
-#[test]
-#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
-fn preset_add_dry_run_writes_nothing() {
-    crate::support::cases::run_case(
-        include_str!("../cases/preset/preset_add_dry_run_writes_nothing.toml"),
-        "tests/cases/preset/preset_add_dry_run_writes_nothing.toml",
-    );
-}
-#[test]
-#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
-fn preset_add_incompatible_auth_hints_at_auth_as() {
-    crate::support::cases::run_case(
-        include_str!("../cases/preset/preset_add_incompatible_auth_hints_at_auth_as.toml"),
-        "tests/cases/preset/preset_add_incompatible_auth_hints_at_auth_as.toml",
-    );
-}
-#[test]
-#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
-fn preset_add_json_dry_run_reports_not_applied() {
-    crate::support::cases::run_case(
-        include_str!("../cases/preset/preset_add_json_dry_run_reports_not_applied.toml"),
-        "tests/cases/preset/preset_add_json_dry_run_reports_not_applied.toml",
-    );
-}
-#[test]
-#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
-fn preset_add_json_reports_save_result_and_next_steps() {
-    crate::support::cases::run_case(
-        include_str!("../cases/preset/preset_add_json_reports_save_result_and_next_steps.toml"),
-        "tests/cases/preset/preset_add_json_reports_save_result_and_next_steps.toml",
-    );
-}
-#[test]
-#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
-fn preset_add_missing_input_exits_2_lists_the_keys() {
-    crate::support::cases::run_case(
-        include_str!("../cases/preset/preset_add_missing_input_exits_2_lists_the_keys.toml"),
-        "tests/cases/preset/preset_add_missing_input_exits_2_lists_the_keys.toml",
-    );
-}
-#[test]
-#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
-fn preset_add_refuses_a_literal_secret_exits_2() {
-    crate::support::cases::run_case(
-        include_str!("../cases/preset/preset_add_refuses_a_literal_secret_exits_2.toml"),
-        "tests/cases/preset/preset_add_refuses_a_literal_secret_exits_2.toml",
-    );
-}
-#[test]
-#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
-fn preset_add_refuses_an_existing_name_exits_2() {
-    crate::support::cases::run_case(
-        include_str!("../cases/preset/preset_add_refuses_an_existing_name_exits_2.toml"),
-        "tests/cases/preset/preset_add_refuses_an_existing_name_exits_2.toml",
-    );
-}
-#[test]
-#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
-fn preset_add_refuses_an_incompatible_existing_auth() {
-    crate::support::cases::run_case(
-        include_str!("../cases/preset/preset_add_refuses_an_incompatible_existing_auth.toml"),
-        "tests/cases/preset/preset_add_refuses_an_incompatible_existing_auth.toml",
-    );
-}
-#[test]
-#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
-fn preset_add_reuses_an_existing_auth_and_warns_about_scopes() {
-    crate::support::cases::run_case(
-        include_str!("../cases/preset/preset_add_reuses_an_existing_auth_and_warns_about_scopes.toml"),
-        "tests/cases/preset/preset_add_reuses_an_existing_auth_and_warns_about_scopes.toml",
-    );
-}
-#[test]
-#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
-fn preset_add_writes_the_sections_and_status_lists_them() {
-    crate::support::cases::run_case(
-        include_str!("../cases/preset/preset_add_writes_the_sections_and_status_lists_them.toml"),
-        "tests/cases/preset/preset_add_writes_the_sections_and_status_lists_them.toml",
-    );
-}
-#[test]
-#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
 fn preset_list_json_matches_catalog_contract() {
     crate::support::cases::run_case(
         include_str!("../cases/preset/preset_list_json_matches_catalog_contract.toml"),
@@ -2899,6 +2787,70 @@ fn preset_list_runs_without_reading_config() {
 }
 #[test]
 #[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn preset_setup_adds_the_sections_and_names_a_locked_1password() {
+    crate::support::cases::run_case(
+        include_str!("../cases/preset/preset_setup_adds_the_sections_and_names_a_locked_1password.toml"),
+        "tests/cases/preset/preset_setup_adds_the_sections_and_names_a_locked_1password.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn preset_setup_agent_run_is_held_to_the_agent_policy() {
+    crate::support::cases::run_case(
+        include_str!("../cases/preset/preset_setup_agent_run_is_held_to_the_agent_policy.toml"),
+        "tests/cases/preset/preset_setup_agent_run_is_held_to_the_agent_policy.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn preset_setup_as_renames_only_the_api_and_keeps_the_auth_name() {
+    crate::support::cases::run_case(
+        include_str!("../cases/preset/preset_setup_as_renames_only_the_api_and_keeps_the_auth_name.toml"),
+        "tests/cases/preset/preset_setup_as_renames_only_the_api_and_keeps_the_auth_name.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn preset_setup_as_reuses_the_default_auth_without_renaming_it() {
+    crate::support::cases::run_case(
+        include_str!("../cases/preset/preset_setup_as_reuses_the_default_auth_without_renaming_it.toml"),
+        "tests/cases/preset/preset_setup_as_reuses_the_default_auth_without_renaming_it.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn preset_setup_auth_as_renames_the_auth_and_the_api_reference() {
+    crate::support::cases::run_case(
+        include_str!("../cases/preset/preset_setup_auth_as_renames_the_auth_and_the_api_reference.toml"),
+        "tests/cases/preset/preset_setup_auth_as_renames_the_auth_and_the_api_reference.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn preset_setup_auth_as_reuses_a_compatible_auth_under_that_name() {
+    crate::support::cases::run_case(
+        include_str!("../cases/preset/preset_setup_auth_as_reuses_a_compatible_auth_under_that_name.toml"),
+        "tests/cases/preset/preset_setup_auth_as_reuses_a_compatible_auth_under_that_name.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn preset_setup_backlog_puts_the_key_in_the_api_key_parameter() {
+    crate::support::cases::run_case(
+        include_str!("../cases/preset/preset_setup_backlog_puts_the_key_in_the_api_key_parameter.toml"),
+        "tests/cases/preset/preset_setup_backlog_puts_the_key_in_the_api_key_parameter.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn preset_setup_checks_auth_names_against_aws_profiles() {
+    crate::support::cases::run_case(
+        include_str!("../cases/preset/preset_setup_checks_auth_names_against_aws_profiles.toml"),
+        "tests/cases/preset/preset_setup_checks_auth_names_against_aws_profiles.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
 fn preset_setup_commands_shell_quote_dynamic_values() {
     crate::support::cases::run_case(
         include_str!("../cases/preset/preset_setup_commands_shell_quote_dynamic_values.toml"),
@@ -2907,154 +2859,242 @@ fn preset_setup_commands_shell_quote_dynamic_values() {
 }
 #[test]
 #[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
-fn preset_show_as_renames_only_the_api_and_keeps_the_auth_name() {
+fn preset_setup_contentful_sends_the_management_token_as_a_bearer_token() {
     crate::support::cases::run_case(
-        include_str!("../cases/preset/preset_show_as_renames_only_the_api_and_keeps_the_auth_name.toml"),
-        "tests/cases/preset/preset_show_as_renames_only_the_api_and_keeps_the_auth_name.toml",
+        include_str!("../cases/preset/preset_setup_contentful_sends_the_management_token_as_a_bearer_token.toml"),
+        "tests/cases/preset/preset_setup_contentful_sends_the_management_token_as_a_bearer_token.toml",
     );
 }
 #[test]
 #[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
-fn preset_show_auth_as_reuses_a_compatible_auth_under_that_name() {
+fn preset_setup_dry_run_json_reports_the_plan() {
     crate::support::cases::run_case(
-        include_str!("../cases/preset/preset_show_auth_as_reuses_a_compatible_auth_under_that_name.toml"),
-        "tests/cases/preset/preset_show_auth_as_reuses_a_compatible_auth_under_that_name.toml",
+        include_str!("../cases/preset/preset_setup_dry_run_json_reports_the_plan.toml"),
+        "tests/cases/preset/preset_setup_dry_run_json_reports_the_plan.toml",
     );
 }
 #[test]
 #[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
-fn preset_show_backlog_puts_the_key_in_the_api_key_parameter() {
+fn preset_setup_dry_run_missing_input_lists_the_keys_and_the_setup_steps() {
     crate::support::cases::run_case(
-        include_str!("../cases/preset/preset_show_backlog_puts_the_key_in_the_api_key_parameter.toml"),
-        "tests/cases/preset/preset_show_backlog_puts_the_key_in_the_api_key_parameter.toml",
+        include_str!("../cases/preset/preset_setup_dry_run_missing_input_lists_the_keys_and_the_setup_steps.toml"),
+        "tests/cases/preset/preset_setup_dry_run_missing_input_lists_the_keys_and_the_setup_steps.toml",
     );
 }
 #[test]
 #[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
-fn preset_show_contentful_sends_the_management_token_as_a_bearer_token() {
+fn preset_setup_dry_run_prints_the_steps_then_the_toml() {
     crate::support::cases::run_case(
-        include_str!("../cases/preset/preset_show_contentful_sends_the_management_token_as_a_bearer_token.toml"),
-        "tests/cases/preset/preset_show_contentful_sends_the_management_token_as_a_bearer_token.toml",
+        include_str!("../cases/preset/preset_setup_dry_run_prints_the_steps_then_the_toml.toml"),
+        "tests/cases/preset/preset_setup_dry_run_prints_the_steps_then_the_toml.toml",
     );
 }
 #[test]
 #[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
-fn preset_show_elevenlabs_puts_the_key_in_xi_api_key() {
+fn preset_setup_dry_run_skips_every_step_after_configure() {
     crate::support::cases::run_case(
-        include_str!("../cases/preset/preset_show_elevenlabs_puts_the_key_in_xi_api_key.toml"),
-        "tests/cases/preset/preset_show_elevenlabs_puts_the_key_in_xi_api_key.toml",
+        include_str!("../cases/preset/preset_setup_dry_run_skips_every_step_after_configure.toml"),
+        "tests/cases/preset/preset_setup_dry_run_skips_every_step_after_configure.toml",
     );
 }
 #[test]
 #[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
-fn preset_show_fireworks_sends_the_key_as_a_bearer_token() {
+fn preset_setup_dry_run_writes_nothing() {
     crate::support::cases::run_case(
-        include_str!("../cases/preset/preset_show_fireworks_sends_the_key_as_a_bearer_token.toml"),
-        "tests/cases/preset/preset_show_fireworks_sends_the_key_as_a_bearer_token.toml",
+        include_str!("../cases/preset/preset_setup_dry_run_writes_nothing.toml"),
+        "tests/cases/preset/preset_setup_dry_run_writes_nothing.toml",
     );
 }
 #[test]
 #[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
-fn preset_show_invalid_input_value_names_the_input() {
+fn preset_setup_elevenlabs_puts_the_key_in_xi_api_key() {
     crate::support::cases::run_case(
-        include_str!("../cases/preset/preset_show_invalid_input_value_names_the_input.toml"),
-        "tests/cases/preset/preset_show_invalid_input_value_names_the_input.toml",
+        include_str!("../cases/preset/preset_setup_elevenlabs_puts_the_key_in_xi_api_key.toml"),
+        "tests/cases/preset/preset_setup_elevenlabs_puts_the_key_in_xi_api_key.toml",
     );
 }
 #[test]
 #[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
-fn preset_show_jira_sends_the_email_and_token_as_basic() {
+fn preset_setup_fireworks_sends_the_key_as_a_bearer_token() {
     crate::support::cases::run_case(
-        include_str!("../cases/preset/preset_show_jira_sends_the_email_and_token_as_basic.toml"),
-        "tests/cases/preset/preset_show_jira_sends_the_email_and_token_as_basic.toml",
+        include_str!("../cases/preset/preset_setup_fireworks_sends_the_key_as_a_bearer_token.toml"),
+        "tests/cases/preset/preset_setup_fireworks_sends_the_key_as_a_bearer_token.toml",
     );
 }
 #[test]
 #[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
-fn preset_show_json_reports_the_setup_plan() {
+fn preset_setup_incompatible_auth_hints_at_auth_as() {
     crate::support::cases::run_case(
-        include_str!("../cases/preset/preset_show_json_reports_the_setup_plan.toml"),
-        "tests/cases/preset/preset_show_json_reports_the_setup_plan.toml",
+        include_str!("../cases/preset/preset_setup_incompatible_auth_hints_at_auth_as.toml"),
+        "tests/cases/preset/preset_setup_incompatible_auth_hints_at_auth_as.toml",
     );
 }
 #[test]
 #[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
-fn preset_show_missing_input_exits_2_lists_the_keys() {
+fn preset_setup_invalid_input_value_names_the_input() {
     crate::support::cases::run_case(
-        include_str!("../cases/preset/preset_show_missing_input_exits_2_lists_the_keys.toml"),
-        "tests/cases/preset/preset_show_missing_input_exits_2_lists_the_keys.toml",
+        include_str!("../cases/preset/preset_setup_invalid_input_value_names_the_input.toml"),
+        "tests/cases/preset/preset_setup_invalid_input_value_names_the_input.toml",
     );
 }
 #[test]
 #[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
-fn preset_show_missing_input_is_an_argument_error() {
+fn preset_setup_jira_sends_the_email_and_token_as_basic() {
     crate::support::cases::run_case(
-        include_str!("../cases/preset/preset_show_missing_input_is_an_argument_error.toml"),
-        "tests/cases/preset/preset_show_missing_input_is_an_argument_error.toml",
+        include_str!("../cases/preset/preset_setup_jira_sends_the_email_and_token_as_basic.toml"),
+        "tests/cases/preset/preset_setup_jira_sends_the_email_and_token_as_basic.toml",
     );
 }
 #[test]
 #[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
-fn preset_show_open_without_a_terminal_prints_the_url_and_opens_nothing() {
+fn preset_setup_json_dry_run_leaves_the_file_as_it_was() {
     crate::support::cases::run_case(
-        include_str!("../cases/preset/preset_show_open_without_a_terminal_prints_the_url_and_opens_nothing.toml"),
-        "tests/cases/preset/preset_show_open_without_a_terminal_prints_the_url_and_opens_nothing.toml",
+        include_str!("../cases/preset/preset_setup_json_dry_run_leaves_the_file_as_it_was.toml"),
+        "tests/cases/preset/preset_setup_json_dry_run_leaves_the_file_as_it_was.toml",
     );
 }
 #[test]
 #[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
-fn preset_show_openai_sends_the_key_as_a_bearer_token() {
+fn preset_setup_keeps_an_existing_api_as_it_is() {
     crate::support::cases::run_case(
-        include_str!("../cases/preset/preset_show_openai_sends_the_key_as_a_bearer_token.toml"),
-        "tests/cases/preset/preset_show_openai_sends_the_key_as_a_bearer_token.toml",
+        include_str!("../cases/preset/preset_setup_keeps_an_existing_api_as_it_is.toml"),
+        "tests/cases/preset/preset_setup_keeps_an_existing_api_as_it_is.toml",
     );
 }
 #[test]
 #[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
-fn preset_show_prints_the_toml_on_stdout_and_the_setup_on_stderr() {
+fn preset_setup_missing_input_exits_2_lists_the_keys() {
     crate::support::cases::run_case(
-        include_str!("../cases/preset/preset_show_prints_the_toml_on_stdout_and_the_setup_on_stderr.toml"),
-        "tests/cases/preset/preset_show_prints_the_toml_on_stdout_and_the_setup_on_stderr.toml",
+        include_str!("../cases/preset/preset_setup_missing_input_exits_2_lists_the_keys.toml"),
+        "tests/cases/preset/preset_setup_missing_input_exits_2_lists_the_keys.toml",
     );
 }
 #[test]
 #[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
-fn preset_show_reuses_only_a_compatible_auth() {
+fn preset_setup_missing_input_is_an_argument_error() {
     crate::support::cases::run_case(
-        include_str!("../cases/preset/preset_show_reuses_only_a_compatible_auth.toml"),
-        "tests/cases/preset/preset_show_reuses_only_a_compatible_auth.toml",
+        include_str!("../cases/preset/preset_setup_missing_input_is_an_argument_error.toml"),
+        "tests/cases/preset/preset_setup_missing_input_is_an_argument_error.toml",
     );
 }
 #[test]
 #[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
-fn preset_show_slack_sends_the_bot_token_as_a_bearer_token() {
+fn preset_setup_missing_input_stops_at_configure_with_the_setup_steps() {
     crate::support::cases::run_case(
-        include_str!("../cases/preset/preset_show_slack_sends_the_bot_token_as_a_bearer_token.toml"),
-        "tests/cases/preset/preset_show_slack_sends_the_bot_token_as_a_bearer_token.toml",
+        include_str!("../cases/preset/preset_setup_missing_input_stops_at_configure_with_the_setup_steps.toml"),
+        "tests/cases/preset/preset_setup_missing_input_stops_at_configure_with_the_setup_steps.toml",
     );
 }
 #[test]
 #[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
-fn preset_show_validates_the_fragment_with_existing_config() {
+fn preset_setup_oauth_without_a_login_names_the_login_to_run() {
     crate::support::cases::run_case(
-        include_str!("../cases/preset/preset_show_validates_the_fragment_with_existing_config.toml"),
-        "tests/cases/preset/preset_show_validates_the_fragment_with_existing_config.toml",
+        include_str!("../cases/preset/preset_setup_oauth_without_a_login_names_the_login_to_run.toml"),
+        "tests/cases/preset/preset_setup_oauth_without_a_login_names_the_login_to_run.toml",
     );
 }
 #[test]
 #[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
-fn preset_show_with_a_broken_config_stays_config_invalid() {
+fn preset_setup_offline_json_reports_each_step() {
     crate::support::cases::run_case(
-        include_str!("../cases/preset/preset_show_with_a_broken_config_stays_config_invalid.toml"),
-        "tests/cases/preset/preset_show_with_a_broken_config_stays_config_invalid.toml",
+        include_str!("../cases/preset/preset_setup_offline_json_reports_each_step.toml"),
+        "tests/cases/preset/preset_setup_offline_json_reports_each_step.toml",
     );
 }
 #[test]
 #[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
-fn preset_show_zendesk_gets_a_client_credentials_token() {
+fn preset_setup_offline_writes_the_sections_and_status_lists_them() {
     crate::support::cases::run_case(
-        include_str!("../cases/preset/preset_show_zendesk_gets_a_client_credentials_token.toml"),
-        "tests/cases/preset/preset_show_zendesk_gets_a_client_credentials_token.toml",
+        include_str!("../cases/preset/preset_setup_offline_writes_the_sections_and_status_lists_them.toml"),
+        "tests/cases/preset/preset_setup_offline_writes_the_sections_and_status_lists_them.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn preset_setup_openai_sends_the_key_as_a_bearer_token() {
+    crate::support::cases::run_case(
+        include_str!("../cases/preset/preset_setup_openai_sends_the_key_as_a_bearer_token.toml"),
+        "tests/cases/preset/preset_setup_openai_sends_the_key_as_a_bearer_token.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn preset_setup_refuses_a_literal_secret_exits_2() {
+    crate::support::cases::run_case(
+        include_str!("../cases/preset/preset_setup_refuses_a_literal_secret_exits_2.toml"),
+        "tests/cases/preset/preset_setup_refuses_a_literal_secret_exits_2.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn preset_setup_refuses_an_incompatible_existing_auth() {
+    crate::support::cases::run_case(
+        include_str!("../cases/preset/preset_setup_refuses_an_incompatible_existing_auth.toml"),
+        "tests/cases/preset/preset_setup_refuses_an_incompatible_existing_auth.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn preset_setup_rejected_credential_exits_4() {
+    crate::support::cases::run_case(
+        include_str!("../cases/preset/preset_setup_rejected_credential_exits_4.toml"),
+        "tests/cases/preset/preset_setup_rejected_credential_exits_4.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn preset_setup_resumes_with_the_existing_api_and_reads_once() {
+    crate::support::cases::run_case(
+        include_str!("../cases/preset/preset_setup_resumes_with_the_existing_api_and_reads_once.toml"),
+        "tests/cases/preset/preset_setup_resumes_with_the_existing_api_and_reads_once.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn preset_setup_reuses_an_existing_auth_and_warns_about_scopes() {
+    crate::support::cases::run_case(
+        include_str!("../cases/preset/preset_setup_reuses_an_existing_auth_and_warns_about_scopes.toml"),
+        "tests/cases/preset/preset_setup_reuses_an_existing_auth_and_warns_about_scopes.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn preset_setup_reuses_only_a_compatible_auth() {
+    crate::support::cases::run_case(
+        include_str!("../cases/preset/preset_setup_reuses_only_a_compatible_auth.toml"),
+        "tests/cases/preset/preset_setup_reuses_only_a_compatible_auth.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn preset_setup_slack_sends_the_bot_token_as_a_bearer_token() {
+    crate::support::cases::run_case(
+        include_str!("../cases/preset/preset_setup_slack_sends_the_bot_token_as_a_bearer_token.toml"),
+        "tests/cases/preset/preset_setup_slack_sends_the_bot_token_as_a_bearer_token.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn preset_setup_validates_the_fragment_with_existing_config() {
+    crate::support::cases::run_case(
+        include_str!("../cases/preset/preset_setup_validates_the_fragment_with_existing_config.toml"),
+        "tests/cases/preset/preset_setup_validates_the_fragment_with_existing_config.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn preset_setup_with_a_broken_config_stays_config_invalid() {
+    crate::support::cases::run_case(
+        include_str!("../cases/preset/preset_setup_with_a_broken_config_stays_config_invalid.toml"),
+        "tests/cases/preset/preset_setup_with_a_broken_config_stays_config_invalid.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn preset_setup_zendesk_gets_a_client_credentials_token() {
+    crate::support::cases::run_case(
+        include_str!("../cases/preset/preset_setup_zendesk_gets_a_client_credentials_token.toml"),
+        "tests/cases/preset/preset_setup_zendesk_gets_a_client_credentials_token.toml",
     );
 }
 #[test]

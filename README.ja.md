@@ -1,4 +1,4 @@
-<!-- en: 6781d60ef51f -->
+<!-- en: 7e2d78a2a7cb -->
 <p align="center">
   <img src="docs/assets/kurama-banner.svg" alt="鞍馬 Kurama: 夜の山の稜線に立つ鳥居と、その向こうの満月。下には青海波の帯" width="100%">
 </p>
@@ -50,7 +50,7 @@ kurama login github               # OAuth: authorize in the browser, store the t
 kurama api github /user --jq .login
 kurama api github                 # Explore the API's OpenAPI description in the TUI
 kurama api github issues/create -P owner=o -P repo=r -d '{"title":"x"}'
-kurama preset add openai --set secret=op://Agent/openai/credential   # an API in one command
+kurama preset setup openai --set secret=op://Agent/openai/credential # an API in one command
 kurama data ./events.jsonl --query 'SELECT count(*) FROM data'
 kurama db app --tables
 ```
@@ -100,7 +100,7 @@ kurama data 's3://my-bucket/orders/2026-08.parquet' --aws-profile ops --query 'S
 </p>
 
 ## 機能
-<!-- en: 40168095822d -->
+<!-- en: c30ef08255e9 -->
 
 <table>
   <tr>
@@ -125,7 +125,7 @@ kurama data 's3://my-bucket/orders/2026-08.parquet' --aws-profile ops --query 'S
   </tr>
   <tr>
     <td><strong>API が求める形で API キーを送る</strong><br>キーは呼び出しのたびに 1Password か AWS から読み、保存はしません。送り方は、ベアラートークン、名前付きヘッダー、HTTP Basic、クエリパラメーターから選べます。</td>
-    <td><strong>よく使う API のプリセット</strong><br><code>kurama preset add</code> が GitHub、Google、Linear、OpenAI、Slack、Jira、Zendesk、Backlog などの設定セクションを書き込みます。セクションは省略せずに書き出すので、各認証情報がどこに入るかはファイルを見ればわかります。</td>
+    <td><strong>よく使う API のプリセット</strong><br><code>kurama preset setup</code> が GitHub、Google、Linear、OpenAI、Slack、Jira、Zendesk、Backlog などの設定セクションを書き込みます。セクションは省略せずに書き出すので、各認証情報がどこに入るかはファイルを見ればわかります。</td>
   </tr>
   <tr>
     <td><strong>ローカルと S3 のファイル</strong><br><code>kurama data</code> は、組み込みの DuckDB で CSV、JSONL、Parquet に読み取り専用の SQL を実行します。行数とバイト数には上限があります。</td>
@@ -197,7 +197,7 @@ whence -w kurama   # kurama: function
 補完は、スクリプトを出力したバイナリを絶対パスで呼び出し、シェルのラッパーを通りません。バイナリを切り替えたら `eval` の行を実行し直してください。`fpath` を自分で管理している場合は、補完スクリプトだけを出力する `kurama completions zsh` を使えます。
 
 ### 最初の切り替え
-<!-- en: d7e9426cf774 -->
+<!-- en: 2b366d390400 -->
 
 ```bash
 kurama status                # See the profiles available in ~/.aws/config
@@ -206,6 +206,14 @@ kurama unset                 # Clear the credentials when you are done
 ```
 
 プロファイルを一覧から選びたい場合は、ターミナルで `kurama` を実行してください。スクリプトやエージェントからは、まず `kurama exec dev -- <command>` を使います。
+
+API と Claude Code を使う場合は、1 つのコマンドでプリセットを何もない状態から最初の応答まで進められます。設定の追加、検証、認証情報の確認、Claude Code 用の kurama の Skill、1 回の読み取りを順に行い、どこで止まっても次に実行するコマンドを示します。
+
+```bash
+kurama preset setup github --set secret=op://Agent/kurama-github/credential
+```
+
+その後、`kurama agent` がエージェント向けのレシピを出力します。たとえば、AWS Lambda 関数が失敗する原因を、ログとリポジトリの最近の変更から読み取りだけで調べる手順です。
 
 <details>
 <summary><strong>アップデートとアンインストール</strong></summary>
@@ -234,7 +242,7 @@ brew uninstall kurama    # or: cargo uninstall kurama, or rm ~/.cargo/bin/kurama
 
 </details>
 ## 使い方
-<!-- en: 3712c8041527 -->
+<!-- en: e8008d7c18f5 -->
 
 ```bash
 kurama                       # TUI: pick a profile (needs a terminal)
@@ -255,8 +263,8 @@ kurama config add --file new.toml   # append sections, checked whole first; --dr
 kurama config set core.log_level '"debug"'   # change one key in place; set --file replaces whole sections
 kurama config remove api.old   # remove sections (unset removes keys); an [auth.*] an API still uses is refused
 kurama preset                # the bundled provider presets (GitHub, Google, Linear, ElevenLabs, OpenAI, Slack, Contentful, Fireworks, Jira, Zendesk, Backlog); reads no configuration
-kurama preset show github --set secret=op://Agent/kurama-github/credential   # its TOML on stdout, setup steps on stderr
-kurama preset add github --set secret=op://Agent/kurama-github/credential    # the same TOML appended to config.toml
+kurama preset setup github --set secret=op://Agent/kurama-github/credential --dry-run  # its TOML, checked with the file; nothing written or sent
+kurama preset setup github --set secret=op://Agent/kurama-github/credential  # add (or keep), check, credential, Claude Code Skill, first read; resumable
 kurama logout ops            # remove the cached MFA session of the profile's MFA device
 kurama logout --all          # remove every cached MFA session and stored token
 
@@ -365,7 +373,7 @@ Enter を押すと、`kurama env` と同じように選択中のプロファイ�
 | <kbd>q</kbd> / <kbd>Ctrl-C</kbd> | 終了 |
 
 ## 設定
-<!-- en: e52875efeb97 -->
+<!-- en: c662953c0bd0 -->
 
 kurama は `~/.config/kurama/config.toml` を読みます。別のファイルを使うには `KURAMA_CONFIG_PATH` を設定します。キーはすべて省略できます。ファイルには次のセクションがあります。
 
@@ -401,9 +409,14 @@ kurama は `~/.config/kurama/config.toml` を読みます。別のファイル�
 - Zendesk（OAuth の client credentials グラント）
 - Backlog（クエリ文字列に入れる API キー）
 
-`kurama preset show <ID> --set <key>=<value>...` は、プリセットを 1 つ TOML として stdout に出力し、認証情報を作成する手順を stderr に出力します（端末では `--open` でセットアップページを開けます）。TOML はプリセット名を記したコメント付きで完全に展開されるので、認証情報の送信先の URL がすべてファイル自体に現れます。ファイルにすでにある `[auth.*]` は、その取り決めがプリセットと一致するときだけ再利用し、そのソースに足りないスコープがあれば警告します。`--as` で API の名前を、`--auth-as` で auth の名前を変えられます。結果は `config add` と同じ方法でファイルに対して検査され、何も書き込まれません。
+`kurama preset setup <ID> --set <key>=<value>...` は、プリセットを 1 つ、何もない状態から最初の応答まで進めます。各手順を `done`、`planned`、`needs_action`、`failed`、`skipped` のいずれかで報告し、次に実行するコマンドを示します。
 
-`kurama preset add` は同じ引数を取り、`config add` と同じ書き込み処理でその TOML を追加します。ファイルの既存の内容とコメントは残り、再利用した `[auth.*]` を書き直すことはありません。`--dry-run` では出力するだけです。追加した後は、スコープ、`kurama login`、最初の呼び出しなど、残りの作業を示します。
+1. `config add` と同じ書き込み処理で、プリセットのセクションを追加します。TOML は省略せずに展開され、プリセット名のコメントが付くので、認証情報の送り先となる URL はすべてファイルを見れば分かります。ファイルの既存の内容とコメントは残ります。既存の `[auth.*]` は、その内容がプリセットと一致する場合に限って再利用します（足りないスコープは警告と手順で示します）。`--as` で API の名前を、`--auth-as` で認証の名前を変えられます。書き込みの前に、結果全体を検証します。`[api.*]` がすでにあればそのまま残すので、2 回目の実行は前回止まったところから再開します。
+2. config.toml を読み直し、人の操作なしで認証情報を使えるかを示します（必要なログインは次の手順として示します）。
+3. kurama の Agent Skill を `~/.claude/skills/kurama/SKILL.md` に書きます。
+4. プリセットの例を 1 回の GET で送ります。この読み取りには `kurama api` と同じく `[agent]` ポリシーと監査ログが適用されます。
+
+失敗は通常どおりのコードで報告します。1Password のロックは `SECRET_UNAVAILABLE`、ログイン未完了は `OAUTH_LOGIN_REQUIRED`、認証情報の拒否は `API_HTTP_ERROR` です。`--dry-run` はセクションを計画・検証して TOML を出力するだけで、何も書かず何も送りません。`--offline` は読み取り以外のすべてを行います。
 
 ```toml
 [core]

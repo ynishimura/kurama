@@ -1,0 +1,30 @@
+# An input the sections need and nobody gave is refused with every missing
+# key, and no placeholder is printed as configuration. The report still
+# carries the preset's setup steps: they say how to get the inputs, and the
+# last one is the command to run with them.
+id = "preset_setup_dry_run_missing_input_lists_the_keys_and_the_setup_steps"
+feature = "preset"
+
+[combination]
+command = "preset-setup"
+input = "missing"
+
+[input]
+args = ["preset", "setup", "google-sheets", "--dry-run"]
+then_run = [["preset", "setup", "google-sheets", "--set", "client_id=abc", "--dry-run", "--json"]]
+
+[expect]
+json_error = { code = "ARGUMENT_INVALID", exit = 2 }
+stderr_lines = 1
+stderr_json = { "/error/message" = "preset google-sheets needs client_secret; give each with --set <key>=<value>", "/error/hint" = "`kurama preset --json` lists each preset's inputs and its setup page; the `next` of `kurama preset setup <ID>`'s configure step says how to make the missing ones" }
+stdout_json = { "/dry_run" = true, "/toml" = "<null>", "/steps/0/state" = "needs_action", "/steps/0/next" = { length = 4 }, "/steps/0/next/0" = { contains = "https://console.cloud.google.com/apis/credentials" }, "/steps/0/next/3" = { contains = "\nkurama preset setup google-sheets --set client_id=abc --set 'client_secret=op://<vault>/kurama-google/client_secret'" } }
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+error = { code = "ARGUMENT_INVALID", exit = 2, message = "preset google-sheets needs client_id, client_secret; give each with --set <key>=<value>" }
+hint = "`kurama preset --json` lists each preset's inputs and its setup page; the `next` of `kurama preset setup <ID>`'s configure step says how to make the missing ones"
+stdout = { contains = ["configure    needs_action  preset google-sheets needs client_id, client_secret\n", "next: Enable the Google Sheets API", "kurama preset setup google-sheets --set 'client_id=<client-id>' --set 'client_secret=op://<vault>/kurama-google/client_secret'\n"] }
+stdout_excludes = ["# would append", "REPLACE_ME"]

@@ -1,0 +1,55 @@
+# The sections are checked with the file they would join, the way the config
+# writer checks a save: an auth named like an AWS profile is refused, and so
+# is a literal secret, whose value is not echoed. A taken API name is not a
+# refusal: the [api.github] the file has is kept as it is. Nothing is written
+# by any of them.
+id = "preset_setup_validates_the_fragment_with_existing_config"
+feature = "preset"
+
+[combination]
+command = "preset-setup"
+config = "rejected"
+
+[input]
+args = ["preset", "setup", "linear", "--set", "secret=op://Agent/kurama-linear/credential", "--dry-run"]
+then_run = [
+  ["preset", "setup", "github", "--set", "secret=op://Agent/kurama-github/credential", "--dry-run"],
+  ["preset", "setup", "google-drive", "--set", "client_id=id", "--set", "client_secret=GOCSPX-literal-987", "--dry-run"],
+]
+config = """
+[api.github]
+base_url = "https://api.github.com"
+"""
+aws_config = """
+[default]
+region = us-east-1
+
+[profile linear]
+region = us-east-1
+"""
+
+[expect]
+error = { code = "ARGUMENT_INVALID", exit = 2 }
+stderr_contains = ["--set client_secret must be a secret reference"]
+stderr_excludes = ["GOCSPX-literal-987"]
+stdout = { contains = ["configure    failed        error[ARGUMENT_INVALID]\n"] }
+stdout_excludes = ["GOCSPX-literal-987"]
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+error = { code = "CONFIG_INVALID", exit = 2 }
+stderr_contains = ["[auth.linear] has the same name as the AWS profile 'linear'"]
+hint = "give the auth another name with --auth-as <name>, or rename that AWS profile in ~/.aws/config; the file was not changed"
+stderr_excludes = ["--as"]
+stdout = { contains = ["configure    failed        error[CONFIG_INVALID]\n"] }
+stdout_excludes = ["--as", "# would append"]
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+stderr_empty = true
+stdout = { contains = ["configure    done          [api.github] is already in ", "kurama-config.toml; kept as it is\n", "check        skipped       --dry-run writes nothing and sends nothing\n"] }
+stdout_excludes = ["# would append", "[auth.github]"]

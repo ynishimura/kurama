@@ -1,0 +1,36 @@
+# Without `--auth-as`, an [auth.github] whose contract is not the preset's
+# stops `configure`, and the hint offers `--auth-as` first, in the text, the
+# JSON error and the step's `next` alike. Nothing is written.
+id = "preset_setup_incompatible_auth_hints_at_auth_as"
+feature = "preset"
+
+[combination]
+command = "preset-setup"
+auth = "incompatible"
+
+[input]
+args = ["preset", "setup", "github", "--set", "secret=op://Agent/kurama-github/credential", "--offline"]
+then_run = [["preset", "setup", "github", "--set", "secret=op://Agent/kurama-github/credential", "--offline", "--json"]]
+config = """
+[auth.github]
+kind = "oauth"
+grant_type = "device_code"
+token_url = "https://github.com/login/oauth/access_token"
+device_auth_url = "https://github.com/login/device/code"
+client_id = "Iv1.x"
+"""
+
+[expect]
+json_error = { code = "ARGUMENT_INVALID", exit = 2 }
+stderr_lines = 1
+stderr_json = { "/error/hint" = { contains = "give the auth another name with --auth-as <name>" } }
+stdout_json = { "/steps/0/state" = "failed", "/steps/0/next/0" = { contains = "give the auth another name with --auth-as <name>" } }
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+error = { code = "ARGUMENT_INVALID", exit = 2 }
+stderr_contains = ["[auth.github] in ", "hint: give the auth another name with --auth-as <name>"]
+stdout = { contains = ["configure    failed        error[ARGUMENT_INVALID]\n", "next: give the auth another name with --auth-as <name>"] }

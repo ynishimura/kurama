@@ -1,0 +1,30 @@
+# A `--set` value that makes a section config.toml refuses (a site name with
+# a space in the base URL) is an argument error that names the `--set` key
+# the URL was built from, not only the key of the section.
+id = "preset_setup_invalid_input_value_names_the_input"
+feature = "preset"
+
+[combination]
+command = "preset-setup"
+input = "invalid-value"
+
+[input]
+args = ["preset", "setup", "jira", "--set", "secret=op://Agent/kurama-jira/credential", "--set", "site=my site", "--set", "email=me@example.com", "--dry-run"]
+then_run = [["preset", "setup", "jira", "--set", "secret=op://Agent/kurama-jira/credential", "--set", "site=my site", "--set", "email=me@example.com", "--dry-run", "--json"]]
+
+[expect]
+json_error = { code = "ARGUMENT_INVALID", exit = 2 }
+stderr_lines = 1
+stderr_json = { "/error/message" = { contains = ["--set site", "[api.jira] base_url is not a URL"] }, "/error/hint" = "fix the input; the file was not changed" }
+stdout_json = { "/steps/0/state" = "failed", "/steps/0/next" = ["fix the input; the file was not changed"], "/toml" = "<null>" }
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+error = { code = "ARGUMENT_INVALID", exit = 2 }
+stderr_contains = ["the value of --set site is refused: ", "[api.jira] base_url is not a URL"]
+stderr_excludes = ["--set email is", "email, "]
+hint = "fix the input; the file was not changed"
+stdout = { contains = ["configure    failed        error[ARGUMENT_INVALID]\n"] }

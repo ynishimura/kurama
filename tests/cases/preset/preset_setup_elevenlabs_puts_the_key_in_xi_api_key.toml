@@ -1,0 +1,25 @@
+# ElevenLabs takes its API key as it is in `xi-api-key`, not as a Bearer
+# token in Authorization, so the preset writes the header and the format
+# kurama's defaults would get wrong. The dry run resolves, contacts and writes nothing.
+id = "preset_setup_elevenlabs_puts_the_key_in_xi_api_key"
+feature = "preset"
+
+[combination]
+command = "preset-setup"
+output = "text"
+
+[input]
+args = ["preset", "setup", "elevenlabs", "--set", "secret=op://Agent/kurama-elevenlabs/credential", "--dry-run"]
+
+[fakes]
+op = "enabled"
+
+[expect]
+exit_code = 0
+stdout = { starts_with = "# kurama preset setup elevenlabs ([api.elevenlabs])\nconfigure    planned       would add [auth.elevenlabs], [api.elevenlabs] to ", contains = ["kurama-config.toml:\n# kurama preset: elevenlabs (kurama ", "# setup: https://elevenlabs.io/app/settings/api-keys\n", "[auth.elevenlabs]\nkind = \"token\"\ntoken = \"op://Agent/kurama-elevenlabs/credential\"\nheader = \"xi-api-key\"\nformat = \"{token}\"\nenv_var = \"ELEVENLABS_API_KEY\"\n", "[api.elevenlabs]\ndescription = \"ElevenLabs API\"\nbase_url = \"https://api.elevenlabs.io\"\n", "openapi = \"https://api.elevenlabs.io/openapi.json\""] }
+stderr_empty = true
+sts_actions = []
+op_calls = 0
+secret_reads = []
+api_calls = { count = 0 }
+no_files_written = true

@@ -10,9 +10,9 @@ files = [
 tests = ["error_code", "error::"]
 scenarios = [
   "preset_unknown_id_exits_2_with_hint",
-  "preset_show_missing_input_is_an_argument_error",
-  "preset_show_invalid_input_value_names_the_input",
-  "preset_show_with_a_broken_config_stays_config_invalid",
+  "preset_setup_missing_input_is_an_argument_error",
+  "preset_setup_invalid_input_value_names_the_input",
+  "preset_setup_with_a_broken_config_stays_config_invalid",
   "sts_access_denied_exits_4_with_error_code",
   "profile_loading_unknown_profile_exits_2_with_hint",
   "mfa_without_provider_exits_3_with_hint",

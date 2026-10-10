@@ -1,0 +1,48 @@
+# `--as` names the API only: `preset setup google-sheets --as sheets-work
+# --offline` adds [api.sheets-work] with auth = "google", reuses the
+# [auth.google] the file has, and adds no [auth.sheets-work]; the check and
+# the credential step name the API by its new name and the auth by its own.
+id = "preset_setup_as_reuses_the_default_auth_without_renaming_it"
+feature = "preset"
+
+[combination]
+command = "preset-setup"
+rename = "as"
+
+[input]
+args = ["preset", "setup", "google-sheets", "--as", "sheets-work", "--offline"]
+then_run = [["config", "show", "api.sheets-work", "--json"], ["config", "list", "--json"]]
+config = """
+[auth.google]
+kind = "oauth"
+grant_type = "authorization_code"
+issuer = "https://accounts.google.com"
+client_id = "id-1"
+client_secret = "op://Agent/kurama-google/client_secret"
+scopes = ["https://www.googleapis.com/auth/spreadsheets.readonly"]
+redirect_port = 8080
+
+[api.google-sheets]
+base_url = "https://sheets.googleapis.com/v4"
+auth = "google"
+"""
+
+[expect]
+exit_code = 0
+stdout_json = { "/sections/2/name" = "auth.google", "/sections/3/name" = "api.google-sheets", "/sections/4/name" = "api.sheets-work", "/sections" = { length = 5 } }
+sts_actions = []
+op_calls = 0
+api_calls = { count = 0 }
+files_written = ["home/.claude/skills/kurama/SKILL.md", "kurama-config.toml"]
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stderr_empty = true
+stdout = { starts_with = "# kurama preset setup google-sheets ([api.sheets-work])\n", contains = ["configure    done          added [api.sheets-work] (reuses [auth.google]) to ", "check        done          config.toml loads; [api.sheets-work] uses [auth.google]", "credential   needs_action  through api sheets-work: through auth google: ", "next: kurama login google\n"] }
+stdout_excludes = ["auth.sheets-work", "# warning"]
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+stdout_json = { "/key" = "api.sheets-work", "/value/auth" = "google", "/value/base_url" = "https://sheets.googleapis.com", "/value/discovery" = "https://sheets.googleapis.com/$discovery/rest?version=v4" }

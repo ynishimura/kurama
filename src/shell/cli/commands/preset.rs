@@ -1,26 +1,22 @@
-//! `kurama preset [--json]`, `kurama preset show <ID> [--as NAME] [--auth-as NAME] [--set k=v]... [--open] [--json]` and the parsing of `preset add`: the preset catalog, and one preset expanded against config.toml and checked with it whole, without writing it.
+//! `kurama preset [--json]` and the parsing of `preset setup`: the preset catalog, read without the configuration, and one preset expanded against config.toml and checked with it whole, for `preset_setup.rs` to append and verify.
 //!
 //! The list reads no configuration, so it works under a file that does not
-//! load. `show` reads config.toml through the config writer's `ConfigFile`
-//! -- to reuse a compatible `[auth.*]`, to refuse a taken `[api.*]` name and
-//! to name the vault -- and runs the fragment through the same append and
-//! validate a save would, but never saves; `preset add`
-//! (`preset_add.rs`) saves what the same two steps passed. stdout carries
-//! the TOML only; the setup steps, notices and warnings go to stderr. No
-//! secret is resolved and nothing is contacted, except the browser `--open`
-//! starts on a terminal.
+//! load. `plan_against_file` reads config.toml through the config writer's
+//! `ConfigFile` -- to reuse a compatible `[auth.*]` and to name the vault --
+//! and `check_plan` runs the fragment through the same append and validate
+//! a save would; `preset setup` saves what passed, or on `--dry-run` only
+//! reports it.
 
 use anyhow::Result;
 use clap::{Arg, ArgAction, ArgMatches, Command, ValueHint};
 use clap_complete::engine::{ArgValueCandidates, CompletionCandidate};
 use serde_json::json;
 
-use crate::adapters::browser::open_url;
+use super::preset_setup::SetupMode;
 use crate::adapters::config::Config;
 use crate::adapters::config::input::InputError;
 use crate::adapters::config::writer::{Appended, ConfigFile, Validated};
 use crate::adapters::profile::load_profiles;
-use crate::console::progress;
 use crate::domain::functions::preset_render::{
     AuthAction, Existing, PresetError, PresetPlan, PresetRequest, input_keys, plan_preset,
 };
@@ -43,66 +39,55 @@ pub enum PresetCommand {
     List {
         json: bool,
     },
-    Show {
+    Setup {
         id: String,
         request: PresetRequest,
-        open: bool,
-        json: bool,
-    },
-    Add {
-        id: String,
-        request: PresetRequest,
-        dry_run: bool,
+        mode: SetupMode,
         json: bool,
     },
 }
 
 pub fn command() -> Command {
     Command::new("preset")
-        .about("List the bundled provider presets, or print one as config.toml sections")
+        .about("List the bundled provider presets, or set one up from nothing to a first answer")
         .long_about(
-            "List the bundled provider presets (GitHub, Google, Linear, ...), or print one\n\
-             as [auth.*] / [api.*] sections to append to config.toml. The list reads no\n\
-             configuration. `preset show` reads config.toml to reuse a compatible\n\
-             [auth.*] and to check the sections with the file, and writes nothing: the\n\
-             TOML goes to stdout, the setup steps to stderr.",
+            "List the bundled provider presets (GitHub, Google, Linear, ...), or set one up:\n\
+             `preset setup` appends its [auth.*] / [api.*] sections to config.toml, checks\n\
+             them, reports whether the credential can be used, writes kurama's Agent Skill\n\
+             for Claude Code and sends the preset's example as one GET. The list reads no\n\
+             configuration.",
         )
         .arg(json_arg("Print the catalog as JSON"))
         .subcommand(
-            Command::new("show")
-                .about("Print a preset's sections for config.toml on stdout and its setup steps on stderr")
-                .args(request_args())
-                .arg(
-                    Arg::new("open")
-                        .long("open")
-                        .action(ArgAction::SetTrue)
-                        .help("Open the page that creates the credential; without a terminal, print its URL"),
-                )
-                .arg(json_arg("Print one JSON document instead of the TOML and the steps")),
-        )
-        .subcommand(
-            Command::new("add")
-                .about("Append a preset's sections to config.toml, checked whole before anything is written")
+            Command::new("setup")
+                .about("Take a preset from nothing to a first answer: add, check, credential, Claude Code Skill, first read")
                 .long_about(
-                    "Append a preset's [auth.*] / [api.*] sections to config.toml. A compatible\n\
-                     [auth.*] the file already has is reused and not written again. The file's\n\
-                     own bytes, comments and order are kept; the file plus the sections is\n\
-                     checked whole before the one write. Secret inputs take a reference\n\
-                     (op://, aws-secrets://, aws-ssm://); nothing is resolved or contacted.",
+                    "Take a preset from nothing to a first answer, one step at a time: append its\n\
+                     sections (reusing a compatible [auth.*]; an [api.*] already there is kept),\n\
+                     check config.toml, report whether the credential can be used, write kurama's\n\
+                     Agent Skill for Claude Code, and send the preset's example as one GET. Each\n\
+                     step says whether it is done and what to run next; run it again after a stop\n\
+                     and it resumes. Secret inputs take a reference (op://, aws-secrets://, aws-ssm://).",
                 )
                 .args(request_args())
                 .arg(
                     Arg::new("dry-run")
                         .long("dry-run")
                         .action(ArgAction::SetTrue)
-                        .help("Check and print the TOML `preset show` prints; write nothing"),
+                        .conflicts_with("offline")
+                        .help("Plan and check the sections and print their TOML; write, read and send nothing"),
+                )
+                .arg(
+                    Arg::new("offline")
+                        .long("offline")
+                        .action(ArgAction::SetTrue)
+                        .help("Every step but the first read: no secret is read and nothing is sent"),
                 )
                 .arg(json_arg("Print one JSON document")),
         )
 }
 
-/// `ID`, `--as`, `--set` and `--auth-as`, which `show` and `add` read the
-/// same way.
+/// `ID`, `--as`, `--set` and `--auth-as`.
 fn request_args() -> [Arg; 4] {
     [
         Arg::new("id")
@@ -170,17 +155,17 @@ fn parse_input(value: &str) -> Result<(String, String), String> {
 impl PresetCommand {
     pub fn parse(preset: &ArgMatches) -> Self {
         match preset.subcommand() {
-            Some(("show", show)) => Self::Show {
-                id: preset_id(show),
-                request: request_of(show),
-                open: show.get_flag("open"),
-                json: show.get_flag("json"),
-            },
-            Some(("add", add)) => Self::Add {
-                id: preset_id(add),
-                request: request_of(add),
-                dry_run: add.get_flag("dry-run"),
-                json: add.get_flag("json"),
+            Some(("setup", setup)) => Self::Setup {
+                id: preset_id(setup),
+                request: request_of(setup),
+                mode: if setup.get_flag("dry-run") {
+                    SetupMode::DryRun
+                } else if setup.get_flag("offline") {
+                    SetupMode::Offline
+                } else {
+                    SetupMode::Full
+                },
+                json: setup.get_flag("json"),
             },
             _ => Self::List {
                 json: preset.get_flag("json"),
@@ -191,7 +176,7 @@ impl PresetCommand {
     /// Whether stdout carries one JSON document.
     pub fn json(&self) -> bool {
         match self {
-            Self::List { json } | Self::Show { json, .. } | Self::Add { json, .. } => *json,
+            Self::List { json } | Self::Setup { json, .. } => *json,
         }
     }
 
@@ -201,18 +186,26 @@ impl PresetCommand {
                 print_list(json);
                 Ok(())
             }
-            Self::Show {
+            Self::Setup {
                 id,
                 request,
-                open,
+                mode,
                 json,
-            } => show(&id, &request, open, json).await,
-            Self::Add {
-                id,
-                request,
-                dry_run,
-                json,
-            } => super::preset_add::run(&id, &request, dry_run, json).await,
+            } => super::preset_setup::run(&id, &request, mode, json).await,
+        }
+    }
+
+    /// The `[api.*]` `setup` sends its first read to, for the audit log;
+    /// `None` when nothing is sent.
+    pub fn sent_to(&self) -> Option<&str> {
+        match self {
+            Self::Setup {
+                id, request, mode, ..
+            } if *mode == SetupMode::Full => request
+                .api_name
+                .as_deref()
+                .or_else(|| find_preset(id).map(|preset| preset.api.name)),
+            Self::Setup { .. } | Self::List { .. } => None,
         }
     }
 }
@@ -330,74 +323,6 @@ pub async fn check_plan(file: &ConfigFile, plan: &PresetPlan) -> Result<(Appende
     Ok((appended, validated))
 }
 
-async fn show(id: &str, request: &PresetRequest, open: bool, json: bool) -> Result<()> {
-    let (file, plan) = plan_against_file(id, request)?;
-    let preset = find_preset(id).expect("the plan found it");
-    if open {
-        if crate::shell::tui::terminal::stderr_is_interactive() {
-            progress!("# Opening {}", preset.docs_url);
-            if let Err(error) = open_url(preset.docs_url) {
-                progress!("# Could not open the browser ({error}); open the page above");
-            }
-        } else {
-            progress!("# Open this page in a browser: {}", preset.docs_url);
-        }
-    }
-    if !json {
-        print_setup(&plan);
-    }
-    let (_, validated) = check_plan(&file, &plan).await?;
-    let fragment = plan.fragment.as_ref().expect("check_plan read it");
-    let warnings = &validated.warnings;
-    if json {
-        let document = json!({
-            "id": plan.id,
-            "docs_url": preset.docs_url,
-            "path": file.path().display().to_string(),
-            "api": plan.api,
-            "auth": {"name": plan.auth, "action": plan.auth_action.as_str()},
-            "toml": fragment,
-            "setup": plan.setup,
-            "warnings": warnings,
-        });
-        println!("{}", serde_json::to_string_pretty(&document)?);
-        return Ok(());
-    }
-    print!("{fragment}");
-    for warning in warnings {
-        progress!("# warning: {warning}");
-    }
-    Ok(())
-}
-
-/// The numbered steps on stderr, after a notice when the auth is reused.
-pub fn print_setup(plan: &PresetPlan) {
-    progress!("# Setup for {}", plan.id);
-    print_reuse_notice(plan);
-    print_steps(&plan.setup);
-}
-
-/// On stderr, when the plan reuses the file's `[auth.*]`.
-pub fn print_reuse_notice(plan: &PresetPlan) {
-    if plan.auth_action == AuthAction::Reuse {
-        progress!(
-            "# [auth.{}] is already in the file; the API reuses it",
-            plan.auth
-        );
-    }
-}
-
-/// Steps numbered from 1 on stderr, a step's later lines indented under it.
-pub fn print_steps(steps: &[String]) {
-    for (index, step) in steps.iter().enumerate() {
-        let mut lines = step.lines();
-        progress!("#   {}. {}", index + 1, lines.next().unwrap_or_default());
-        for line in lines {
-            progress!("#        {line}");
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -457,7 +382,7 @@ mod tests {
         assert_eq!(
             parse(&[
                 "preset",
-                "show",
+                "setup",
                 "google-sheets",
                 "--as",
                 "sheets-work",
@@ -465,58 +390,51 @@ mod tests {
                 "client_id=a=b",
                 "--set",
                 "client_secret=op://V/i/f",
-                "--open",
+                "--auth-as",
+                "google-work",
+                "--dry-run",
                 "--json",
             ]),
-            PresetCommand::Show {
+            PresetCommand::Setup {
                 id: "google-sheets".into(),
                 request: PresetRequest {
                     api_name: Some("sheets-work".into()),
-                    auth_name: None,
+                    auth_name: Some("google-work".into()),
                     inputs: [
                         ("client_id".to_owned(), "a=b".to_owned()),
                         ("client_secret".to_owned(), "op://V/i/f".to_owned()),
                     ]
                     .into(),
                 },
-                open: true,
+                mode: SetupMode::DryRun,
                 json: true,
             }
         );
+        let mode = |args: &[&str]| match parse(args) {
+            PresetCommand::Setup { mode, .. } => mode,
+            other => panic!("{other:?}"),
+        };
+        assert_eq!(mode(&["preset", "setup", "linear"]), SetupMode::Full);
         assert_eq!(
-            parse(&[
-                "preset",
-                "add",
-                "linear",
-                "--as",
-                "work",
-                "--set",
-                "secret=op://V/i/f",
-                "--auth-as",
-                "linear-key",
-                "--dry-run",
-                "--json",
-            ]),
-            PresetCommand::Add {
-                id: "linear".into(),
-                request: PresetRequest {
-                    api_name: Some("work".into()),
-                    auth_name: Some("linear-key".into()),
-                    inputs: [("secret".to_owned(), "op://V/i/f".to_owned())].into(),
-                },
-                dry_run: true,
-                json: true,
-            }
+            mode(&["preset", "setup", "linear", "--offline"]),
+            SetupMode::Offline
         );
         let refused = |args: &[&str]| {
             crate::build_command()
                 .try_get_matches_from(std::iter::once("kurama").chain(args.iter().copied()))
                 .is_err()
         };
-        assert!(refused(&["preset", "show", "github", "--set", "novalue"]));
-        assert!(refused(&["preset", "show", "github", "--as", "a.b"]));
-        assert!(refused(&["preset", "add", "github", "--auth-as", "a.b"]));
-        assert!(refused(&["preset", "add", "github", "--open"]));
+        assert!(refused(&["preset", "setup", "github", "--set", "novalue"]));
+        assert!(refused(&["preset", "setup", "github", "--as", "a.b"]));
+        assert!(refused(&[
+            "preset",
+            "setup",
+            "github",
+            "--dry-run",
+            "--offline"
+        ]));
+        assert!(refused(&["preset", "show", "github"]));
+        assert!(refused(&["preset", "add", "github"]));
     }
 
     /// Every preset, added to an empty file, is a configuration kurama loads.

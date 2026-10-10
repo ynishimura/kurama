@@ -253,7 +253,7 @@ mod tests {
             source("config remove"),
             "src/shell/cli/commands/config_edit.rs: remove_command"
         );
-        for path in ["preset", "preset show", "preset add"] {
+        for path in ["preset", "preset setup"] {
             assert_eq!(source(path), "src/shell/cli/commands/preset.rs: command");
         }
     }

@@ -58,7 +58,7 @@ kurama login github               # OAuth: authorize in the browser, store the t
 kurama api github /user --jq .login
 kurama api github                 # Explore the API's OpenAPI description in the TUI
 kurama api github issues/create -P owner=o -P repo=r -d '{"title":"x"}'
-kurama preset add openai --set secret=op://Agent/openai/credential   # an API in one command
+kurama preset setup openai --set secret=op://Agent/openai/credential # an API in one command
 kurama data ./events.jsonl --query 'SELECT count(*) FROM data'
 kurama db app --tables
 ```
@@ -134,7 +134,7 @@ to jump to any source, and an explorer for each API, database and bucket.
   </tr>
   <tr>
     <td><strong>API keys where the API wants them</strong><br>The key is read from 1Password or AWS on every call and never stored. It is sent as a bearer token, in a named header, over HTTP Basic or in a query parameter.</td>
-    <td><strong>Presets for common APIs</strong><br><code>kurama preset add</code> writes the config sections for GitHub, Google, Linear, OpenAI, Slack, Jira, Zendesk, Backlog and more. The sections are written out in full, so the file shows where each credential goes.</td>
+    <td><strong>Presets for common APIs</strong><br><code>kurama preset setup</code> writes the config sections for GitHub, Google, Linear, OpenAI, Slack, Jira, Zendesk, Backlog and more. The sections are written out in full, so the file shows where each credential goes.</td>
   </tr>
   <tr>
     <td><strong>Files, locally or on S3</strong><br><code>kurama data</code> runs read-only SQL over CSV, JSONL and Parquet with embedded DuckDB, within row and byte limits.</td>
@@ -250,6 +250,18 @@ kurama unset                 # Clear the credentials when you are done
 Prefer a profile picker? Run `kurama` in a terminal. In scripts and agents,
 start with `kurama exec dev -- <command>`.
 
+For an API and Claude Code, one command takes a preset from nothing to a
+first answer -- the sections, a check, the credential, kurama's Skill for
+Claude Code and one read -- and says what to run next wherever it stops:
+
+```bash
+kurama preset setup github --set secret=op://Agent/kurama-github/credential
+```
+
+Then `kurama agent` prints the recipes an agent can follow, such as finding
+why an AWS Lambda function fails from its logs and the repository's recent
+changes, read only.
+
 <details>
 <summary><strong>Updating and uninstalling</strong></summary>
 
@@ -305,8 +317,8 @@ kurama config add --file new.toml   # append sections, checked whole first; --dr
 kurama config set core.log_level '"debug"'   # change one key in place; set --file replaces whole sections
 kurama config remove api.old   # remove sections (unset removes keys); an [auth.*] an API still uses is refused
 kurama preset                # the bundled provider presets (GitHub, Google, Linear, ElevenLabs, OpenAI, Slack, Contentful, Fireworks, Jira, Zendesk, Backlog); reads no configuration
-kurama preset show github --set secret=op://Agent/kurama-github/credential   # its TOML on stdout, setup steps on stderr
-kurama preset add github --set secret=op://Agent/kurama-github/credential    # the same TOML appended to config.toml
+kurama preset setup github --set secret=op://Agent/kurama-github/credential --dry-run  # its TOML, checked with the file; nothing written or sent
+kurama preset setup github --set secret=op://Agent/kurama-github/credential  # add (or keep), check, credential, Claude Code Skill, first read; resumable
 kurama logout ops            # remove the cached MFA session of the profile's MFA device
 kurama logout --all          # remove every cached MFA session and stored token
 
@@ -507,19 +519,28 @@ is `CONFIG_WRITE_FAILED` (exit 1).
 - Zendesk, with an OAuth client credentials grant;
 - Backlog, with an API key in the query string.
 
-`kurama preset show <ID> --set <key>=<value>...` prints one preset as TOML on
-stdout, and on stderr the steps to create the credential (`--open` opens the
-setup page on a terminal). The TOML is expanded in full, with a comment naming
-the preset, so the file itself shows every URL a credential is sent to. The
-command reuses an `[auth.*]` the file already has only when its contract
-matches the preset's, and warns about scopes that source lacks. `--as` renames
-the API and `--auth-as` the auth. The result is checked against the file the
-way `config add` checks it, and nothing is written.
+`kurama preset setup <ID> --set <key>=<value>...` takes one preset from
+nothing to a first answer and reports each step as `done`, `planned`,
+`needs_action`, `failed` or `skipped`, with the command to run next:
 
-`kurama preset add` takes the same arguments and appends that TOML through
-the same writer as `config add`. The file's bytes and comments are kept, a
-reused `[auth.*]` is not written again, and `--dry-run` only prints it. It
-then says what is left to do: scopes, `kurama login`, a first call.
+1. It appends the preset's sections through the same writer as `config add`.
+   The TOML is expanded in full, with a comment naming the preset, so the
+   file itself shows every URL a credential is sent to. The file's bytes and
+   comments are kept, an `[auth.*]` the file already has is reused only when
+   its contract matches the preset's (scopes it lacks are a warning and a
+   step), `--as` renames the API and `--auth-as` the auth, and the result is
+   checked whole before the one write. An `[api.*]` that is already there is
+   kept as it is, so a second run resumes where the first stopped.
+2. It reads config.toml back and says whether the credential can be used
+   without a person (a login it needs is the next step).
+3. It writes kurama's Agent Skill to `~/.claude/skills/kurama/SKILL.md`.
+4. It sends the preset's example as one GET, held to the `[agent]` policy and
+   audited like `kurama api`.
+
+A failure keeps its usual code: a locked 1Password is `SECRET_UNAVAILABLE`, a
+missing login `OAUTH_LOGIN_REQUIRED`, a rejected credential `API_HTTP_ERROR`.
+`--dry-run` only plans and checks the sections and prints their TOML, writing
+and sending nothing; `--offline` does everything but the read.
 
 ```toml
 [core]

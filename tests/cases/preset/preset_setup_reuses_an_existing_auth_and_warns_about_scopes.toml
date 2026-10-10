@@ -1,0 +1,61 @@
+# An [auth.google] with the preset's contract is reused: only the API is
+# appended, the auth keeps every byte it had, and the scope it lacks is a
+# warning that says how to add it and log in again. The JSON report names
+# the reused auth with the action `reuse`, and the credential step names the
+# login still to run.
+id = "preset_setup_reuses_an_existing_auth_and_warns_about_scopes"
+feature = "preset"
+
+[combination]
+command = "preset-setup"
+auth = "reuse"
+
+[input]
+args = ["preset", "setup", "google-docs", "--offline"]
+then_run = [
+  ["preset", "setup", "google-drive", "--offline", "--json"],
+  ["config", "show", "auth.google"],
+  ["config", "list", "--json"],
+]
+config = """
+[auth.google]
+kind = "oauth"
+grant_type = "authorization_code"
+issuer = "https://accounts.google.com"
+client_id = "id-1"
+client_secret = "op://Agent/kurama-google/client_secret"
+scopes = ["https://www.googleapis.com/auth/spreadsheets.readonly"]   # mine
+redirect_port = 8080
+
+[api.google-sheets]
+base_url = "https://sheets.googleapis.com/v4"
+auth = "google"
+"""
+
+[expect]
+exit_code = 0
+stdout_json = { "/sections/2/name" = "auth.google", "/sections/3/name" = "api.google-sheets", "/sections/4/name" = "api.google-docs", "/sections/5/name" = "api.google-drive", "/sections" = { length = 6 } }
+sts_actions = []
+op_calls = 0
+api_calls = { count = 0 }
+open_calls = []
+files_written = ["home/.claude/skills/kurama/SKILL.md", "kurama-config.toml"]
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stderr_empty = true
+stdout = { contains = ["configure    done          added [api.google-docs] (reuses [auth.google]) to ", "check        done          config.toml loads; [api.google-docs] uses [auth.google]\n", "next: kurama login google\n", "# warning: [auth.google] lacks the scope https://www.googleapis.com/auth/documents.readonly: add it with `kurama config set auth.google.scopes '[\"https://www.googleapis.com/auth/spreadsheets.readonly\",\"https://www.googleapis.com/auth/documents.readonly\"]'`, then run `kurama login --force google`\n"] }
+stdout_excludes = ["[auth.google], ", "op item create"]
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+stderr_empty = true
+stdout_json = { "/auth" = { name = "google", action = "reuse" }, "/steps/0/state" = "done", "/steps/0/detail" = { contains = "added [api.google-drive] (reuses [auth.google]) to " }, "/steps/2/step" = "credential", "/steps/2/state" = "needs_action", "/steps/2/next" = ["kurama login google"], "/toml" = { contains = "[api.google-drive]\n" }, "/warnings" = { length = 1 }, "/warnings/0" = { contains = ["lacks the scope https://www.googleapis.com/auth/drive.readonly", "kurama config set auth.google.scopes '[\"https://www.googleapis.com/auth/spreadsheets.readonly\",\"https://www.googleapis.com/auth/drive.readonly\"]'", "kurama login --force google"] } }
+
+[[expect.runs]]
+run = 2
+exit_code = 0
+stdout = { contains = ["client_id = \"id-1\"\n", "scopes = [\"https://www.googleapis.com/auth/spreadsheets.readonly\"]   # mine\n"] }
+stdout_excludes = ["documents.readonly", "drive.readonly"]

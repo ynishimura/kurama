@@ -39,11 +39,6 @@ pub fn stdout_is_interactive() -> bool {
     person_at(io::stdout().is_terminal())
 }
 
-/// Whether stderr is read by a person, who can follow a browser that opens.
-pub fn stderr_is_interactive() -> bool {
-    person_at(io::stderr().is_terminal())
-}
-
 /// Whether a person could answer a login prompt, and so whether a JSON run
 /// keeps stderr for one: stdin and stderr are terminals. Blind to the
 /// declaration on purpose: it changes what a run shows, never how it

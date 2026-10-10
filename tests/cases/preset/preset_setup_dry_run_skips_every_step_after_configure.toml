@@ -1,0 +1,26 @@
+# A dry run plans `configure` and nothing else: the steps after it are
+# reported as skipped with the reason, the run does not claim to be
+# complete, and the file keeps its bytes.
+id = "preset_setup_dry_run_skips_every_step_after_configure"
+feature = "preset"
+
+[combination]
+command = "preset-setup"
+output = "dry-run"
+
+[input]
+args = ["preset", "setup", "google-sheets", "--set", "client_id=cid", "--set", "client_secret=op://Agent/kurama-google/client_secret", "--dry-run", "--json"]
+config = """
+# mine
+[core]
+log_level = "info"
+"""
+
+[expect]
+exit_code = 0
+stderr_empty = true
+stdout_json = { "/dry_run" = true, "/complete" = false, "/steps" = { length = 5 }, "/steps/0/step" = "configure", "/steps/0/state" = "planned", "/steps/0/detail" = { contains = ["would add [auth.google], [api.google-sheets] to ", "kurama-config.toml; nothing was written"] }, "/steps/0/next" = [], "/steps/1" = { step = "check", state = "skipped", detail = "--dry-run writes nothing and sends nothing", next = [] }, "/steps/2" = { step = "credential", state = "skipped", detail = "--dry-run writes nothing and sends nothing", next = [] }, "/steps/3" = { step = "agent", state = "skipped", detail = "--dry-run writes nothing and sends nothing", next = [] }, "/steps/4" = { step = "first_read", state = "skipped", detail = "--dry-run writes nothing and sends nothing", next = [] } }
+sts_actions = []
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true

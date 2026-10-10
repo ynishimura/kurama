@@ -1,0 +1,49 @@
+# A second run after the sections exist keeps them as they are (here an
+# [api.github] that points at the fake API and a token kept in Parameter
+# Store), and the first read is one GET of the preset's example with the
+# credential and the API's own headers: the setup is complete. Run again,
+# it changes nothing and sends the one read again.
+id = "preset_setup_resumes_with_the_existing_api_and_reads_once"
+feature = "preset"
+
+[combination]
+command = "preset-setup"
+preset = "github"
+output = "json"
+setup_stop = "none"
+
+[input]
+args = ["preset", "setup", "github", "--json"]
+then_run = [["preset", "setup", "github"]]
+config = """
+[auth.github]
+kind = "token"
+token = "aws-ssm://dev/kurama/github-token"
+env_var = "GITHUB_TOKEN"
+
+[api.github]
+base_url = "{server}/api"
+headers = { Accept = "application/vnd.github+json" }
+"""
+
+[fakes]
+aws_secrets = "from-id"
+api = "ok"
+
+[expect]
+exit_code = 0
+op_calls = 0
+files_written = ["home/.claude/skills/kurama/SKILL.md"]
+api_calls = { count = 1, calls = [{ method = "GET", path = "/api/user", authorization = "Bearer parameter-of/kurama/github-token", headers = { accept = "application/vnd.github+json" } }] }
+
+[[expect.runs]]
+run = 0
+stdout_json = { "/complete" = true, "/steps/0/step" = "configure", "/steps/0/state" = "done", "/steps/0/detail" = { contains = "[api.github] is already in " }, "/steps/1/state" = "done", "/steps/2/step" = "credential", "/steps/2/state" = "done", "/steps/3/step" = "agent", "/steps/3/detail" = { contains = "wrote kurama's Skill" }, "/steps/4/step" = "first_read", "/steps/4/state" = "done", "/steps/4/detail" = "GET /user answered HTTP 200" }
+
+[[expect.runs]]
+run = 1
+stdout = { contains = [
+  "agent        done          Claude Code already has kurama's Skill: ",
+  "first_read   done          GET /user answered HTTP 200",
+  "# complete: configured, connected and registered",
+] }

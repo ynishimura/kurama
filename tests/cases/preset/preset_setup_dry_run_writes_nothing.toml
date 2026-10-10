@@ -1,0 +1,35 @@
+# `--dry-run` prints the steps, then the TOML it would append, and says
+# nothing was written; the file keeps its bytes and its mtime (the harness
+# compares both), and no Skill is written. The JSON form is the same report
+# with `dry_run` true and the TOML in `toml`.
+id = "preset_setup_dry_run_writes_nothing"
+feature = "preset"
+
+[combination]
+command = "preset-setup"
+output = "dry-run"
+
+[input]
+args = ["preset", "setup", "linear", "--set", "secret=op://Agent/kurama-linear/credential", "--dry-run"]
+then_run = [["preset", "setup", "linear", "--set", "secret=op://Agent/kurama-linear/credential", "--dry-run", "--json"]]
+config = """
+# mine
+[core]
+log_level = "info"
+"""
+
+[expect]
+exit_code = 0
+stderr_empty = true
+stdout_json = { "/dry_run" = true, "/auth" = { name = "linear", action = "add" }, "/steps/0/state" = "planned", "/toml" = { contains = ["[auth.linear]\nkind = \"token\"\n", "[api.linear]\n"] } }
+sts_actions = []
+op_calls = 0
+api_calls = { count = 0 }
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+exit_code = 0
+stderr_empty = true
+stdout = { starts_with = "# kurama preset setup linear ([api.linear])\nconfigure    planned       would add [auth.linear], [api.linear] to ", contains = ["kurama-config.toml; nothing was written\n", "kurama-config.toml:\n# kurama preset: linear (kurama ", "[auth.linear]\nkind = \"token\"\ntoken = \"op://Agent/kurama-linear/credential\"\n", "[api.linear]\ndescription = \"Linear GraphQL API\"\nbase_url = \"https://api.linear.app\"\nauth = \"linear\"\n"] }
+stdout_excludes = ["# complete", "# not complete"]

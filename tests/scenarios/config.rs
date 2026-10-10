@@ -569,10 +569,10 @@ fn config_set_file_replaces_related_sections_atomically() {
 
 /// The preset flow the edit commands exist for: two Google presets share
 /// one `[auth.google]`; the scope the second lacks is added with the
-/// `config set` its step names; adding that preset again is refused as a
-/// collision; removing its API keeps the shared auth, with the scope, for
-/// the API still using it, and the auth itself cannot be removed while that
-/// API is there.
+/// `config set` its warning names; setting that preset up again keeps the
+/// API it already has and warns about nothing; removing its API keeps the
+/// shared auth, with the scope, for the API still using it, and the auth
+/// itself cannot be removed while that API is there.
 #[test]
 fn config_remove_api_keeps_a_shared_auth() {
     const SCOPES: &str = "[\"https://www.googleapis.com/auth/spreadsheets.readonly\",\"https://www.googleapis.com/auth/documents.readonly\"]";
@@ -583,16 +583,17 @@ fn config_remove_api_keeps_a_shared_auth() {
     let mut runs = vec![
         sandbox.run_cli(&[
             "preset",
-            "add",
+            "setup",
             "google-sheets",
             "--set",
             "client_id=id-1",
             "--set",
             "client_secret=op://Agent/kurama-google/client_secret",
+            "--offline",
         ]),
-        sandbox.run_cli(&["preset", "add", "google-docs"]),
+        sandbox.run_cli(&["preset", "setup", "google-docs", "--offline"]),
         sandbox.run_cli(&["config", "set", "auth.google.scopes", SCOPES]),
-        sandbox.run_cli(&["preset", "add", "google-docs"]),
+        sandbox.run_cli(&["preset", "setup", "google-docs", "--offline"]),
         sandbox.run_cli(&["config", "show", "auth.google"]),
     ];
     let before_remove = std::fs::read_to_string(&config).unwrap();
@@ -605,21 +606,22 @@ fn config_remove_api_keeps_a_shared_auth() {
     let mut v = sandbox.finish(scenario.id, scenario.feature, runs, vec![]);
     v.keyed_run(0, "first preset", |v| {
         v.expect_exit_code(0)
-            .expect_stderr_contains("# added [auth.google], [api.google-sheets] to ")
+            .expect_stdout_contains("added [auth.google], [api.google-sheets] to ")
     });
     v.keyed_run(1, "second preset", |v| {
         v.expect_exit_code(0)
-            .expect_stderr_contains("# added [api.google-docs] to ")
-            .expect_stderr_contains(&format!("kurama config set auth.google.scopes '{SCOPES}'"))
+            .expect_stdout_contains("added [api.google-docs] (reuses [auth.google]) to ")
+            .expect_stdout_contains(&format!("kurama config set auth.google.scopes '{SCOPES}'"))
     });
     v.keyed_run(2, "add the scope", |v| {
         v.expect_exit_code(0)
             .expect_stderr_contains("# set auth.google.scopes in ")
     });
     v.keyed_run(3, "the preset again", |v| {
-        v.expect_error("ARGUMENT_INVALID", 2)
-            .expect_stderr_contains("[api.google-docs]")
-            .expect_stderr_contains("--as")
+        v.expect_exit_code(0)
+            .expect_stdout_contains("[api.google-docs] is already in ")
+            .expect_stdout_contains("; kept as it is\n")
+            .expect_stdout_excludes("# warning")
     });
     v.keyed_run(4, "the auth before", |v| {
         v.expect_exit_code(0)
@@ -656,6 +658,6 @@ fn config_remove_api_keeps_a_shared_auth() {
     .expect_sts_actions(&[])
     .expect_op_calls(0)
     .expect_api_call_count(0)
-    .expect_files_written(&["kurama-config.toml"]);
+    .expect_files_written(&["home/.claude/skills/kurama/SKILL.md", "kurama-config.toml"]);
     v.finish();
 }
