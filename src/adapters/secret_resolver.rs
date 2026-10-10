@@ -23,7 +23,7 @@ use crate::adapters::aws::secret_store;
 use crate::adapters::config::OnePasswordConfig;
 use crate::console::progress;
 use crate::domain::types::SecretFailure;
-use crate::domain::types::{AwsSecretRef, AwsSecretStore, SecretRef};
+use crate::domain::types::{AwsSecretRef, AwsSecretStore, Secret, SecretRef};
 use crate::ports::{AwsProfileCredentials, SecretError, SecretResolver};
 
 /// One secret in one place, as the cache keys it. Two AWS profiles can name
@@ -68,7 +68,7 @@ pub struct ConfiguredSecrets {
     /// the IAM token of a `kurama db` call, so one profile is assumed once.
     aws: Arc<dyn AwsProfileCredentials>,
     /// What AWS already answered in this process. Values never leave it.
-    read: Mutex<HashMap<ReadSecret, String>>,
+    read: Mutex<HashMap<ReadSecret, Secret>>,
     /// Say each read that goes to a store on stderr (`kurama api -v`).
     report_reads: bool,
 }
@@ -98,7 +98,7 @@ impl ConfiguredSecrets {
         }
     }
 
-    async fn resolve_onepassword(&self, reference: &str) -> Result<String, SecretError> {
+    async fn resolve_onepassword(&self, reference: &str) -> Result<Secret, SecretError> {
         let Some(field) = ItemField::parse(reference) else {
             return self
                 .read_once(ReadSecret::OnePassword(reference.into()), || {
@@ -113,7 +113,7 @@ impl ConfiguredSecrets {
         let item = self
             .read_once(key, || self.onepassword.read_item(field.vault, field.item))
             .await?;
-        item_field_value(&field, &item)
+        item_field_value(&field, item.expose())
     }
 
     /// What `read` answers, asked of 1Password once per process.
@@ -121,9 +121,9 @@ impl ConfiguredSecrets {
         &self,
         key: ReadSecret,
         read: impl FnOnce() -> F,
-    ) -> Result<String, SecretError>
+    ) -> Result<Secret, SecretError>
     where
-        F: std::future::Future<Output = Result<String, SecretError>>,
+        F: std::future::Future<Output = Result<Secret, SecretError>>,
     {
         if let Some(value) = self.read.lock().await.get(&key) {
             return Ok(value.clone());
@@ -134,16 +134,16 @@ impl ConfiguredSecrets {
         Ok(value)
     }
 
-    async fn resolve_aws(&self, reference: &AwsSecretRef) -> Result<String, SecretError> {
+    async fn resolve_aws(&self, reference: &AwsSecretRef) -> Result<Secret, SecretError> {
         let value = self.read_aws(reference).await?;
         match &reference.json_key {
-            Some(key) => json_field(reference, &value, key),
+            Some(key) => json_field(reference, value.expose(), key),
             None => Ok(value),
         }
     }
 
     /// The whole value AWS holds, read once per process.
-    async fn read_aws(&self, reference: &AwsSecretRef) -> Result<String, SecretError> {
+    async fn read_aws(&self, reference: &AwsSecretRef) -> Result<Secret, SecretError> {
         let profile = self
             .aws
             .load_profile(&reference.aws_profile)
@@ -198,14 +198,14 @@ impl ConfiguredSecrets {
 
 /// One field of a JSON `SecretString`, which is the shape an RDS managed
 /// secret has.
-fn json_field(reference: &AwsSecretRef, value: &str, key: &str) -> Result<String, SecretError> {
+fn json_field(reference: &AwsSecretRef, value: &str, key: &str) -> Result<Secret, SecretError> {
     let document: serde_json::Value = serde_json::from_str(value).map_err(|_| {
         SecretError::invalid(format!(
             "{reference}: #{key} needs a JSON secret and this one is not JSON"
         ))
     })?;
     match document.get(key) {
-        Some(serde_json::Value::String(field)) => Ok(field.clone()),
+        Some(serde_json::Value::String(field)) => Ok(Secret::new(field.as_str())),
         Some(other) => Err(SecretError::invalid(format!(
             "{reference}: the key {key} holds {}, not a string",
             kind_of(other)
@@ -229,9 +229,9 @@ fn kind_of(value: &serde_json::Value) -> &'static str {
 
 #[async_trait]
 impl SecretResolver for ConfiguredSecrets {
-    async fn resolve(&self, secret: &SecretRef) -> Result<String, SecretError> {
+    async fn resolve(&self, secret: &SecretRef) -> Result<Secret, SecretError> {
         match secret {
-            SecretRef::Literal(value) => Ok(value.clone()),
+            SecretRef::Literal(value) => Ok(Secret::new(value.as_str())),
             SecretRef::OnePassword(reference) => self.resolve_onepassword(reference).await,
             SecretRef::Aws(reference) => self.resolve_aws(reference).await,
         }
@@ -305,7 +305,7 @@ mod tests {
             .resolve(&SecretRef::Literal("plain".into()))
             .await
             .unwrap();
-        assert_eq!(value, "plain");
+        assert_eq!(value.expose(), "plain");
     }
 
     /// The region the reference does not name comes from the AWS profile, and
@@ -376,7 +376,7 @@ mod tests {
                 .resolve(&SecretRef::Aws(reference(written)))
                 .await
                 .expect(written);
-            assert_eq!(value, expected);
+            assert_eq!(value.expose(), expected);
         }
     }
 
@@ -409,7 +409,7 @@ mod tests {
             .resolve(&SecretRef::Aws(reference("aws-ssm://dev/app/db")))
             .await
             .expect("dev already read it");
-        assert_eq!(dev, "value-of-dev");
+        assert_eq!(dev.expose(), "value-of-dev");
         let other = secrets
             .resolve(&SecretRef::Aws(reference("aws-ssm://other/app/db")))
             .await
@@ -443,7 +443,7 @@ mod tests {
                 .resolve(&SecretRef::OnePassword(reference))
                 .await
                 .expect("this process already read the item");
-            assert_eq!(value, expected);
+            assert_eq!(value.expose(), expected);
         }
     }
 
@@ -463,7 +463,7 @@ mod tests {
             .resolve(&SecretRef::OnePassword(reference.into()))
             .await
             .expect("this process already read it");
-        assert_eq!(value, "s3cret");
+        assert_eq!(value.expose(), "s3cret");
     }
 
     /// The `-v` line names the store call, the id and the region, or the
@@ -522,7 +522,9 @@ mod tests {
             assert!(!error.to_string().contains("reader"), "{error}");
         }
         assert_eq!(
-            json_field(&parsed, r#"{"password":"s3cret"}"#, "password").unwrap(),
+            json_field(&parsed, r#"{"password":"s3cret"}"#, "password")
+                .unwrap()
+                .expose(),
             "s3cret"
         );
     }

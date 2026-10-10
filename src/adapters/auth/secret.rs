@@ -7,6 +7,7 @@ use tracing::debug;
 use crate::adapters::auth::op_cli::OpCli;
 use crate::adapters::config::OnePasswordConfig;
 use crate::domain::functions::onepassword::{ItemGetOutput, build_item_get_args};
+use crate::domain::types::Secret;
 use crate::ports::SecretError;
 
 /// The vault, the item and the field of `op://<vault>/<item>/<field>`: a
@@ -54,7 +55,7 @@ struct Field {
 /// The value of the field an `op://` reference names, out of the JSON
 /// `op item get` printed: matched on the field's id or its label, as
 /// `op read` matches it. An empty field is the empty string.
-pub fn item_field_value(reference: &ItemField, item_json: &str) -> Result<String, SecretError> {
+pub fn item_field_value(reference: &ItemField, item_json: &str) -> Result<Secret, SecretError> {
     let item: Item = serde_json::from_str(item_json).map_err(|_| {
         SecretError::needs_a_person(format!(
             "op item get {} --vault {}: the 1Password CLI did not print an item",
@@ -68,7 +69,7 @@ pub fn item_field_value(reference: &ItemField, item_json: &str) -> Result<String
     item.fields
         .into_iter()
         .find(|field| named(&field.id) || named(&field.label))
-        .map(|field| field.value.unwrap_or_default())
+        .map(|field| Secret::new(field.value.unwrap_or_default()))
         .ok_or_else(|| {
             SecretError::invalid(format!(
                 "op://{}/{}/{}: the item has no field {}",
@@ -89,18 +90,18 @@ impl OnePasswordSecrets {
     }
 
     /// The value behind an `op://` reference, through `op read`.
-    pub async fn read(&self, reference: &str) -> Result<String, SecretError> {
+    pub async fn read(&self, reference: &str) -> Result<Secret, SecretError> {
         debug!(reference, cli_path = %self.op.cli_path, "Reading a secret from 1Password");
         let what = format!("op read {reference}");
         let value = self
             .run(vec!["read".into(), reference.into()], &what)
             .await?;
-        Ok(value.trim_end_matches(['\n', '\r']).to_string())
+        Ok(Secret::new(value.trim_end_matches(['\n', '\r'])))
     }
 
     /// The whole item, as the JSON `op item get --format json` prints: every
     /// field of it in one CLI run and one biometric prompt.
-    pub async fn read_item(&self, vault: &str, item: &str) -> Result<String, SecretError> {
+    pub async fn read_item(&self, vault: &str, item: &str) -> Result<Secret, SecretError> {
         debug!(vault, item, cli_path = %self.op.cli_path, "Reading an item from 1Password");
         let what = format!("op item get {item} --vault {vault}");
         self.run(
@@ -108,6 +109,7 @@ impl OnePasswordSecrets {
             &what,
         )
         .await
+        .map(Secret::new)
     }
 
     /// stdout of one `op` run. Every failure here needs a person: signing
@@ -198,7 +200,7 @@ mod tests {
             ("op://Agent/db/notes", ""),
         ] {
             let field = ItemField::parse(reference).unwrap();
-            assert_eq!(item_field_value(&field, item).unwrap(), expected);
+            assert_eq!(item_field_value(&field, item).unwrap().expose(), expected);
         }
         let missing = item_field_value(&ItemField::parse("op://Agent/db/token").unwrap(), item)
             .expect_err("no such field");

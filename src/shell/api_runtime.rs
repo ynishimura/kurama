@@ -31,7 +31,7 @@ use crate::console::progress;
 use crate::domain::functions::oauth::base64url;
 use crate::domain::functions::signing_target::{SigningTarget, resolve_signing_target};
 use crate::domain::types::{
-    Credentials, OAuthClientConfig, OAuthToken, Profile, RequestAuth, SecretsSourceConfig,
+    Credentials, OAuthClientConfig, OAuthToken, Profile, RequestAuth, Secret, SecretsSourceConfig,
     SourceCredential, TokenSourceConfig,
 };
 use crate::ports::{
@@ -184,7 +184,7 @@ impl ApiRuntime {
     pub(crate) async fn resolve_secret(
         &self,
         secret: &crate::domain::types::SecretRef,
-    ) -> std::result::Result<String, crate::ports::SecretError> {
+    ) -> std::result::Result<Secret, crate::ports::SecretError> {
         self.secrets.resolve(secret).await
     }
 
@@ -310,7 +310,7 @@ impl ApiRuntime {
     pub async fn resolve_secrets(
         &self,
         source: &SecretsSourceConfig,
-    ) -> Result<Vec<(String, String)>> {
+    ) -> Result<Vec<(String, Secret)>> {
         progress!(
             "# Reading the secrets of '{}' from their secret stores",
             source.name
@@ -327,7 +327,7 @@ impl ApiRuntime {
     }
 
     /// The value behind a `kind = "token"` source's reference.
-    async fn issued_value(&self, source: &TokenSourceConfig) -> Result<String> {
+    async fn issued_value(&self, source: &TokenSourceConfig) -> Result<Secret> {
         progress!(
             "# Reading the credential of '{}' from its secret store",
             source.name
@@ -363,7 +363,7 @@ impl ApiRuntime {
             // reference again after a 401 would send the same value twice.
             ApiCredential::Token(source) => {
                 let value = self.issued_value(&source).await?;
-                return self.send(source.apply(request, &value)).await;
+                return self.send(source.apply(request, value.expose())).await;
             }
             ApiCredential::OAuth(client) => client,
         };

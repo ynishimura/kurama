@@ -193,7 +193,10 @@ pub fn token_env_vars(
 ) -> Vec<(String, String)> {
     auth_env_vars(
         source.name(),
-        vec![(source.env_var().to_string(), credential.value().to_string())],
+        vec![(
+            source.env_var().to_string(),
+            credential.expose().to_string(),
+        )],
     )
 }
 
@@ -225,7 +228,7 @@ pub fn generate_token_json(credential: &SourceCredential) -> String {
         SourceCredential::Issued(_) => (None, None, None),
     };
     serde_json::json!({
-        "access_token": credential.value(),
+        "access_token": credential.expose(),
         "token_type": token_type,
         "expires_at": expires_at,
         "scope": scope,
@@ -236,7 +239,7 @@ pub fn generate_token_json(credential: &SourceCredential) -> String {
 /// `sha256:<hex>` of the credential: says whether two sources hold one
 /// value without saying anything else about it -- not even its length.
 pub fn token_fingerprint(credential: &SourceCredential) -> String {
-    let hex: String = Sha256::digest(credential.value().as_bytes())
+    let hex: String = Sha256::digest(credential.expose().as_bytes())
         .iter()
         .map(|byte| format!("{byte:02x}"))
         .collect();
