@@ -12,7 +12,7 @@ use crate::adapters::config::references::name_collisions;
 use crate::adapters::profile::{find_profile, load_profiles};
 use crate::domain::Profile;
 use crate::domain::types::{
-    AuthSource, OAuthClientConfig, RequestAuth, SecretsSourceConfig, SourceCredential,
+    AuthSource, OAuthClientConfig, RequestAuth, Secret, SecretsSourceConfig, SourceCredential,
 };
 use crate::shell::api_runtime::{ApiRuntime, ApiRuntimeOptions};
 use crate::shell::cli::executor::CliExecutorError;
@@ -70,7 +70,7 @@ pub async fn resolve_source_secrets(
     config: Config,
     source: &SecretsSourceConfig,
     options: ApiRuntimeOptions,
-) -> Result<Vec<(String, String)>> {
+) -> Result<Vec<(String, Secret)>> {
     ApiRuntime::from_config(Arc::new(config), options)?
         .resolve_secrets(source)
         .await

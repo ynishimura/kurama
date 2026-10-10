@@ -22,6 +22,9 @@ that is what picks `SECRET_UNAVAILABLE` / `SECRET_INVALID` /
 `SECRET_REJECTED` / `SECRET_FAILED`. Getting the credentials is not one of
 them: `SecretError::credentials` keeps the AssumeRole chain, so a wrong TOTP
 stays `STS_*` and exit 3 instead of becoming a reference that is malformed.
+The value comes back as a `Secret` (`src/domain/types/secret.rs`), which
+redacts `Debug` and `Display`, zeroizes on drop and is read through
+`expose()` only where a request, an export script or stdout takes it.
 The files: `cargo xtask map secrets`.
 
 Every `op` call goes through `src/adapters/auth/op_cli.rs`: it passes a

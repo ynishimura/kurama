@@ -6,6 +6,8 @@
 //! drawn on top. Regions come from `layout`, widgets from `components`,
 //! colors from `theme`.
 
+use strum::VariantArray;
+
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Rect};
 use ratatui::text::{Line, Span};
@@ -208,7 +210,7 @@ fn render_tables(frame: &mut Frame, area: Rect, model: &DbModel) {
 
 /// The tab bar, the current tab written in brackets.
 fn tab_bar(model: &DbModel) -> String {
-    Tab::ALL
+    Tab::VARIANTS
         .iter()
         .map(|tab| {
             if *tab == model.tab {

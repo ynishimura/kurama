@@ -5,7 +5,7 @@ use std::time::Instant;
 use chrono::{DateTime, Utc};
 
 use crate::domain::types::{
-    OAuthClientConfig, OAuthEndpoints, OAuthToken, SecretFailure, SecretRef,
+    OAuthClientConfig, OAuthEndpoints, OAuthToken, Secret, SecretFailure, SecretRef,
 };
 use crate::workflows::common::LogLevel;
 
@@ -193,7 +193,7 @@ pub enum TokenEvent {
         error: String,
     },
     SecretResolved {
-        secret: String,
+        secret: Secret,
     },
     SecretFailed {
         failure: SecretFailure,
@@ -290,7 +290,7 @@ pub struct Session {
     pub input: TokenInput,
     pub endpoints: Option<OAuthEndpoints>,
     /// The resolved client secret, when the client has one.
-    pub secret: Option<String>,
+    pub secret: Option<Secret>,
 }
 
 impl std::fmt::Debug for Session {

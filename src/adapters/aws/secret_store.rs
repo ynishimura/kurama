@@ -12,7 +12,7 @@ use std::time::Duration;
 use tracing::debug;
 
 use crate::adapters::utils::error_chain::causes;
-use crate::domain::types::{AwsSecretStore, Credentials};
+use crate::domain::types::{AwsSecretStore, Credentials, Secret};
 use crate::ports::SecretError;
 
 /// How long one read may take end to end.
@@ -26,12 +26,13 @@ pub async fn read(
     credentials: &Credentials,
     region: &str,
     id: &str,
-) -> Result<String, SecretError> {
+) -> Result<Secret, SecretError> {
     debug!(store = store.scheme(), region, "Reading a secret from AWS");
     match store {
         AwsSecretStore::SecretsManager => secrets_manager(credentials, region, id).await,
         AwsSecretStore::ParameterStore => parameter_store(credentials, region, id).await,
     }
+    .map(Secret::new)
 }
 
 async fn secrets_manager(

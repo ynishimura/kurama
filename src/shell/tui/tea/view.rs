@@ -6,6 +6,8 @@
 //! it. Regions come from `layout`, widgets from
 //! `components`, colors from `theme`: this file only decides what to show.
 
+use strum::VariantArray;
+
 use ratatui::Frame;
 use ratatui::text::{Line, Span};
 use unicode_width::UnicodeWidthStr;
@@ -79,8 +81,8 @@ const PROCESSING_HINTS: [(&str, &str); 0] = [];
 pub fn render(frame: &mut Frame, model: &TuiModel) {
     let (tabs, layout) = home_tabs_layout(frame.area());
     frame.render_widget(header(model), layout.header);
-    let labels = Tab::ALL.map(Tab::label);
-    let selected = Tab::ALL.iter().position(|tab| *tab == model.tab);
+    let labels: Vec<&str> = Tab::VARIANTS.iter().map(|tab| tab.label()).collect();
+    let selected = Tab::VARIANTS.iter().position(|tab| *tab == model.tab);
     frame.render_widget(Tabs::new(&labels, selected.unwrap_or(0)), tabs);
     match model.sources.list(model.tab) {
         None => render_profiles(frame, model, &layout),

@@ -44,7 +44,7 @@ pub async fn handle_token_command(
         (true, true) => println!("{}", generate_fingerprint_json(&credential)),
         (true, false) => println!("{}", token_fingerprint(&credential)),
         (false, true) => println!("{}", generate_token_json(&credential)),
-        (false, false) => println!("{}", credential.value()),
+        (false, false) => println!("{}", credential.expose()),
     }
     Ok(())
 }

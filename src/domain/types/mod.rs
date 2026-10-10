@@ -31,6 +31,7 @@ pub mod profile;
 pub mod request_history;
 pub mod s3_browse;
 pub mod s3_object;
+pub mod secret;
 pub mod secret_ref;
 pub mod secrets_source;
 pub mod session_duration;
@@ -46,6 +47,7 @@ pub use oauth_client::{
 pub use oauth_token::OAuthToken;
 pub use output_format::OutputFormat;
 pub use profile::{Profile, ProfileAuth};
+pub use secret::Secret;
 pub use secret_ref::{AwsSecretRef, AwsSecretStore, SecretFailure, SecretRef};
 pub use secrets_source::SecretsSourceConfig;
 pub use session_duration::SessionDuration;

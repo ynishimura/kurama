@@ -24,7 +24,7 @@ under "Not measured".
 
 ## What the syntax rules read
 
-ARCH-001, 002, 006, 009, 013, 019, 024 and 025 read the Rust syntax
+ARCH-001, 002, 006, 009, 013, 019, 024, 025 and 037 read the Rust syntax
 (`tests/architecture/syntax.rs`): a nested, aliased or multi-line `use`, a call
 split over lines and `Command::new` under any import are seen, and a comment,
 a string or test-only code is not a violation. Names are not resolved beyond
@@ -44,6 +44,7 @@ trusted. Recorded 2026-09-23.
 | Syntax rules | `use crate::{adapters::config}` in `src/domain`; a `map_err(|error| X(error.to_string()))` over four lines in `src/shell` | ARCH-001, ARCH-006 (the text checks passed both) |
 | Fixture runner | `syntax::names` made to match no segment sequence | Detection rate 13 / 14, the miss attributed to ARCH-001's fixture |
 | Fixture runner | A fixture source that does not parse | Reported as "failed for another reason", not as a miss |
+| Contract matches (2026-10-11) | A `_ =>` put back after the explicit `DataError` arms of `classify`, and after the last arm of `CliCommand::contract`; a `_ =>` arm in a per-engine match of `server.rs` | ARCH-037 named each line |
 
 Holding the allowlists to their files also found two gaps in rules that had
 passed for months: the spawn check could not see five of the seven allowed

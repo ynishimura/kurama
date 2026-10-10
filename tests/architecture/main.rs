@@ -61,7 +61,9 @@
 //! ARCH-034 SQLite's C API is reached through the reviewed entry points only.
 //! ARCH-035 A server statement is prepared in one place.
 //! ARCH-036 A database failure never holds a bare `String`.
-//! ARCH-037 A choice made per database engine names every engine.
+//! ARCH-037 A choice made per variant names every variant: per database
+//!          engine, in `ErrorCode::classify` / `hint_of` and in
+//!          `CliCommand::contract`.
 //! ARCH-038 Every database engine has a real-database test.
 //! ARCH-039 (`cargo xtask architecture-audit`, tested in xtask) This list,
 //!          `rules.toml` and the tests name the same rules.
@@ -78,6 +80,9 @@
 //! ARCH-045 `README.ja.md` translates the current `README.md`: the same
 //!          headings, code blocks and images, and a digest of each English
 //!          section it translated.
+//! ARCH-046 A type in `src/domain/types` or `src/ports` named for a
+//!          credential, a token or a secret does not derive `Debug`, unless
+//!          it is listed as holding none.
 //!
 //! One file per group of rules; `support` is what they share.
 
@@ -90,6 +95,7 @@ mod errors;
 mod feature_map;
 mod layers;
 mod readme;
+mod secret_types;
 mod sigint_listener;
 mod support;
 mod syntax;

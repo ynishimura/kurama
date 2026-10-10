@@ -7,10 +7,12 @@ use clap::{Arg, ArgAction, Command, ValueHint};
 use serde_json::Value;
 use std::ffi::OsString;
 use std::io::Read;
+use strum::VariantArray;
 
 /// A subcommand that answers an agent with one JSON document on stdout and one
-/// JSON error document on stderr.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// JSON error document on stderr. `ClientKind::VARIANTS` is every kind, in
+/// the order `--kind` lists them.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, strum::VariantArray)]
 pub enum ClientKind {
     Data,
     Db,
@@ -18,9 +20,6 @@ pub enum ClientKind {
 }
 
 impl ClientKind {
-    /// Every kind, in the order `--kind` lists them. A new variant belongs here.
-    pub const ALL: &'static [Self] = &[Self::Data, Self::Db, Self::S3];
-
     /// The subcommand this kind names; also its `--kind` value.
     pub fn as_str(self) -> &'static str {
         match self {
@@ -31,7 +30,10 @@ impl ClientKind {
     }
 
     pub fn parse(name: &str) -> Option<Self> {
-        Self::ALL.iter().copied().find(|kind| kind.as_str() == name)
+        Self::VARIANTS
+            .iter()
+            .copied()
+            .find(|kind| kind.as_str() == name)
     }
 
     /// The code a usage failure of this subcommand carries.
@@ -45,18 +47,25 @@ impl ClientKind {
 
     /// The `--kind` values, for the argument definition.
     pub fn values() -> Vec<&'static str> {
-        Self::ALL.iter().map(|kind| kind.as_str()).collect()
+        Self::VARIANTS.iter().map(|kind| kind.as_str()).collect()
     }
 }
 
 /// A subcommand whose failures, when it runs with `--json` or `--jq`, are one
 /// JSON error document on stderr. A [`ClientKind`] is one, and more: it has a
 /// request contract and answers its usage failures with its own code even
-/// without `--json`. The other variants have only the error contract, so they
-/// are a separate type that `agent --kind` cannot list.
+/// without `--json`. The others have only the error contract, so they are a
+/// separate type that `agent --kind` cannot list.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum JsonErrorKind {
     Client(ClientKind),
+    ErrorOnly(ErrorOnlyKind),
+}
+
+/// A subcommand with only the JSON error contract. `ErrorOnlyKind::VARIANTS`
+/// is every one of them.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, strum::VariantArray)]
+pub enum ErrorOnlyKind {
     Api,
     Status,
     Env,
@@ -66,22 +75,10 @@ pub enum JsonErrorKind {
     Obsidian,
 }
 
-impl JsonErrorKind {
-    /// The kinds with only the error contract. A new variant belongs here.
-    const ERROR_ONLY: &'static [Self] = &[
-        Self::Api,
-        Self::Status,
-        Self::Env,
-        Self::Token,
-        Self::Config,
-        Self::Preset,
-        Self::Obsidian,
-    ];
-
+impl ErrorOnlyKind {
     /// The subcommand this kind names.
     pub fn as_str(self) -> &'static str {
         match self {
-            Self::Client(kind) => kind.as_str(),
             Self::Api => "api",
             Self::Status => "status",
             Self::Env => "env",
@@ -91,14 +88,28 @@ impl JsonErrorKind {
             Self::Obsidian => "obsidian",
         }
     }
+}
+
+impl JsonErrorKind {
+    /// Every kind: the clients, then the error-only kinds.
+    pub fn all() -> impl Iterator<Item = Self> {
+        ClientKind::VARIANTS
+            .iter()
+            .copied()
+            .map(Self::Client)
+            .chain(ErrorOnlyKind::VARIANTS.iter().copied().map(Self::ErrorOnly))
+    }
+
+    /// The subcommand this kind names.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Client(kind) => kind.as_str(),
+            Self::ErrorOnly(kind) => kind.as_str(),
+        }
+    }
 
     pub fn parse(name: &str) -> Option<Self> {
-        ClientKind::parse(name).map(Self::Client).or_else(|| {
-            Self::ERROR_ONLY
-                .iter()
-                .copied()
-                .find(|kind| kind.as_str() == name)
-        })
+        Self::all().find(|kind| kind.as_str() == name)
     }
 
     /// The code a usage failure of this subcommand carries. `status`, `env`,
@@ -107,13 +118,15 @@ impl JsonErrorKind {
     pub fn usage_code(self) -> ErrorCode {
         match self {
             Self::Client(kind) => kind.usage_code(),
-            Self::Api => ErrorCode::ApiArgumentInvalid,
-            Self::Status
-            | Self::Env
-            | Self::Token
-            | Self::Config
-            | Self::Preset
-            | Self::Obsidian => ErrorCode::ArgumentInvalid,
+            Self::ErrorOnly(ErrorOnlyKind::Api) => ErrorCode::ApiArgumentInvalid,
+            Self::ErrorOnly(
+                ErrorOnlyKind::Status
+                | ErrorOnlyKind::Env
+                | ErrorOnlyKind::Token
+                | ErrorOnlyKind::Config
+                | ErrorOnlyKind::Preset
+                | ErrorOnlyKind::Obsidian,
+            ) => ErrorCode::ArgumentInvalid,
         }
     }
 
@@ -125,11 +138,19 @@ impl JsonErrorKind {
             Self::Client(ClientKind::Data | ClientKind::Db) => None,
             // `config` is a group: its help lists the subcommands, and each
             // subcommand's help its arguments.
-            Self::Config => Some(
+            Self::ErrorOnly(ErrorOnlyKind::Config) => Some(
                 "run `kurama config --help` to see its subcommands, and `kurama config <subcommand> --help` for their arguments"
                     .to_owned(),
             ),
-            _ => Some(format!(
+            Self::Client(ClientKind::S3)
+            | Self::ErrorOnly(
+                ErrorOnlyKind::Api
+                | ErrorOnlyKind::Status
+                | ErrorOnlyKind::Env
+                | ErrorOnlyKind::Token
+                | ErrorOnlyKind::Preset
+                | ErrorOnlyKind::Obsidian,
+            ) => Some(format!(
                 "run `kurama {} --help` to see the arguments it takes",
                 self.as_str()
             )),
@@ -139,7 +160,10 @@ impl JsonErrorKind {
     /// Whether a usage failure is this subcommand's to report when no JSON
     /// was asked for. Only a client does; the others keep clap's text.
     pub fn reports_text_usage(self) -> bool {
-        matches!(self, Self::Client(_))
+        match self {
+            Self::Client(_) => true,
+            Self::ErrorOnly(_) => false,
+        }
     }
 }
 
@@ -329,7 +353,7 @@ mod tests {
 
     #[test]
     fn every_kind_names_its_subcommand_and_parses_back() {
-        for kind in ClientKind::ALL {
+        for kind in ClientKind::VARIANTS {
             assert_eq!(ClientKind::parse(kind.as_str()), Some(*kind));
             assert!(
                 crate::build_command()
@@ -345,16 +369,20 @@ mod tests {
     /// contract covers those and the error-only kinds, which it never lists.
     #[test]
     fn agent_kinds_are_the_clients_and_the_error_contract_is_wider() {
-        for kind in ClientKind::ALL {
+        for kind in ClientKind::VARIANTS {
             assert_eq!(
                 JsonErrorKind::parse(kind.as_str()),
                 Some(JsonErrorKind::Client(*kind))
             );
         }
-        for kind in JsonErrorKind::ERROR_ONLY {
+        for kind in ErrorOnlyKind::VARIANTS
+            .iter()
+            .copied()
+            .map(JsonErrorKind::ErrorOnly)
+        {
             assert!(!ClientKind::values().contains(&kind.as_str()));
             assert_eq!(ClientKind::parse(kind.as_str()), None);
-            assert_eq!(JsonErrorKind::parse(kind.as_str()), Some(*kind));
+            assert_eq!(JsonErrorKind::parse(kind.as_str()), Some(kind));
             assert!(!kind.reports_text_usage());
             assert_eq!(kind.usage_code().exit_code(), 2);
             // `config` takes `--json` on its subcommands.
@@ -368,7 +396,7 @@ mod tests {
             assert!(json, "{} has --json", kind.as_str());
         }
         assert_eq!(
-            JsonErrorKind::ERROR_ONLY
+            ErrorOnlyKind::VARIANTS
                 .iter()
                 .map(|kind| kind.as_str())
                 .collect::<Vec<_>>(),
@@ -378,7 +406,7 @@ mod tests {
         );
         assert!(JsonErrorKind::Client(ClientKind::Data).reports_text_usage());
         assert_eq!(
-            JsonErrorKind::Api.usage_code(),
+            JsonErrorKind::ErrorOnly(ErrorOnlyKind::Api).usage_code(),
             ErrorCode::ApiArgumentInvalid
         );
         let s3 = JsonErrorKind::Client(ClientKind::S3);
@@ -390,20 +418,75 @@ mod tests {
             Some("run `kurama s3 --help` to see the arguments it takes")
         );
         for kind in [
-            JsonErrorKind::Status,
-            JsonErrorKind::Env,
-            JsonErrorKind::Token,
-            JsonErrorKind::Config,
-            JsonErrorKind::Preset,
-            JsonErrorKind::Obsidian,
+            ErrorOnlyKind::Status,
+            ErrorOnlyKind::Env,
+            ErrorOnlyKind::Token,
+            ErrorOnlyKind::Config,
+            ErrorOnlyKind::Preset,
+            ErrorOnlyKind::Obsidian,
         ] {
-            assert_eq!(kind.usage_code(), ErrorCode::ArgumentInvalid);
+            assert_eq!(
+                JsonErrorKind::ErrorOnly(kind).usage_code(),
+                ErrorCode::ArgumentInvalid
+            );
         }
         assert_eq!(
-            JsonErrorKind::Token.usage_hint().as_deref(),
+            JsonErrorKind::ErrorOnly(ErrorOnlyKind::Token)
+                .usage_hint()
+                .as_deref(),
             Some("run `kurama token --help` to see the arguments it takes")
         );
         assert_eq!(JsonErrorKind::Client(ClientKind::Db).usage_hint(), None);
+    }
+
+    /// The subcommands that take `--json` and have no JSON error contract,
+    /// each with the reason. A subcommand that takes `--json` is either a
+    /// `JsonErrorKind` or listed here.
+    const JSON_WITHOUT_ERROR_DOCUMENT: &[(&str, &str)] = &[
+        (
+            "agent",
+            "prints a constant contract read off the binary; it reads no configuration and has nothing to fail at but its arguments, which clap reports",
+        ),
+        (
+            "audit",
+            "reads the local audit log only; a failure is the text error line, and no agent contract promises it a document",
+        ),
+    ];
+
+    #[test]
+    fn every_subcommand_with_json_has_an_error_contract_or_a_reason() {
+        fn takes_json(command: &Command) -> bool {
+            command.get_arguments().any(|arg| arg.get_id() == "json")
+                || command.get_subcommands().any(takes_json)
+        }
+        let root = crate::build_command();
+        let mut unexplained = Vec::new();
+        let mut listed = Vec::new();
+        for command in root.get_subcommands().filter(|command| takes_json(command)) {
+            let name = command.get_name();
+            let reason = JSON_WITHOUT_ERROR_DOCUMENT
+                .iter()
+                .find(|(listed, _)| *listed == name);
+            match (JsonErrorKind::parse(name), reason) {
+                (Some(_), None) | (None, Some(_)) => {}
+                (Some(_), Some(_)) => listed.push(name.to_owned()),
+                (None, None) => unexplained.push(name.to_owned()),
+            }
+        }
+        assert!(
+            unexplained.is_empty(),
+            "takes --json with no JsonErrorKind and no reason: {unexplained:?}"
+        );
+        assert!(
+            listed.is_empty(),
+            "has a JsonErrorKind and is still listed without one: {listed:?}"
+        );
+        for (name, _) in JSON_WITHOUT_ERROR_DOCUMENT {
+            let command = root
+                .find_subcommand(name)
+                .unwrap_or_else(|| panic!("{name} is a subcommand"));
+            assert!(takes_json(command), "{name} no longer takes --json");
+        }
     }
 
     #[test]
@@ -434,7 +517,7 @@ mod tests {
             JsonErrorKind::Client(ClientKind::Db)
         );
         let status = classify_invocation(&argv(&["status", "--json"])).unwrap();
-        assert_eq!(status.kind, JsonErrorKind::Status);
+        assert_eq!(status.kind, JsonErrorKind::ErrorOnly(ErrorOnlyKind::Status));
         assert!(status.reports_usage());
         let api = classify_invocation(&argv(&["api", "github", "/x"])).unwrap();
         assert!(!api.json);

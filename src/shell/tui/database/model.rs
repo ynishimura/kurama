@@ -26,7 +26,7 @@ pub struct TableEntry {
     pub kind: String,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, strum::VariantArray)]
 pub enum Tab {
     Columns,
     Preview,
@@ -35,8 +35,6 @@ pub enum Tab {
 }
 
 impl Tab {
-    pub const ALL: [Self; 4] = [Self::Columns, Self::Preview, Self::Sql, Self::Result];
-
     pub fn title(self) -> &'static str {
         match self {
             Self::Columns => "Columns",

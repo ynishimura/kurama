@@ -26,7 +26,11 @@ The full text, with the reasons, of what AGENTS.md lists in one line each.
    (`indent_json`), which changes its whitespace and nothing else.
 4. Secrets never appear in `Debug`, `Display` or logs. Credential and token
    types derive `Zeroize` and redact `Debug`; `Authorization` headers are
-   masked in `--dry-run` and `-v`.
+   masked in `--dry-run` and `-v`. A value the resolver read, or a credential
+   issued elsewhere, is a `Secret` (`src/domain/types/secret.rs`), read only
+   through `expose()` where it is sent, exported or printed; a type in
+   `src/domain/types` or `src/ports` named for a credential, a token or a
+   secret does not derive `Debug` unless ARCH-046 lists it as holding none.
 5. No unexpected STS, federation, token endpoint, API, 1Password or browser
    calls. Scenarios pin the exact call sequence, the signing key, MFA fields,
    policy ARNs, grant types and bearer tokens.
@@ -108,6 +112,13 @@ The full text, with the reasons, of what AGENTS.md lists in one line each.
 - Several projections of one type destructure it without `..`, so a new
   field stops the build instead of quietly missing from one of them
   (`Operation` in `spec_output.rs`, `Schema` in `api_spec.rs`).
+- A choice made per variant lists every variant, with no `_ =>`: a new
+  error variant gets the code and hint someone chose in
+  `ErrorCode::classify` / `hint_of`, and a new subcommand its output kind and
+  audit entry in `CliCommand::contract` (ARCH-037). An invariant violation
+  maps to `INTERNAL` by name. A variant list is `strum::VariantArray`, never
+  written by hand (`ClientKind::VARIANTS`, `DbEngine::VARIANTS`, the TUI
+  tabs, whose digit keys follow `Tab::VARIANTS.len()`).
 - Mutually exclusive state is one enum, not two fields that can disagree
   (`JqPanel`). The bounds external input is cut to live in
   `domain/types/limits.rs`, where a test destructures them exhaustively and
