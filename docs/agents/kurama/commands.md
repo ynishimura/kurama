@@ -12,7 +12,7 @@
 | `kurama preset --json` | the bundled provider presets: `[{id, title, auth, api, inputs, setup}]`; reads no configuration |
 | `kurama preset setup <ID> --set k=v... [--as NAME] [--auth-as NAME] [--dry-run \| --offline] --json` | `{kind: "preset_setup", preset, api, auth, path, dry_run, complete, steps: [{step, state, detail, next}], toml, warnings}`; see Setup |
 | `kurama exec <profile> -- <cmd>...` | the command's output | Run tools with the credentials or the token in their environment |
-| `kurama env <profile> --json` | credential_process JSON (AWS) or `{access_token, ...}` (auth) | A program needs the credentials as JSON |
+| `kurama env <aws-profile> --json` | credential_process JSON; an `[auth.*]` source is `KIND_UNSUPPORTED` (use `token --json`) | A program needs AWS credentials as JSON |
 | `kurama unset` | `unset` lines for every variable `env` exports | Clear the credentials from a shell you exported them into |
 | `kurama api <API> <TARGET> [--json] [--jq F]` | response body, envelope, or jq results | Call an API with the source's bearer token or a SigV4 signature |
 | `kurama api <API> --ops [QUERY] --json` | JSON array of operations | Find an operation in the API's OpenAPI description |
@@ -63,8 +63,8 @@ the same bytes every time. `agent --json` takes no `--jq`: pipe it to `jq`
 (`kurama agent --json | jq '.commands.api.arguments[].long'`).
 
 Prefer `exec` and `api`. The credentials go only into the command's
-environment or the request; `env --json` and `token` print them on stdout,
-so use those two only to feed a program. `status --json`, `token --fingerprint` and `api ...
+environment or the request; `env --json` (AWS) and `token` print them on
+stdout, so use those two only to feed a program. `status --json`, `token --fingerprint` and `api ...
 --dry-run` check a source without printing a secret (`--dry-run` on an
 operation target still fetches the description, with the API's credential
 when it sets `openapi_auth`), and a printed token never goes into a report,

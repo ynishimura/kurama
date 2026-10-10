@@ -17,7 +17,9 @@
 //! `kind = "secrets"` source, each secret into its own variable -- with the
 //! source name in `KURAMA_AUTH` and the variable names in `KURAMA_AUTH_VAR`;
 //! `exec` puts them in the command's environment, after every value was
-//! read. `console` and `--readonly` do not apply to any kind.
+//! read. `console`, `--readonly` and `--json` do not apply to any kind:
+//! `token --json` is the one way a source's credential reaches stdout as a
+//! document, and a `secrets` source's values are for `exec`.
 
 use super::source::{ensure_source_credential, resolve_source_secrets};
 use super::unset::managed_token_vars;
@@ -26,8 +28,7 @@ use crate::adapters::env_script::output_shell_script;
 use crate::console::progress;
 use crate::domain::OutputFormat;
 use crate::domain::functions::export::{
-    auth_env_vars, generate_auth_export_script, generate_secrets_json, generate_token_json,
-    token_env_vars,
+    auth_env_vars, generate_auth_export_script, token_env_vars,
 };
 use crate::domain::types::AuthSource;
 use crate::shell::agent_policy::exec_is_read_only;
@@ -159,28 +160,25 @@ pub async fn handle_auth_profile_command(
     if config.readonly {
         return Err(unsupported("--readonly").into());
     }
-    if config.action == ProfileAction::OpenConsole {
-        return Err(unsupported("console").into());
+    match config.action {
+        ProfileAction::OpenConsole => return Err(unsupported("console").into()),
+        ProfileAction::Export(OutputFormat::Json) => return Err(unsupported("env --json").into()),
+        ProfileAction::Export(OutputFormat::Shell) | ProfileAction::Exec(_) => {}
     }
     let managed = managed_token_vars(&app_config)?;
     let options = ApiRuntimeOptions {
         report_secret_reads: config.verbose,
         ..ApiRuntimeOptions::default()
     };
-    // What was exported, for the progress line; the variables; `--json`.
-    let (what, vars, json) = match source.request_auth() {
+    // What was exported, for the progress line, and the variables.
+    let (what, vars) = match source.request_auth() {
         Ok(source) => {
             let credential = ensure_source_credential(app_config, &source, options).await?;
-            (
-                "Token for",
-                token_env_vars(&credential, &source),
-                generate_token_json(&credential),
-            )
+            ("Token for", token_env_vars(&credential, &source))
         }
         Err(secrets) => {
             let values = resolve_source_secrets(app_config, &secrets, options).await?;
-            let json = generate_secrets_json(&values);
-            ("Secrets of", auth_env_vars(&secrets.name, values), json)
+            ("Secrets of", auth_env_vars(&secrets.name, values))
         }
     };
 
@@ -194,9 +192,10 @@ pub async fn handle_auth_profile_command(
                 exported.unwrap_or_default()
             );
         }
-        ProfileAction::Export(OutputFormat::Json) => println!("{json}"),
         ProfileAction::Exec(command) => return Err(exec_command(&command, vars)),
-        ProfileAction::OpenConsole => unreachable!("rejected above"),
+        ProfileAction::Export(OutputFormat::Json) | ProfileAction::OpenConsole => {
+            unreachable!("rejected above")
+        }
     }
     Ok(())
 }
@@ -342,6 +341,11 @@ mod tests {
         .unwrap();
         for (action, readonly, verb) in [
             (ProfileAction::OpenConsole, false, "console"),
+            (
+                ProfileAction::Export(OutputFormat::Json),
+                false,
+                "env --json",
+            ),
             (
                 ProfileAction::Export(OutputFormat::Shell),
                 true,

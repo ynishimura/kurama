@@ -373,7 +373,7 @@ Enter を押すと、`kurama env` と同じように選択中のプロファイ�
 | <kbd>q</kbd> / <kbd>Ctrl-C</kbd> | 終了 |
 
 ## 設定
-<!-- en: c662953c0bd0 -->
+<!-- en: 616c0b4ede82 -->
 
 kurama は `~/.config/kurama/config.toml` を読みます。別のファイルを使うには `KURAMA_CONFIG_PATH` を設定します。キーはすべて省略できます。ファイルには次のセクションがあります。
 
@@ -539,7 +539,7 @@ aws_profile = "dev"            # exclusive with auth
 
 `kind = "secrets"` のソースは、複数のシークレットを環境変数で受け取るコマンドのためのものです。たとえば、ブラウザー自動化ツールがログイン画面を通過する場合に使います。`kurama exec` か `kurama env` の実行時に `env` 配下の参照をすべて読み、すべて読めてからコマンドを起動します。読めない参照があれば、最初の 1 つの `SECRET_*` コードで失敗します。1 つの 1Password アイテムのフィールドは 1 回の `op` 呼び出しで読み、`?attribute=otp` の参照は実行のたびに新しく読みます。このソースでは次のようになります。
 
-- `kurama exec <source> -- <cmd>` はすべての変数を設定して `<cmd>` を実行し、`kurama env` はそれらをエクスポートします（`--json` は `{"env": {...}}`）。
+- `kurama exec <source> -- <cmd>` はすべての変数を設定して `<cmd>` を実行し、`kurama env` はそれらをシェルにエクスポートします。
 - `kurama token`、`console`、`--readonly` は拒否され（`KIND_UNSUPPORTED`）、`[api.*]` の `auth` にも使えません（`CONFIG_INVALID`）。
 - `kurama login` と `kurama logout` は何もしません。
 - `kurama status` は変数名だけを `not_checked` として表示し、値は表示しません。

@@ -123,8 +123,8 @@ kurama exec example-login -- bash -c 'playwright-cli fill e3 "$SITE_USER" && pla
   reaches the transcript, the shell history or a file. The command itself
   can still print them: the environment of a command an agent runs is not a
   boundary it cannot read.
-- `kurama env <name>` exports every variable (`--json`: `{"env": {...}}`),
-  and `kurama unset` clears them; `KURAMA_AUTH_VAR` lists the variable names,
+- `kurama env <name>` exports every variable (`--json` is refused: no
+  document carries them), and `kurama unset` clears them; `KURAMA_AUTH_VAR` lists the variable names,
   space separated, so a renamed one is still cleared.
 - `kurama token <name>`, `console` and `--readonly` are `KIND_UNSUPPORTED`
   (exit 2), and an `[api.*]` that names the source (or shares its name) is
