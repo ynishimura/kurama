@@ -14,8 +14,9 @@ use super::commands::status::StatusRowKind;
 /// Map the matches of `args::build_command` to a command.
 pub fn parse_cli_command(matches: &ArgMatches) -> CliCommand {
     match matches.subcommand() {
-        Some(("init", _)) => CliCommand::Init,
-        Some(("completions", _)) => CliCommand::Completions,
+        Some(("init", init)) => CliCommand::Init {
+            completion_only: init.get_flag("completion-only"),
+        },
         Some(("inventory", _)) => CliCommand::Inventory,
         Some(("config", config)) => {
             CliCommand::Config(super::commands::config::ConfigCommand::parse(config))
@@ -545,14 +546,21 @@ mod tests {
     }
 
     #[test]
-    fn parses_init_and_completions_for_zsh_only() {
-        assert!(matches!(parse(&["init", "zsh"]).unwrap(), CliCommand::Init));
+    fn parses_init_for_zsh_only() {
         assert!(matches!(
-            parse(&["completions", "zsh"]).unwrap(),
-            CliCommand::Completions
+            parse(&["init", "zsh"]).unwrap(),
+            CliCommand::Init {
+                completion_only: false
+            }
+        ));
+        assert!(matches!(
+            parse(&["init", "zsh", "--completion-only"]).unwrap(),
+            CliCommand::Init {
+                completion_only: true
+            }
         ));
         assert!(parse(&["init", "bash"]).is_err());
         assert!(parse(&["init"]).is_err());
-        assert!(parse(&["completions", "fish"]).is_err());
+        assert!(parse(&["completions", "zsh"]).is_err());
     }
 }

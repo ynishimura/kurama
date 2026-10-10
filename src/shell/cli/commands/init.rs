@@ -1,4 +1,4 @@
-//! `init` / `completions` command output
+//! `init zsh [--completion-only]` command output
 //!
 //! Both commands print zsh code for `eval "$(kurama init zsh)"`; they are
 //! pure string generators so shell startup never touches configuration.

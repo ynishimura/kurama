@@ -236,7 +236,7 @@ the cache.
 
 The completer calls the binary that printed the script by its absolute path,
 bypassing the shell wrapper. Re-run the `eval` line when you switch binaries.
-`kurama completions zsh` prints only the completion script, for setups that
+`kurama init zsh --completion-only` prints only the completion script, for setups that
 manage `fpath` themselves.
 
 ### Make your first switch

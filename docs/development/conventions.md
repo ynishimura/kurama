@@ -43,8 +43,8 @@ The full text, with the reasons, of what AGENTS.md lists in one line each.
    that needs one exits 3 with `hint: run \`kurama login <source>\``, and the
    1Password CLI is killed at `[onepassword] timeout` rather than left waiting
    for a biometric answer.
-7. `kurama init zsh`, `completions` and `agent` never read configuration or
-   the AWS environment: the first two run at every shell start, and the
+7. `kurama init zsh` and `agent` never read configuration or
+   the AWS environment: the first runs at every shell start, and the
    agent contract is what an agent reads to write or fix the configuration.
    Whether each source can be used now is `kurama status --ready`, which
    reads what `status` reads (config.toml, `~/.aws/config`, the session

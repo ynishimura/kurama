@@ -1,7 +1,7 @@
 //! Process bootstrap for commands that need configuration: load `config.toml`
 //! and initialize logging.
 //!
-//! `init`, `completions` and `agent` skip this (see `CliCommand::needs_bootstrap`)
+//! `init` and `agent` skip this (see `CliCommand::needs_bootstrap`)
 //! because they run at every shell startup.
 
 use anyhow::Result;

@@ -1,15 +1,16 @@
-# `completions zsh` prints the completer alone, without the shell function,
+# `init zsh --completion-only` prints the completer alone, without the shell function,
 # and reads no configuration: the file is not even TOML.
-id = "completions_zsh_prints_the_completer_without_reading_config"
+id = "init_completion_only_prints_the_completer_without_reading_config"
 feature = "shell-integration"
 
 [combination]
-command = "completions"
-"completions.shell" = "zsh"
+command = "init"
+"init.shell" = "zsh"
+output = "completion-only"
 config = "unread"
 
 [input]
-args = ["completions", "zsh"]
+args = ["init", "zsh", "--completion-only"]
 replace_config = "this = is not [ toml\n"
 
 [expect]
