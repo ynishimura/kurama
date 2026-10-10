@@ -1,6 +1,7 @@
 [api-explorer]
 summary = "`kurama api <API> --ops | --describe <OP> | --schema [OP] | --skill | <OP> -P k=v | --refresh-spec` and the explorer TUI: OpenAPI 3.x / Swagger 2.0 descriptions, Google Discovery Documents or GraphQL introspection results (URL cached with ETag / Last-Modified under ~/.cache/kurama/openapi/, or a JSON / YAML file) normalized into operations with parameters, request skeletons, response shapes and scopes"
 entry = "src/shell/cli/commands/api_spec.rs"
+docs = ["docs/development/flows/openapi.md", "docs/development/flows/tui.md"]
 files = [
   "src/domain/types/api_spec.rs",
   "src/domain/types/json_shape.rs",

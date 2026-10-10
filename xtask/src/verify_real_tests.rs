@@ -30,6 +30,7 @@ fn feature(real: Option<Real>) -> Feature {
     Feature {
         summary: "s".into(),
         entry: "src/a.rs".into(),
+        docs: vec![],
         files: vec![],
         tests: vec![],
         scenarios: vec!["db_mock".into()],

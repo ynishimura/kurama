@@ -1,6 +1,7 @@
 [errors]
 summary = "Error codes, exit codes and hints: every failure leaves main() as `error[CODE]: message`"
 entry = "src/shell/cli/error_code.rs"
+docs = ["docs/development/flows/cli.md"]
 files = [
   "src/shell/cli/error_code.rs",
   "src/shell/cli/client_error.rs",

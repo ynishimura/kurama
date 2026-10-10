@@ -1,6 +1,7 @@
 [s3-explorer]
 summary = "`kurama s3 <S3>`: the explorer on a terminal, or walk a bucket and prefix (--list, --recursive), search keys by literal substring (--search) or list buckets (--buckets) with an [s3.*] connection's assumed role; bounded runs that say whether they are complete and continue with a cursor; one object's metadata (--head), a bounded conditional range of it (--preview: UTF-8 boundaries, gzip from the start, binary as a hex head) and a bounded literal line search of the objects under a prefix (--search-content); contents never written to disk"
 entry = "src/shell/cli/commands/s3.rs"
+docs = ["docs/development/flows/s3.md"]
 files = [
   "src/shell/cli/commands/s3.rs",
   "src/shell/cli/commands/s3_command.rs",

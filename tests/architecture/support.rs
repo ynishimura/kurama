@@ -106,6 +106,8 @@ pub(crate) fn violations_in(source: &str, forbidden: &[&str]) -> Vec<(usize, Str
 #[derive(serde::Deserialize)]
 pub(crate) struct Feature {
     pub(crate) entry: String,
+    #[serde(default)]
+    pub(crate) docs: Vec<String>,
     pub(crate) files: Vec<String>,
     #[serde(default)]
     pub(crate) scenarios: Vec<String>,

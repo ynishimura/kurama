@@ -1,6 +1,7 @@
 [assume-role]
 summary = "Resolve a profile to temporary credentials through STS AssumeRole, with MFA and readonly policy"
 entry = "src/workflows/assume_role/transitions.rs"
+docs = ["docs/development/flows/cli.md"]
 files = [
   "src/workflows/",
   "src/domain/functions/assume_role.rs",

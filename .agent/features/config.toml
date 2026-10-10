@@ -1,6 +1,7 @@
 [config]
 summary = "~/.config/kurama/config.toml: [core] / [aws] / [onepassword] / [auth.*] (kind oauth or token) / [api.*] layout (auth or aws_profile per API), validation, unknown-key errors, environment overrides, `kurama config check [--json]`, which reads each section on its own and lists every problem without a secret store, a keychain or the network, `kurama config path|list|show` (the saved file read for syntax only, literal secrets redacted) `kurama config add`, which appends sections, and `kurama config set|unset|remove`, which edit keys and sections in place (`src/adapters/config/edit.rs`: only the target changes, comments and order kept, an [auth.*] still used is not removed; `layout.rs` decides which comments a removed unit takes; `diff.rs` prints the `--dry-run` hunks), all through the one config writer (`src/adapters/config/writer.rs`: validate the whole candidate once, lock, detect a change since the read, atomic rename keeping mode and symlinks)"
 entry = "src/adapters/config/mod.rs"
+docs = ["docs/development/flows/config.md"]
 files = [
   "src/adapters/config/",
   "src/adapters/utils/",

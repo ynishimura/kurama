@@ -1,6 +1,7 @@
 [mfa-login]
 summary = "`kurama login` on an AWS profile: get an MFA session for its MFA device and cache it; no-op while the cached session is valid"
 entry = "src/workflows/mfa_login/transitions.rs"
+docs = ["docs/development/flows/cli.md"]
 files = [
   "src/workflows/mfa_login/",
   "src/shell/mfa_login_executor.rs",

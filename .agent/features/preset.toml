@@ -1,6 +1,7 @@
 [preset]
 summary = "`kurama preset [--json]`: the bundled provider catalog (GitHub, Google, Linear), listed without reading configuration; `kurama preset show <ID> [--as NAME] [--auth-as NAME] [--set k=v]... [--open] [--json]`: one preset expanded into [auth.*] / [api.*] TOML on stdout and setup steps on stderr, reusing only a compatible [auth.*] and checked with config.toml through the config writer's append and validate, never saved; `kurama preset add <ID> [--as NAME] [--auth-as NAME] [--set k=v]... [--dry-run] [--json]`: the same TOML appended to config.toml through the config writer's save, with config add's JSON save result; a scope a reused auth lacks is a step and a warning naming the `kurama config set auth.<name>.scopes` that writes the whole list"
 entry = "src/shell/cli/commands/preset.rs"
+docs = ["docs/development/flows/preset.md"]
 files = [
   "src/domain/types/preset.rs",
   "src/domain/functions/preset_render.rs",

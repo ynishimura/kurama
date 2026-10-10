@@ -46,8 +46,9 @@ OAuth, API and 1Password endpoints (`--features test-fakes`).
 
 ## Making a change
 
-[AGENTS.md](AGENTS.md) is the full working agreement, for people and coding
-agents alike. The short version:
+[AGENTS.md](AGENTS.md) is the working agreement, for people and coding
+agents alike; the details it links live under `docs/development/`. The short
+version:
 
 1. **Find the feature.** `cargo xtask map <feature>` lists its files, tests
    and runtime scenarios. Read those, not the whole tree.

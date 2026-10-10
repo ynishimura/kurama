@@ -1,6 +1,7 @@
 [xtask]
 summary = "The agent interface: cargo xtask commands that map, gate, judge and claim work"
 entry = "xtask/src/main.rs"
+docs = ["docs/development/commands.md", "docs/development/harness.md", "docs/development/parallel-work.md"]
 files = [
   "xtask/",
   "tests/fakes/gh",

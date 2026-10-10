@@ -1,6 +1,7 @@
 [database]
 summary = "`kurama db`: read a configured database or a SQLite file -- schemas, tables, describe, preview and one read-only statement with bound parameters, as one bounded JSON result; a server user authenticates with a password from 1Password, Secrets Manager or Parameter Store, or with an IAM token (RDS, Aurora, Aurora DSQL)"
 entry = "src/shell/cli/commands/db.rs"
+docs = ["docs/development/flows/database.md", "docs/development/database.md"]
 files = [
   "src/shell/cli/commands/db.rs",
   "src/shell/cli/commands/db_command.rs",

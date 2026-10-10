@@ -1,6 +1,7 @@
 [audit]
 summary = "`kurama audit [--since] [--json]`: the api, exec, db and data calls recorded in ~/.local/state/kurama/audit.jsonl, without a secret, a query string, a header or a body; `--watch` opens the activity monitor (src/shell/tui/activity/, feature tui) on them"
 entry = "src/shell/audit.rs"
+docs = ["docs/development/flows/agent-runs.md"]
 files = [
   "src/shell/audit.rs",
   "src/shell/cli/commands/audit.rs",

@@ -10,6 +10,10 @@ use crate::{cases, root, verify_real};
 pub(crate) struct Feature {
     pub(crate) summary: String,
     pub(crate) entry: String,
+    /// Documents to read before the files: the narration of the feature's
+    /// flow, which `map` prints first.
+    #[serde(default)]
+    pub(crate) docs: Vec<String>,
     /// File paths, or directory prefixes ending in `/`.
     pub(crate) files: Vec<String>,
     /// Filters for tests whose path implies no module prefix: an
@@ -115,5 +119,22 @@ mod tests {
         );
         assert!(cases.windows(2).all(|pair| pair[0] < pair[1]), "{cases:?}");
         assert_eq!(case_scenarios("no-such-feature"), Vec::<String>::new());
+    }
+
+    /// An agent cannot run `cargo xtask map <feature>` without a name to
+    /// give it, and without one it greps the tree instead; AGENTS.md lists
+    /// the names on the line that starts with `Features:`.
+    #[test]
+    fn agents_md_names_every_feature() {
+        let agents = std::fs::read_to_string(root().join("AGENTS.md")).unwrap();
+        let listed: Vec<String> = agents
+            .lines()
+            .find_map(|line| line.strip_prefix("Features: "))
+            .expect("AGENTS.md has a `Features: ` line")
+            .split(", ")
+            .map(|name| name.trim_matches('`').to_string())
+            .collect();
+        let mapped: Vec<String> = load_features().unwrap().into_keys().collect();
+        assert_eq!(listed, mapped);
     }
 }
