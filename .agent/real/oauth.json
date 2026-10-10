@@ -3,9 +3,9 @@
   "feature": "oauth",
   "status": "verified",
   "reason": null,
-  "commit": "0745ae5491bf96c7b307b7237ba18c92b0d197c6",
-  "feature_hash": "461cb0e2aede79d7",
-  "diff_hash": "1816de90043b3eec",
+  "commit": "43baf0884ce7e3229162abfb08b9b900776ab755",
+  "feature_hash": "f404e534138bf813",
+  "diff_hash": "ce9e4c04ac1cffce",
   "environment": "real-services",
   "access": "read-only",
   "command": [
@@ -16,7 +16,7 @@
     "real",
     "oauth"
   ],
-  "generated_at": "2026-10-10T17:39:34.263537+00:00",
+  "generated_at": "2026-10-10T18:28:04.035246+00:00",
   "observed": [
     {
       "test": "oauth_real_client_credentials_grant_issues_a_token",

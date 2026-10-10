@@ -5,6 +5,7 @@
 use super::server::Wire;
 use crate::adapters::aws::db_iam_token::TokenSigner;
 use crate::adapters::config::{DbAuth, DbEngine, DbTls, ServerDatabase};
+use crate::domain::types::Secret;
 use crate::domain::types::database::{DbError, InvalidDb, ServerError};
 use sqlx::ConnectOptions;
 use sqlx::mysql::{MySqlConnectOptions, MySqlSslMode};
@@ -14,8 +15,8 @@ use std::time::Duration;
 /// What a connection authenticates with. Neither derives `Debug`.
 #[derive(Clone)]
 pub enum ServerPassword {
-    /// Read from 1Password before the connection was opened.
-    Fixed(String),
+    /// Read from its secret store before the connection was opened.
+    Fixed(Secret),
     /// Signed when a connection opens, because a token lives fifteen minutes
     /// and the connection that stops a statement may open later than that.
     Iam(TokenSigner),
@@ -38,7 +39,7 @@ impl ServerAccess {
     /// The password this connection opens with.
     fn password(&self) -> Result<String, DbError> {
         match &self.password {
-            ServerPassword::Fixed(password) => Ok(password.clone()),
+            ServerPassword::Fixed(password) => Ok(password.expose().to_owned()),
             ServerPassword::Iam(signer) => signer
                 .token(chrono::Utc::now())
                 .map_err(|detail| InvalidDb::IamTokenUnsignable(detail.into()).into()),

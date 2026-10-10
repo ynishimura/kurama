@@ -26,7 +26,11 @@ The full text, with the reasons, of what AGENTS.md lists in one line each.
    (`indent_json`), which changes its whitespace and nothing else.
 4. Secrets never appear in `Debug`, `Display` or logs. Credential and token
    types derive `Zeroize` and redact `Debug`; `Authorization` headers are
-   masked in `--dry-run` and `-v`.
+   masked in `--dry-run` and `-v`. A value the resolver read, or a credential
+   issued elsewhere, is a `Secret` (`src/domain/types/secret.rs`), read only
+   through `expose()` where it is sent, exported or printed; a type in
+   `src/domain/types` or `src/ports` named for a credential, a token or a
+   secret does not derive `Debug` unless ARCH-046 lists it as holding none.
 5. No unexpected STS, federation, token endpoint, API, 1Password or browser
    calls. Scenarios pin the exact call sequence, the signing key, MFA fields,
    policy ARNs, grant types and bearer tokens.

@@ -178,7 +178,7 @@ async fn an_issued_credential_is_sent_in_the_header_the_source_names() {
         .expect_resolve()
         .times(1)
         .returning(|reference| match reference {
-            SecretRef::OnePassword(text) => Ok(format!("value-of-{text}")),
+            SecretRef::OnePassword(text) => Ok(format!("value-of-{text}").into()),
             other => panic!("unexpected reference {other:?}"),
         });
     let config = config_with_issued_credential();

@@ -190,7 +190,7 @@ mod tests {
         let (listener, address) = bind("127.0.0.1:0".parse().unwrap()).await.unwrap();
         let run_tool: RunTool = Arc::new(|_| Box::pin(async { serde_json::json!({}) }));
         let endpoint = Endpoint {
-            token: McpToken::new("t0ken".to_owned()).unwrap(),
+            token: McpToken::new("t0ken".into()).unwrap(),
             exposed: Vec::new(),
             run_tool,
             limits: McpHttpLimits {

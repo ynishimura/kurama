@@ -177,7 +177,13 @@ pub async fn handle_auth_profile_command(
             ("Token for", token_env_vars(&credential, &source))
         }
         Err(secrets) => {
-            let values = resolve_source_secrets(app_config, &secrets, options).await?;
+            let values = resolve_source_secrets(app_config, &secrets, options)
+                .await?
+                .into_iter()
+                // Exposed here: these are the variables the export script
+                // and the command's environment carry.
+                .map(|(var, value)| (var, value.expose().to_owned()))
+                .collect();
             ("Secrets of", auth_env_vars(&secrets.name, values))
         }
     };
