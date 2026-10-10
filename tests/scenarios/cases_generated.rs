@@ -51,22 +51,6 @@ fn agent_prints_the_contract_without_reading_config() {
 }
 #[test]
 #[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
-fn agent_ready_names_the_login_a_person_has_to_run() {
-    crate::support::cases::run_case(
-        include_str!("../cases/agent-guide/agent_ready_names_the_login_a_person_has_to_run.toml"),
-        "tests/cases/agent-guide/agent_ready_names_the_login_a_person_has_to_run.toml",
-    );
-}
-#[test]
-#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
-fn agent_ready_reports_each_source_without_calling_anything() {
-    crate::support::cases::run_case(
-        include_str!("../cases/agent-guide/agent_ready_reports_each_source_without_calling_anything.toml"),
-        "tests/cases/agent-guide/agent_ready_reports_each_source_without_calling_anything.toml",
-    );
-}
-#[test]
-#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
 fn agent_skill_prints_the_skill_that_points_at_the_contract() {
     crate::support::cases::run_case(
         include_str!("../cases/agent-guide/agent_skill_prints_the_skill_that_points_at_the_contract.toml"),
@@ -3567,6 +3551,22 @@ fn status_only_s3_lists_the_connections_without_reaching_them() {
     crate::support::cases::run_case(
         include_str!("../cases/status/status_only_s3_lists_the_connections_without_reaching_them.toml"),
         "tests/cases/status/status_only_s3_lists_the_connections_without_reaching_them.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn status_ready_names_the_login_a_person_has_to_run() {
+    crate::support::cases::run_case(
+        include_str!("../cases/status/status_ready_names_the_login_a_person_has_to_run.toml"),
+        "tests/cases/status/status_ready_names_the_login_a_person_has_to_run.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn status_ready_reports_each_source_without_calling_anything() {
+    crate::support::cases::run_case(
+        include_str!("../cases/status/status_ready_reports_each_source_without_calling_anything.toml"),
+        "tests/cases/status/status_ready_reports_each_source_without_calling_anything.toml",
     );
 }
 #[test]

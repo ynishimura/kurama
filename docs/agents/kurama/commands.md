@@ -4,7 +4,7 @@
 | --- | --- | --- |
 | `kurama status --json` | JSON array | Find names and whether a person must act first |
 | `kurama agent install [--dir DIR] [--offline] [--dry-run] --json` | `{dir, dry_run, skills: [{skill, api, path, status, reason}]}`; `status` is `written`, `unchanged` or `skipped` | Install kurama's Agent Skill and one per `[api.*]` with a description (`kurama-api-<name>/SKILL.md`) under `~/.claude/skills`; a file is written only when it differs, nothing else is touched, and `--dry-run` reads descriptions from the cache only and writes nothing |
-| `kurama agent ready --json` | `{ready, sources: [{name, kind, state, reason, expires_at, next_actions}]}` | Before a run: which sources work now, and the command a person runs for the rest |
+| `kurama status --ready --json` | `{ready, sources: [{name, kind, state, reason, expires_at, next_actions}]}` | Before a run: which sources work now, and the command a person runs for the rest |
 | `kurama config check --json` | one report: the file in use, each `openapi`, every problem | After editing config.toml: every problem at once, without a secret store, a keychain or the network |
 | `kurama config add --file - [--dry-run] --json` | `{path, changed, applied, changes, warnings}` | Add new `[auth.*]` / `[api.*]` / ... sections, checked whole before the file is written |
 | `kurama config set PATH VALUE --json` / `config set --file - --json` / `config unset KEY... --json` / `config remove SECTION... --json` (each with `--dry-run`) | `{path, changed, applied, changes, warnings}` | Change a key, replace whole sections, remove keys or sections in place; the result is checked whole first |

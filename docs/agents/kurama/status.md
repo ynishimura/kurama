@@ -64,14 +64,14 @@ profile, `[data.*]` workspace and `[s3.*]` connection. It is printed as a single
 kurama status --only api --json
 ```
 
-## `kurama agent ready --json`
+## `kurama status --ready --json`
 
 One JSON document, one line, that says for every AWS profile, `[auth.*]`,
 `[api.*]` and `[db.*]` whether a call through it goes through now, so a
 person can be asked before the first exit code 3:
 
 ```json
-{"schema_version":1,"kind":"agent_ready","ready":false,"sources":[
+{"schema_version":1,"kind":"status_ready","ready":false,"sources":[
  {"name":"ops","kind":"aws","state":"ready","reason":"MFA session valid for 11h 52m",
   "expires_at":"2026-09-17T03:00:00Z","next_actions":[]},
  {"name":"github","kind":"auth","state":"needs_human",
@@ -93,5 +93,6 @@ person can be asked before the first exit code 3:
   username and password, its IAM or tunnel profile.
 - It reads what `status` reads and calls nothing: no STS, token endpoint,
   API, AWS secret store or 1Password. A secret is judged by the kind of its
-  reference, never read, and no reference is printed. Unlike the rest of
-  `kurama agent`, it reads the configuration.
+  reference, never read, and no reference is printed. `--ready` takes no
+  PROFILE, `--only` or `--kind`; without `--json` it is a tab-separated
+  table with the same columns.

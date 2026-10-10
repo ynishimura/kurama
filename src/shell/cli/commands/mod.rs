@@ -11,7 +11,6 @@
 pub mod agent;
 pub mod agent_catalog;
 pub(crate) mod agent_install;
-pub(crate) mod agent_ready;
 pub mod api;
 pub(crate) mod api_command;
 pub(crate) mod api_pages;
@@ -48,6 +47,7 @@ pub mod s3_read;
 pub mod s3_status;
 pub mod source;
 pub mod status;
+pub(crate) mod status_ready;
 pub mod token;
 pub mod unset;
 

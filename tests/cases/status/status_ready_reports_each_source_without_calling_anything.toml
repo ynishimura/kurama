@@ -1,21 +1,21 @@
-# `agent ready` answers from what `status` reads -- the cached MFA session,
+# `status --ready` answers from what `status` reads -- the cached MFA session,
 # the stored tokens, the references as written -- and calls nothing: no STS,
 # token endpoint, API, AWS secret store or 1Password. A cached MFA session is
 # ready until it ends, a valid or refreshable token is ready, a `kind =
 # "token"` source is as ready as the profile its reference names, a client
 # secret in 1Password without a service account will prompt, and an [api.*]
 # or [db.*] is as ready as what it goes through. No reference is printed.
-id = "agent_ready_reports_each_source_without_calling_anything"
-feature = "agent-guide"
+id = "status_ready_reports_each_source_without_calling_anything"
+feature = "status"
 
 [combination]
-command = "agent-ready"
+command = "status"
 output = "json"
 session_cache = "reused"
 
 [input]
 args = ["env", "ops-mfa"]
-then_run = [["agent", "ready", "--json"], ["agent", "ready"]]
+then_run = [["status", "--ready", "--json"], ["status", "--ready"]]
 stored_tokens = [
   { source = "github", access_token = "{stored_access_token}", expires_in = 3600, refreshable = false },
   { source = "renewing", access_token = "{stored_access_token}", expires_in = -60, refreshable = true },
@@ -91,4 +91,4 @@ token_grants = []
 oauth_paths = []
 api_calls = { count = 0 }
 stdout_excludes = ["op://", "aws-ssm://", "Agent/machine-item"]
-stdout_json = { "/kind" = "agent_ready", "/ready" = false, "/sources/0/kind" = "aws", "/sources/0/name" = "default", "/sources/0/state" = "ready", "/sources/1/name" = "dev", "/sources/1/state" = "ready", "/sources/2/name" = "ops-mfa", "/sources/2/state" = "ready", "/sources/2/expires_at" = "2030-01-01T12:00:00Z", "/sources/2/next_actions" = [], "/sources/3/kind" = "auth", "/sources/3/name" = "example", "/sources/3/state" = "ready", "/sources/4/name" = "github", "/sources/4/state" = "ready", "/sources/4/expires_at" = { contains = "T" }, "/sources/5/name" = "machine", "/sources/5/state" = "will_prompt", "/sources/5/reason" = { contains = "1Password" }, "/sources/6/name" = "renewing", "/sources/6/state" = "ready", "/sources/6/reason" = { contains = "refresh token" }, "/sources/7/kind" = "api", "/sources/7/name" = "github", "/sources/7/state" = "ready", "/sources/8/name" = "signed", "/sources/8/state" = "ready", "/sources/8/reason" = { contains = "through aws ops-mfa" }, "/sources/9/kind" = "db", "/sources/9/name" = "local", "/sources/9/state" = "ready", "/sources/10" = "<null>" }
+stdout_json = { "/kind" = "status_ready", "/ready" = false, "/sources/0/kind" = "aws", "/sources/0/name" = "default", "/sources/0/state" = "ready", "/sources/1/name" = "dev", "/sources/1/state" = "ready", "/sources/2/name" = "ops-mfa", "/sources/2/state" = "ready", "/sources/2/expires_at" = "2030-01-01T12:00:00Z", "/sources/2/next_actions" = [], "/sources/3/kind" = "auth", "/sources/3/name" = "example", "/sources/3/state" = "ready", "/sources/4/name" = "github", "/sources/4/state" = "ready", "/sources/4/expires_at" = { contains = "T" }, "/sources/5/name" = "machine", "/sources/5/state" = "will_prompt", "/sources/5/reason" = { contains = "1Password" }, "/sources/6/name" = "renewing", "/sources/6/state" = "ready", "/sources/6/reason" = { contains = "refresh token" }, "/sources/7/kind" = "api", "/sources/7/name" = "github", "/sources/7/state" = "ready", "/sources/8/name" = "signed", "/sources/8/state" = "ready", "/sources/8/reason" = { contains = "through aws ops-mfa" }, "/sources/9/kind" = "db", "/sources/9/name" = "local", "/sources/9/state" = "ready", "/sources/10" = "<null>" }

@@ -1,4 +1,4 @@
-//! `kurama agent ready [--json]`: whether each AWS profile, `[auth.*]`, `[api.*]` and `[db.*]` can be used right now, from the reads `status` makes.
+//! `kurama status --ready [--json]`: whether each AWS profile, `[auth.*]`, `[api.*]` and `[db.*]` can be used right now, from the reads `status` makes.
 //!
 //! It reads `~/.aws/config`, `config.toml`, the session cache and the token
 //! store, as `status` does, and never calls STS, a token endpoint, an API or
@@ -37,7 +37,7 @@ pub async fn run(json: bool, config: &Config) -> Result<()> {
     let rows = readiness_rows(config).await?;
     let output = ReadyOutput {
         schema_version: 1,
-        kind: "agent_ready",
+        kind: "status_ready",
         ready: rows.iter().all(|row| row.state == Readiness::Ready),
         sources: rows,
     };
@@ -136,7 +136,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn agent_ready_table_names_the_state_and_what_to_run() {
+    fn the_ready_table_names_the_state_and_what_to_run() {
         let row = SourceReadiness {
             name: "gh".into(),
             kind: "auth",

@@ -21,11 +21,7 @@ pub fn parse_cli_command(matches: &ArgMatches) -> CliCommand {
             CliCommand::Config(super::commands::config::ConfigCommand::parse(config))
         }
         Some(("agent", agent)) => {
-            if let Some(("ready", ready)) = agent.subcommand() {
-                CliCommand::AgentReady {
-                    json: ready.get_flag("json"),
-                }
-            } else if let Some(("install", install)) = agent.subcommand() {
+            if let Some(("install", install)) = agent.subcommand() {
                 CliCommand::AgentInstall(super::commands::agent_install::AgentInstall {
                     dir: install.get_one::<std::path::PathBuf>("dir").cloned(),
                     offline: install.get_flag("offline"),
@@ -94,6 +90,9 @@ pub fn parse_cli_command(matches: &ArgMatches) -> CliCommand {
         Some(("db", db)) => {
             CliCommand::Db(Box::new(super::commands::db_command::DbCommand::parse(db)))
         }
+        Some(("status", status)) if status.get_flag("ready") => CliCommand::StatusReady {
+            json: status.get_flag("json"),
+        },
         Some(("status", status)) if client_kind(status).is_some() => CliCommand::ClientStatus {
             kind: client_kind(status).expect("the guard matched a kind"),
             profile: status.get_one::<String>("profile").cloned(),
@@ -491,6 +490,18 @@ mod tests {
         assert!(parse(&["status", "--only", "db"]).is_err());
         assert!(parse(&["status", "--only", "nothing"]).is_err());
         assert!(parse(&["status", "--only", "api", "--kind", "data"]).is_err());
+        assert!(matches!(
+            parse(&["status", "--ready", "--json"]).unwrap(),
+            CliCommand::StatusReady { json: true }
+        ));
+        for refused in [
+            &["status", "--ready", "dev"][..],
+            &["status", "--ready", "--only", "api"],
+            &["status", "--ready", "--kind", "db"],
+            &["agent", "ready"],
+        ] {
+            assert!(parse(refused).is_err(), "{refused:?}");
+        }
     }
 
     #[test]

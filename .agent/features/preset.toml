@@ -44,7 +44,7 @@ scenarios = [
   "preset_setup_as_reuses_the_default_auth_without_renaming_it",
   "config_remove_api_keeps_a_shared_auth",
 ]
-depends_on = ["config", "cli-entry", "errors", "oauth", "api-explorer", "secrets", "profile-loading", "tui", "agent-guide", "agent-policy", "api-client", "audit"]
+depends_on = ["config", "cli-entry", "errors", "oauth", "api-explorer", "secrets", "profile-loading", "tui", "agent-guide", "agent-policy", "api-client", "audit", "status"]
 notes = "The catalog's endpoints, scopes, headers and base URLs were taken from the providers' documentation on 2026-09-26; only Linear's personal API key header (`Authorization: <key>`, refused with `Bearer`) and, on 2026-10-10, Zendesk's client credentials grant (`/oauth/tokens`, then `/api/v2/users/me` on two accounts) were checked against the real service. Logging in and calling each provider is a manual check."
 
 [preset.real]
