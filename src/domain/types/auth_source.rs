@@ -5,7 +5,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use super::{OAuthClientConfig, OAuthToken, SecretsSourceConfig, TokenSourceConfig};
+use super::{OAuthClientConfig, OAuthToken, Secret, SecretsSourceConfig, TokenSourceConfig};
 
 /// What a `[auth.<name>]` section's `kind` says it is.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
@@ -106,21 +106,31 @@ impl AuthSource {
 }
 
 /// What a source hands a command: a token a grant issued, or a credential
-/// that was issued elsewhere and carries nothing but its value.
-#[derive(Debug, Clone)]
+/// that was issued elsewhere and carries nothing but its value. `Debug` is
+/// written out, so a variant added later has to say how it prints.
+#[derive(Clone)]
 pub enum SourceCredential {
     OAuth(OAuthToken),
     /// The resolved value of a `kind = "token"` source's reference.
-    Issued(String),
+    Issued(Secret),
 }
 
 impl SourceCredential {
     /// The credential itself, as `kurama token` prints it and `kurama env`
     /// exports it.
-    pub fn value(&self) -> &str {
+    pub fn expose(&self) -> &str {
         match self {
             Self::OAuth(token) => &token.access_token,
-            Self::Issued(value) => value,
+            Self::Issued(value) => value.expose(),
+        }
+    }
+}
+
+impl std::fmt::Debug for SourceCredential {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::OAuth(token) => f.debug_tuple("OAuth").field(token).finish(),
+            Self::Issued(value) => f.debug_tuple("Issued").field(value).finish(),
         }
     }
 }
@@ -222,10 +232,22 @@ mod tests {
     #[test]
     fn a_credential_is_the_token_or_the_issued_value() {
         assert_eq!(
-            SourceCredential::OAuth(OAuthToken::bearer("at")).value(),
+            SourceCredential::OAuth(OAuthToken::bearer("at")).expose(),
             "at"
         );
-        assert_eq!(SourceCredential::Issued("key".into()).value(), "key");
+        assert_eq!(SourceCredential::Issued("key".into()).expose(), "key");
+    }
+
+    #[test]
+    fn debug_prints_neither_kind_of_credential() {
+        for credential in [
+            SourceCredential::OAuth(OAuthToken::bearer("oauth-s3cret")),
+            SourceCredential::Issued("issued-s3cret".into()),
+        ] {
+            let printed = format!("{credential:?}");
+            assert!(!printed.contains("s3cret"), "{printed}");
+            assert!(printed.contains("REDACTED"), "{printed}");
+        }
     }
 
     #[rstest::rstest]

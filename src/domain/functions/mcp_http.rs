@@ -6,25 +6,24 @@
 //! Only JSON responses and no session: the part of the transport cloud
 //! clients use.
 
-use serde_json::{Value, json};
-use zeroize::{Zeroize, ZeroizeOnDrop};
-
 use super::mcp::{Incoming, PROTOCOL_VERSIONS, read_value};
+use crate::domain::types::Secret;
 use crate::domain::types::limits::MCP_HTTP;
+use serde_json::{Value, json};
 
 /// The one path the endpoint answers on.
 pub const ENDPOINT: &str = "/mcp";
 
 /// The fixed token a client sends in `Authorization`, redacted in `Debug`
-/// and zeroized on drop.
-#[derive(Clone, Zeroize, ZeroizeOnDrop)]
-pub struct McpToken(String);
+/// and zeroized on drop by the `Secret` it holds.
+#[derive(Clone)]
+pub struct McpToken(Secret);
 
 impl McpToken {
     /// The token, or `None` when it is empty: an empty token would admit an
     /// empty `Authorization` and `Bearer ` alike.
-    pub fn new(token: String) -> Option<Self> {
-        (!token.is_empty()).then_some(Self(token))
+    pub fn new(token: Secret) -> Option<Self> {
+        (!token.expose().is_empty()).then_some(Self(token))
     }
 }
 
@@ -172,7 +171,7 @@ fn token_matches(header: &str, token: &McpToken) -> bool {
         Some((scheme, rest)) if scheme.eq_ignore_ascii_case("bearer") => rest,
         _ => header,
     };
-    let (sent, expected) = (sent.as_bytes(), token.0.as_bytes());
+    let (sent, expected) = (sent.as_bytes(), token.0.expose().as_bytes());
     if sent.len() != expected.len() {
         return false;
     }
@@ -189,7 +188,7 @@ mod tests {
     const TOKEN: &str = "s3cr3t-token-of-the-test";
 
     fn token() -> McpToken {
-        McpToken::new(TOKEN.to_owned()).expect("a token")
+        McpToken::new(Secret::new(TOKEN)).expect("a token")
     }
 
     fn headers(pairs: &[(&str, &str)]) -> Vec<(String, String)> {
@@ -322,7 +321,7 @@ mod tests {
 
     #[test]
     fn an_empty_token_is_no_token() {
-        assert!(McpToken::new(String::new()).is_none());
+        assert!(McpToken::new(Secret::new("")).is_none());
     }
 
     #[test]

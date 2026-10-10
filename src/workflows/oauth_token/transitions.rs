@@ -9,7 +9,7 @@ use crate::domain::functions::oauth::{
     is_token_usable, parse_callback_query, parse_device_authorization, parse_discovery,
     parse_token_response, pkce_challenge, token_request_form,
 };
-use crate::domain::types::{EndpointSource, GrantType, OAuthEndpoints, OAuthToken};
+use crate::domain::types::{EndpointSource, GrantType, OAuthEndpoints, OAuthToken, Secret};
 use crate::workflows::common::LogLevel;
 
 /// Seconds added to the polling interval on `slow_down` (RFC 8628 section 3.5).
@@ -460,6 +460,6 @@ fn token_failed(context: &str, error: TokenError) -> (TokenState, Vec<TokenEffec
 fn client_auth(session: &Session) -> ClientAuth<'_> {
     ClientAuth {
         client_id: &session.input.client.client_id,
-        client_secret: session.secret.as_deref(),
+        client_secret: session.secret.as_ref().map(Secret::expose),
     }
 }

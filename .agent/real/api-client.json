@@ -3,9 +3,9 @@
   "feature": "api-client",
   "status": "verified",
   "reason": null,
-  "commit": "f25350f48a14513d94b3e46e7710d6fb399b16c6",
-  "feature_hash": "5255a40f5671dcf4",
-  "diff_hash": "cbf29ce484222325",
+  "commit": "43baf0884ce7e3229162abfb08b9b900776ab755",
+  "feature_hash": "48ea08a2025a2925",
+  "diff_hash": "1a13321b75215167",
   "environment": "real-services",
   "access": "read-only",
   "command": [
@@ -16,7 +16,7 @@
     "real",
     "api-client"
   ],
-  "generated_at": "2026-09-27T08:30:36.187913+00:00",
+  "generated_at": "2026-10-10T18:26:03.544286+00:00",
   "observed": [
     {
       "test": "api_real_github_header_reaches_the_server",

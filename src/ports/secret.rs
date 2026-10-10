@@ -6,7 +6,7 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 
-use crate::domain::types::{AwsSecretStore, SecretFailure, SecretRef};
+use crate::domain::types::{AwsSecretStore, Secret, SecretFailure, SecretRef};
 
 /// A secret that could not be read. One type with a typed `failure`, because
 /// every caller wants the same two things out of it -- what to print and what
@@ -86,5 +86,5 @@ impl SecretError {
 #[cfg_attr(test, mockall::automock)]
 #[async_trait]
 pub trait SecretResolver: Send + Sync {
-    async fn resolve(&self, secret: &SecretRef) -> Result<String, SecretError>;
+    async fn resolve(&self, secret: &SecretRef) -> Result<Secret, SecretError>;
 }

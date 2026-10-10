@@ -169,7 +169,9 @@ pub async fn open_target(
         Arc::clone(&roles) as Arc<dyn AwsProfileCredentials>,
     );
     let username = match secrets.resolve(&database.username).await {
-        Ok(username) => username,
+        // A user name is who connects, not a credential: the IAM token is
+        // signed for it and a refusal names it.
+        Ok(username) => username.expose().to_owned(),
         Err(error) => return close_and_fail(tunnel, error.into()).await,
     };
     // A token is signed for the database's own host and port even behind a

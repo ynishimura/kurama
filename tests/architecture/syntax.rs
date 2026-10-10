@@ -154,6 +154,7 @@ struct Reader {
     spawns: Vec<usize>,
     flattened: Vec<usize>,
     calls: Vec<(String, usize)>,
+    debug_derived: Vec<(String, usize)>,
 }
 
 impl Reader {
@@ -193,6 +194,22 @@ impl<'ast> Visit<'ast> for Reader {
         if !is_test_only(&item.attrs) {
             syn::visit::visit_impl_item_fn(self, item);
         }
+    }
+
+    fn visit_item_struct(&mut self, item: &'ast syn::ItemStruct) {
+        if derives_debug(&item.attrs) {
+            self.debug_derived
+                .push((item.ident.to_string(), item.ident.span().start().line));
+        }
+        syn::visit::visit_item_struct(self, item);
+    }
+
+    fn visit_item_enum(&mut self, item: &'ast syn::ItemEnum) {
+        if derives_debug(&item.attrs) {
+            self.debug_derived
+                .push((item.ident.to_string(), item.ident.span().start().line));
+        }
+        syn::visit::visit_item_enum(self, item);
     }
 
     fn visit_item_use(&mut self, item: &'ast syn::ItemUse) {
@@ -256,6 +273,23 @@ impl<'ast> Visit<'ast> for Reader {
     }
 }
 
+/// Whether `#[derive(..)]`, or a `#[cfg_attr(.., derive(..))]`, names
+/// `Debug` by itself or as the last segment of a path (`std::fmt::Debug`).
+fn derives_debug(attributes: &[syn::Attribute]) -> bool {
+    fn names_debug(tokens: TokenStream) -> bool {
+        tokens.into_iter().any(|token| match token {
+            TokenTree::Ident(ident) => ident == "Debug",
+            TokenTree::Group(group) => names_debug(group.stream()),
+            _ => false,
+        })
+    }
+    attributes.iter().any(|attribute| {
+        let path = attribute.path();
+        (path.is_ident("derive") || path.is_ident("cfg_attr"))
+            && matches!(&attribute.meta, syn::Meta::List(list) if names_debug(list.tokens.clone()))
+    })
+}
+
 /// `|e| X(e.to_string())`: a constructor whose only argument is the text of
 /// the closure's error. A tuple that keeps a typed kind next to the text, or
 /// a `format!`, is not it.
@@ -304,6 +338,8 @@ pub(crate) struct Reading {
     pub(crate) flattened: Vec<usize>,
     /// The last segment of every function a call names, with its line.
     pub(crate) calls: Vec<(String, usize)>,
+    /// Every struct and enum that derives `Debug`, with the line of its name.
+    pub(crate) debug_derived: Vec<(String, usize)>,
 }
 
 pub(crate) fn read_source(source: &str) -> Reading {
@@ -315,6 +351,7 @@ pub(crate) fn read_source(source: &str) -> Reading {
         spawns: reader.spawns,
         flattened: reader.flattened,
         calls: reader.calls,
+        debug_derived: reader.debug_derived,
     }
 }
 
