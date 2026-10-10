@@ -210,6 +210,15 @@ pub async fn execute_assume_role(
                     }
                 }
                 AssumeRoleEffect::WaitForNextTotpWindow => wait_for_next_totp_window().await,
+                AssumeRoleEffect::ReadProfileKeys => {
+                    effect_event = Some(match runtime.sts.read_signing_keys().await {
+                        Ok(credentials) => AssumeRoleEvent::ProfileKeysRead { credentials },
+                        Err(error) => AssumeRoleEvent::ProfileKeysFailed {
+                            kind: sts_error_kind(&error),
+                            error: error.to_string(),
+                        },
+                    });
+                }
                 AssumeRoleEffect::AssumeRole { request } => {
                     effect_event = Some(match runtime.sts.assume_role(request).await {
                         Ok(response) => AssumeRoleEvent::AssumeRoleSucceeded {
@@ -349,6 +358,12 @@ mod tests {
             _request: AssumeRoleRequest,
         ) -> Result<StsCredentials, StsError> {
             self.response.clone()
+        }
+
+        async fn read_signing_keys(&self) -> Result<Credentials, StsError> {
+            Err(StsError::ServiceError(
+                "Unexpected read of the signing keys".into(),
+            ))
         }
     }
 
@@ -531,7 +546,32 @@ mod tests {
         };
 
         let output = execute_assume_role(&runtime, input).await.unwrap();
-        assert_eq!(output.session_name, "claude-test");
+        assert_eq!(output.session_name.as_deref(), Some("claude-test"));
+    }
+
+    /// A profile without `role_arn` and without MFA hands out the keys its
+    /// STS client signs with, and sends STS nothing.
+    #[tokio::test]
+    async fn an_iam_user_profile_uses_the_signing_keys_without_any_sts_call() {
+        let mut sts = crate::ports::sts::MockStsOperations::new();
+        sts.expect_read_signing_keys().times(1).returning(|| {
+            Ok(Credentials::new(
+                "AKIAUSER".into(),
+                "user-secret".into(),
+                None,
+                None,
+            ))
+        });
+        sts.expect_assume_role().never();
+        sts.expect_get_session_token().never();
+        let runtime = Runtime::test(sts, crate::ports::mfa::MockMfaProvider::new());
+
+        let output = assume_role_for_profile(&runtime, Profile::new("uploader"), false, None)
+            .await
+            .unwrap();
+        assert_eq!(output.credentials.access_key_id(), "AKIAUSER");
+        assert_eq!(output.credentials.session_token(), None);
+        assert_eq!(output.session_name, None);
     }
 }
 

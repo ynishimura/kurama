@@ -1,0 +1,55 @@
+# `exec` on a profile without role_arn and without mfa_serial gives the
+# command the IAM user's long-term keys from the 1Password item
+# `[onepassword.mappings]` names for the profile, and no session token -- not
+# even the stale one the calling shell held -- without any STS call.
+id = "assume_role_iam_user_exec_runs_the_command_with_the_mapped_long_term_keys"
+feature = "assume-role"
+
+[combination]
+command = "exec"
+source = "aws-profile"
+role = "iam-user"
+mfa = "none"
+onepassword = "enabled"
+
+[input]
+args = ["exec", "uploader", "--", "/bin/sh", "-c", "printf '%s %s %s %s\\n' \"$AWS_ACCESS_KEY_ID\" \"$AWS_SECRET_ACCESS_KEY\" \"${AWS_SESSION_TOKEN:-no-session-token}\" \"$AWS_REGION\""]
+env = { AWS_SESSION_TOKEN = "stale-session-token" }
+aws_config = """
+[default]
+region = us-east-1
+
+[profile uploader]
+region = ap-northeast-1
+"""
+config = """
+[onepassword.mappings]
+uploader = "uploader-keys"
+"""
+
+[fakes]
+op = "enabled"
+
+[expect]
+exit_code = 0
+sts_actions = []
+op_calls_containing = { "item get uploader-keys --format json" = 1, "--otp" = 0 }
+stdout = { equals = "{op_access_key} op-source-secret no-session-token ap-northeast-1\n" }
+no_files_written = true
+
+# Against AWS: the person's `default` profile has no role_arn and its keys
+# are the 1Password item `[onepassword]` names, so the command STS answers
+# is that IAM user's own identity, read-only.
+[real]
+requires = ["profile:default", "keychain:OP_SERVICE_ACCOUNT_TOKEN"]
+args = ["exec", "default", "--", "aws", "sts", "get-caller-identity", "--query", "Arn", "--output", "text"]
+config = ""
+
+[real.combination]
+target = "aws-iam-user"
+mfa = "none"
+
+[real.expect]
+exit_code = 0
+stdout = { contains = [":user/"] }
+stdout_excludes = ["assumed-role"]

@@ -11,6 +11,9 @@ scenarios = [
   "oauth_secrets_kind_exec_sets_every_variable",
   "oauth_secrets_kind_unavailable_secret_exits_3_before_the_command_runs",
   "oauth_token_kind_sends_the_configured_header",
+  "assume_role_iam_user_with_mfa_reuses_the_cached_session",
+  "agent_policy_exec_on_an_iam_user_needs_confirm",
+  "assume_role_iam_user_exec_runs_the_command_with_the_mapped_long_term_keys",
 ]
 depends_on = ["assume-role", "oauth", "agent-policy", "audit"]
 notes = "Signals reach the command directly because kurama replaces itself; Ctrl-C handling is not scenario-tested (no TTY)"

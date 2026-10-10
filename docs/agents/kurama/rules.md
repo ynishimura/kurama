@@ -79,8 +79,9 @@
   `deny_paths` pattern matches and, when `allow_paths` is set, one of its
   patterns does (`*` is any run of characters; the query is never matched);
   `[api.<name>.agent]` replaces those keys for one API. `exec` on an AWS
-  profile attaches ReadOnlyAccess (`exec_readonly`, default true), and
-  `db --commit` is refused whatever `allow_write` says. A refused call is
+  profile attaches ReadOnlyAccess (`exec_readonly`, default true); a profile
+  without `role_arn` (an IAM user) has no role session to attach it to, so
+  that `exec` is refused. `db --commit` is refused whatever `allow_write` says. A refused call is
   `AGENT_POLICY_DENIED` (exit code 3), decided before any credential is
   read, so nothing was sent. Ask the person; when they agree, rerun the same
   command with `--confirm` (`api`, `exec`, `db --commit`). Never add

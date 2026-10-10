@@ -73,6 +73,15 @@ Add `-r` / `--readonly` to `exec` or `env` on an AWS profile to attach the
 `ReadOnlyAccess` policy. `exec` replaces kurama with the command, so its exit
 code is the command's.
 
+A profile without `role_arn` is an IAM user (`"auth":"iam_user"` in
+`status --json`): `exec` / `env` hand out the keys it signs with (its
+`[onepassword]` / `[onepassword.mappings]` item, else its own entry in the
+shared credentials file) with no session token, or, with `mfa_serial`, the
+MFA session GetSessionToken gives them, cached like any other MFA session
+(`kurama login` gets it up front). Nothing narrows an IAM user's keys, so
+`--readonly` on it is `PROFILE_INVALID` and `console` is `KIND_UNSUPPORTED`,
+both before any credential is read.
+
 The home screen and API explorer also require `TERM` other than `dumb`;
 otherwise they exit 2 with a hint. `status`, `api --ops`, `--describe`, `--schema`, `--skill` and
 explicit API targets work without the TUI. A nonempty `NO_COLOR` disables

@@ -27,11 +27,13 @@ use crate::adapters::config::Config;
 use crate::adapters::env_script::output_shell_script;
 use crate::console::progress;
 use crate::domain::OutputFormat;
+use crate::domain::Profile;
 use crate::domain::functions::export::{
     auth_env_vars, generate_auth_export_script, token_env_vars,
 };
 use crate::domain::types::AuthSource;
-use crate::shell::agent_policy::exec_is_read_only;
+use crate::domain::types::ProfileAuth;
+use crate::shell::agent_policy::{AgentPolicyDenied, exec_is_read_only};
 use crate::shell::api_runtime::ApiRuntimeOptions;
 use crate::shell::cli::effects::ProfileEffect;
 use crate::shell::cli::executor::{CliExecutorError, exec_command, execute_profile_effects};
@@ -121,18 +123,44 @@ pub fn plan_profile_command(config: &ProfileCommandConfig) -> Vec<ProfileEffect>
 }
 
 /// `exec` of an agent's run attaches ReadOnlyAccess unless `[agent]
-/// exec_readonly = false` or `--confirm` says a person agreed.
+/// exec_readonly = false` or `--confirm` says a person agreed. A profile
+/// with no `role_arn` has no role session to attach it to, so that `exec` is
+/// refused rather than handing the agent the IAM user's own permissions.
 pub fn apply_agent_policy(
     mut config: ProfileCommandConfig,
     app_config: &Config,
     agent_run: bool,
-) -> ProfileCommandConfig {
+    profile: &Profile,
+) -> Result<ProfileCommandConfig, AgentPolicyDenied> {
     if matches!(config.action, ProfileAction::Exec(_))
         && exec_is_read_only(app_config, agent_run, config.confirm)
     {
+        if !profile.can_assume_role() {
+            return Err(AgentPolicyDenied(format!(
+                "exec on '{}': the profile has no role_arn, so ReadOnlyAccess cannot narrow the IAM user's own permissions",
+                profile.name()
+            )));
+        }
         config.readonly = true;
     }
-    config
+    Ok(config)
+}
+
+/// What a profile with no `role_arn` (an IAM user) cannot do, refused
+/// before any credential is read: the console sign-in takes a role session,
+/// which an IAM user's keys and MFA session are not.
+pub fn check_iam_user_profile(
+    config: &ProfileCommandConfig,
+    profile: &Profile,
+) -> Result<(), CliExecutorError> {
+    if !profile.can_assume_role() && config.action == ProfileAction::OpenConsole {
+        return Err(CliExecutorError::KindUnsupported {
+            name: profile.name().to_string(),
+            kind: ProfileAuth::IamUser.as_str(),
+            verb: "console",
+        });
+    }
+    Ok(())
 }
 
 /// Plan and execute `env` / `exec` / `console` on an AWS profile.
@@ -214,23 +242,69 @@ mod tests {
         }
     }
 
+    fn role() -> Profile {
+        Profile::new("dev").with_role_arn_raw("arn:aws:iam::123456789012:role/Dev")
+    }
+
     /// An agent's `exec` is read-only unless a person confirmed it or the
     /// configuration says otherwise; `env` and a person's run are untouched.
     #[test]
     fn an_agents_exec_attaches_read_only_access_unless_confirmed() {
         let exec = || ProfileAction::Exec(vec!["true".into()]);
         let defaults = Config::default();
-        assert!(apply_agent_policy(config(exec(), false), &defaults, true).readonly);
-        assert!(!apply_agent_policy(config(exec(), false), &defaults, false).readonly);
+        let applied = |config: ProfileCommandConfig, app: &Config, agent: bool| {
+            apply_agent_policy(config, app, agent, &role())
+                .unwrap()
+                .readonly
+        };
+        assert!(applied(config(exec(), false), &defaults, true));
+        assert!(!applied(config(exec(), false), &defaults, false));
         let confirmed = ProfileCommandConfig {
             confirm: true,
             ..config(exec(), false)
         };
-        assert!(!apply_agent_policy(confirmed, &defaults, true).readonly);
+        assert!(!applied(confirmed, &defaults, true));
         let env = config(ProfileAction::Export(OutputFormat::Shell), false);
-        assert!(!apply_agent_policy(env, &defaults, true).readonly);
+        assert!(!applied(env, &defaults, true));
         let off = Config::parse("[agent]\nexec_readonly = false\n").unwrap();
-        assert!(!apply_agent_policy(config(exec(), false), &off, true).readonly);
+        assert!(!applied(config(exec(), false), &off, true));
+    }
+
+    /// On an IAM user profile the read-only `exec` an agent would get cannot
+    /// be had, so it is refused; a confirmed run, a person's and `env` pass.
+    #[test]
+    fn an_agents_exec_on_an_iam_user_profile_needs_a_confirmation() {
+        let exec = || ProfileAction::Exec(vec!["true".into()]);
+        let user = Profile::new("uploader");
+        let defaults = Config::default();
+        let error = apply_agent_policy(config(exec(), false), &defaults, true, &user).unwrap_err();
+        assert!(error.0.contains("'uploader'"), "{error}");
+        assert!(error.0.contains("no role_arn"), "{error}");
+        let confirmed = ProfileCommandConfig {
+            confirm: true,
+            ..config(exec(), false)
+        };
+        let passed = apply_agent_policy(confirmed, &defaults, true, &user).unwrap();
+        assert!(!passed.readonly);
+        assert!(apply_agent_policy(config(exec(), false), &defaults, false, &user).is_ok());
+        let env = config(ProfileAction::Export(OutputFormat::Shell), false);
+        assert!(apply_agent_policy(env, &defaults, true, &user).is_ok());
+    }
+
+    #[test]
+    fn the_console_needs_a_role() {
+        let console = config(ProfileAction::OpenConsole, false);
+        assert!(matches!(
+            check_iam_user_profile(&console, &Profile::new("uploader")),
+            Err(CliExecutorError::KindUnsupported {
+                kind: "iam_user",
+                verb: "console",
+                ..
+            })
+        ));
+        assert!(check_iam_user_profile(&console, &role()).is_ok());
+        let exec = config(ProfileAction::Exec(vec!["true".into()]), false);
+        assert!(check_iam_user_profile(&exec, &Profile::new("uploader")).is_ok());
     }
 
     fn position(effects: &[ProfileEffect], wanted: fn(&ProfileEffect) -> bool) -> usize {

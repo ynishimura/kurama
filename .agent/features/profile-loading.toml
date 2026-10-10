@@ -7,7 +7,10 @@ files = [
   "src/adapters/profile/",
 ]
 tests = ["profile"]
-scenarios = []
+scenarios = [
+  "assume_role_iam_user_env_exports_its_long_term_keys",
+  "status_reports_a_profile_without_role_as_an_iam_user",
+]
 depends_on = ["assume-role", "config"]
 
 [profile-loading.real]

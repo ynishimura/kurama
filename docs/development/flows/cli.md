@@ -8,6 +8,13 @@ CLI flow: `src/shell/cli/args.rs` (clap) -> `parser.rs` (`CliCommand`) ->
 (the only AssumeRole interpreter; the TUI calls it too) -> `src/adapters/*`.
 Inherited `AWS_*` credentials are cleared at the SDK boundary, in
 `src/adapters/aws/config_builder.rs`.
+A profile without `role_arn` (`ProfileAuth::IamUser`) goes through the same
+workflow and ends before AssumeRole: with `mfa_serial` its MFA session (cached
+or fresh) is the credential, without it `ReadProfileKeys` reads the keys the
+STS client signs with (`StsOperations::read_signing_keys`, no request).
+`dispatch.rs` refuses what needs a role first: an agent's read-only `exec`
+(`apply_agent_policy`) and `console` (`check_iam_user_profile`); the workflow
+refuses `--readonly`.
 `kurama login` on an AWS profile runs `src/workflows/mfa_login` through
 `src/shell/mfa_login_executor.rs`, which shares the GetSessionToken and
 TOTP-window helpers of `src/shell/executor.rs`.

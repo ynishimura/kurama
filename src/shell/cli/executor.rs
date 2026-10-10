@@ -156,7 +156,7 @@ async fn execute_single_profile_effect(
             .await?;
 
             ctx.credentials = Some(output.credentials);
-            ctx.session_name = Some(output.session_name);
+            ctx.session_name = output.session_name;
             ctx.readonly = readonly;
             debug!("AssumeRole succeeded for profile: {}", output.profile_name);
         }

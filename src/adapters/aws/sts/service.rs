@@ -65,6 +65,9 @@ where
 /// Simple AWS STS service wrapper
 pub struct StsService {
     client: StsClient,
+    /// The provider the client signs with, kept to hand its keys out: the
+    /// STS client's own configuration does not give it back.
+    keys: Option<aws_credential_types::provider::SharedCredentialsProvider>,
 }
 
 impl StsService {
@@ -72,7 +75,9 @@ impl StsService {
     /// 1Password credentials provider for it when the configuration enables
     /// it, and otherwise its `source_profile`, whose keys and region sign.
     /// The selected profile itself is not handed to the SDK without 1Password:
-    /// the SDK would assume its role on its own before kurama does.
+    /// the SDK would assume its role on its own before kurama does. A
+    /// profile with no `role_arn` (an IAM user) has no role for the SDK to
+    /// assume, so its own keys sign.
     pub async fn from_config(kurama_config: &Config, profile: &Profile) -> Self {
         let mut builder = AwsConfigBuilder::new();
         if kurama_config.onepassword.enabled {
@@ -81,6 +86,8 @@ impl StsService {
                 .with_profile(profile.name());
         } else if let Some(source) = profile.source_profile() {
             builder = builder.with_profile(source);
+        } else if !profile.can_assume_role() {
+            builder = builder.with_profile(profile.name());
         }
         let config = builder.build().await;
         debug!(
@@ -91,6 +98,7 @@ impl StsService {
         );
         Self {
             client: StsClient::new(&config),
+            keys: config.credentials_provider(),
         }
     }
 
@@ -218,6 +226,7 @@ impl StsOperations for StsService {
                         .credentials_provider(credentials)
                         .build(),
                 ),
+                keys: None,
             }
         });
         let (serial, token) = if session_service.is_some() {
@@ -240,6 +249,25 @@ impl StsOperations for StsService {
             .map_err(|e| self.map_core_error_to_sts_error(e))?;
 
         Ok(convert_credentials(&credentials))
+    }
+
+    async fn read_signing_keys(&self) -> Result<crate::domain::Credentials, StsError> {
+        use aws_credential_types::provider::ProvideCredentials;
+        let provider = self.keys.as_ref().ok_or_else(|| {
+            StsError::ServiceError("no AWS credentials are configured for the profile".into())
+        })?;
+        let keys = provider.provide_credentials().await.map_err(|error| {
+            StsError::ServiceError(format!(
+                "the profile's AWS credentials could not be read: {}",
+                aws_sdk_sts::error::DisplayErrorContext(&error)
+            ))
+        })?;
+        Ok(crate::domain::Credentials::new(
+            keys.access_key_id().to_string(),
+            keys.secret_access_key().to_string(),
+            keys.session_token().map(str::to_string),
+            keys.expiry().map(chrono::DateTime::<chrono::Utc>::from),
+        ))
     }
 }
 

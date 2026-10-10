@@ -1,0 +1,50 @@
+# A profile without role_arn is reported as an IAM user: `"auth":
+# "iam_user"` with `role_arn` null in `status --json` (a role profile says
+# `"role"`), `iam user (no role_arn)` in the table, and in `status --ready` a
+# reason that names the IAM user's keys; with mfa_serial, no cached session
+# and no 1Password, it needs a person (`kurama login`). Nothing is called.
+id = "status_reports_a_profile_without_role_as_an_iam_user"
+feature = "status"
+
+[combination]
+command = "status"
+output = "json"
+role = "iam-user"
+
+[input]
+args = ["status", "--json"]
+then_run = [["status", "--ready", "--json"], ["status"]]
+aws_config = """
+[default]
+region = us-east-1
+
+[profile dev]
+role_arn = arn:aws:iam::123456789012:role/Dev
+source_profile = default
+region = ap-northeast-1
+
+[profile uploader-mfa]
+mfa_serial = arn:aws:iam::123456789012:mfa/uploader
+region = ap-northeast-1
+"""
+
+[fakes]
+session_cache = true
+
+[expect]
+exit_code = 0
+sts_actions = []
+op_calls = 0
+no_files_written = true
+
+[[expect.runs]]
+run = 0
+stdout_json = { "/0/name" = "default", "/0/auth" = "iam_user", "/0/role_arn" = "<null>", "/0/needs_human" = false, "/1/name" = "dev", "/1/auth" = "role", "/2/name" = "uploader-mfa", "/2/auth" = "iam_user", "/2/role_arn" = "<null>", "/2/mfa_serial" = "arn:aws:iam::123456789012:mfa/uploader", "/2/session" = "missing", "/2/needs_human" = true, "/3" = "<null>" }
+
+[[expect.runs]]
+run = 1
+stdout_json = { "/sources/0/name" = "default", "/sources/0/state" = "ready", "/sources/0/reason" = "no MFA: the IAM user's long-term keys are used as they are", "/sources/1/name" = "dev", "/sources/1/reason" = "no MFA: the role is assumed as is", "/sources/2/name" = "uploader-mfa", "/sources/2/state" = "needs_human", "/sources/2/next_actions" = ["kurama login uploader-mfa"] }
+
+[[expect.runs]]
+run = 2
+stdout = { line_containing = [["aws", "default", "iam user (no role_arn)"], ["aws", "uploader-mfa", "none", "iam user (no role_arn)"]] }

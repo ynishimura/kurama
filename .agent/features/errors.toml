@@ -30,7 +30,7 @@ scenarios = [
   "console_federation_failure_exits_4_without_opening_a_browser",
   "console_federation_browser_open_failure_is_reported",
   "session_cache_unreadable_on_logout_exits_3_with_hint",
-  "profile_loading_without_role_arn_exits_2_with_error_code",
+  "assume_role_iam_user_readonly_exits_2_without_any_call",
   "kind_unsupported_verbs_exit_2",
   "oauth_without_terminal_exits_3_with_login_hint",
   "oauth_rejected_grant_exits_4",

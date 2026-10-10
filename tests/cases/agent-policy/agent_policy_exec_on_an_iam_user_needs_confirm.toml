@@ -1,0 +1,51 @@
+# An agent's `exec` gets ReadOnlyAccess on a role session ([agent]
+# exec_readonly), which a profile without role_arn cannot give: the IAM
+# user's keys would carry its full permissions, so the run is refused as
+# AGENT_POLICY_DENIED (exit 3) before 1Password or STS is asked. `--confirm`
+# says a person agreed and runs the command with the keys; the audit log
+# records both runs like any other profile's.
+id = "agent_policy_exec_on_an_iam_user_needs_confirm"
+feature = "agent-policy"
+
+[combination]
+command = "exec"
+source = "aws-profile"
+role = "iam-user"
+agent = "exec-readonly"
+
+[input]
+args = ["exec", "uploader", "--", "/bin/sh", "-c", "printf '%s\\n' \"$AWS_ACCESS_KEY_ID\""]
+then_run = [
+  ["exec", "uploader", "--confirm", "--", "/bin/sh", "-c", "printf '%s\\n' \"$AWS_ACCESS_KEY_ID\""],
+  ["audit", "--json"],
+]
+env = { KURAMA_AGENT = "1" }
+aws_config = """
+[default]
+region = us-east-1
+
+[profile uploader]
+region = ap-northeast-1
+"""
+
+[fakes]
+op = "enabled"
+
+[expect]
+exit_code = 0
+sts_actions = []
+files_written = ["home/.local/state/kurama/audit.jsonl"]
+stdout_json = { "/entries" = { length = 2 }, "/entries/0/command" = "exec", "/entries/0/target" = "uploader", "/entries/0/exit_code" = 3, "/entries/0/error_code" = "AGENT_POLICY_DENIED", "/entries/1/command" = "exec", "/entries/1/target" = "uploader", "/entries/1/program" = "/bin/sh", "/entries/1/exit_code" = "<null>" }
+
+[[expect.runs]]
+run = 0
+error = { code = "AGENT_POLICY_DENIED", exit = 3 }
+op_calls = 0
+stdout = "empty"
+stderr_contains = ["exec on 'uploader': the profile has no role_arn", "hint: ask a person"]
+
+[[expect.runs]]
+run = 1
+exit_code = 0
+stdout = { equals = "{op_access_key}\n" }
+stderr_excludes = ["# Running in readonly mode"]

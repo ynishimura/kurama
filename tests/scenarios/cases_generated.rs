@@ -83,6 +83,14 @@ fn agent_policy_exec_attaches_read_only_access() {
 }
 #[test]
 #[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn agent_policy_exec_on_an_iam_user_needs_confirm() {
+    crate::support::cases::run_case(
+        include_str!("../cases/agent-policy/agent_policy_exec_on_an_iam_user_needs_confirm.toml"),
+        "tests/cases/agent-policy/agent_policy_exec_on_an_iam_user_needs_confirm.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
 fn agent_policy_refuses_a_write_before_any_call() {
     crate::support::cases::run_case(
         include_str!("../cases/agent-policy/agent_policy_refuses_a_write_before_any_call.toml"),
@@ -955,6 +963,38 @@ fn api_without_openapi_refuses_ops_and_operation_targets() {
 }
 #[test]
 #[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn assume_role_iam_user_env_exports_its_long_term_keys() {
+    crate::support::cases::run_case(
+        include_str!("../cases/assume-role/assume_role_iam_user_env_exports_its_long_term_keys.toml"),
+        "tests/cases/assume-role/assume_role_iam_user_env_exports_its_long_term_keys.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn assume_role_iam_user_exec_runs_the_command_with_the_mapped_long_term_keys() {
+    crate::support::cases::run_case(
+        include_str!("../cases/assume-role/assume_role_iam_user_exec_runs_the_command_with_the_mapped_long_term_keys.toml"),
+        "tests/cases/assume-role/assume_role_iam_user_exec_runs_the_command_with_the_mapped_long_term_keys.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn assume_role_iam_user_readonly_exits_2_without_any_call() {
+    crate::support::cases::run_case(
+        include_str!("../cases/assume-role/assume_role_iam_user_readonly_exits_2_without_any_call.toml"),
+        "tests/cases/assume-role/assume_role_iam_user_readonly_exits_2_without_any_call.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn assume_role_iam_user_with_mfa_reuses_the_cached_session() {
+    crate::support::cases::run_case(
+        include_str!("../cases/assume-role/assume_role_iam_user_with_mfa_reuses_the_cached_session.toml"),
+        "tests/cases/assume-role/assume_role_iam_user_with_mfa_reuses_the_cached_session.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
 fn assume_role_ignores_inherited_stale_credentials() {
     crate::support::cases::run_case(
         include_str!("../cases/assume-role/assume_role_ignores_inherited_stale_credentials.toml"),
@@ -1439,6 +1479,14 @@ fn console_federation_failure_exits_4_without_opening_a_browser() {
     crate::support::cases::run_case(
         include_str!("../cases/console-federation/console_federation_failure_exits_4_without_opening_a_browser.toml"),
         "tests/cases/console-federation/console_federation_failure_exits_4_without_opening_a_browser.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn console_federation_iam_user_is_kind_unsupported() {
+    crate::support::cases::run_case(
+        include_str!("../cases/console-federation/console_federation_iam_user_is_kind_unsupported.toml"),
+        "tests/cases/console-federation/console_federation_iam_user_is_kind_unsupported.toml",
     );
 }
 #[test]
@@ -3107,14 +3155,6 @@ fn profile_loading_unknown_profile_exits_2_with_hint() {
 }
 #[test]
 #[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
-fn profile_loading_without_role_arn_exits_2_with_error_code() {
-    crate::support::cases::run_case(
-        include_str!("../cases/profile-loading/profile_loading_without_role_arn_exits_2_with_error_code.toml"),
-        "tests/cases/profile-loading/profile_loading_without_role_arn_exits_2_with_error_code.toml",
-    );
-}
-#[test]
-#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
 fn s3_a_denied_list_buckets_still_opens_a_known_bucket() {
     crate::support::cases::run_case(
         include_str!("../cases/s3-explorer/s3_a_denied_list_buckets_still_opens_a_known_bucket.toml"),
@@ -3567,6 +3607,14 @@ fn status_ready_reports_each_source_without_calling_anything() {
     crate::support::cases::run_case(
         include_str!("../cases/status/status_ready_reports_each_source_without_calling_anything.toml"),
         "tests/cases/status/status_ready_reports_each_source_without_calling_anything.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn status_reports_a_profile_without_role_as_an_iam_user() {
+    crate::support::cases::run_case(
+        include_str!("../cases/status/status_reports_a_profile_without_role_as_an_iam_user.toml"),
+        "tests/cases/status/status_reports_a_profile_without_role_as_an_iam_user.toml",
     );
 }
 #[test]

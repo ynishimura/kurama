@@ -312,7 +312,10 @@ pub fn render_status_table(rows: &[StatusRow], now: DateTime<Utc>) -> String {
                         kind.clone(),
                         status.name.clone(),
                         describe_session(&status.session, now),
-                        status.role_arn.clone().unwrap_or_else(|| "-".to_string()),
+                        status
+                            .role_arn
+                            .clone()
+                            .unwrap_or_else(|| "iam user (no role_arn)".to_string()),
                     ],
                 ),
                 StatusRow::Auth(status) => (
@@ -473,6 +476,7 @@ pub fn render_status_json(rows: &[StatusRow]) -> String {
                     "name": status.name,
                     "kind": kind,
                     "active": status.active,
+                    "auth": status.auth().as_str(),
                     "role_arn": status.role_arn,
                     "region": status.region,
                     "mfa_serial": status.mfa_serial,
@@ -736,7 +740,7 @@ mod tests {
             "  KIND  PROFILE  SESSION         DETAIL\n\
              \x20 aws   dev      -               arn:aws:iam::123456789012:role/Dev\n\
              * aws   ops-mfa  valid (1h 30m)  arn:aws:iam::123456789012:role/Ops\n\
-             \x20 aws   default  -               -\n"
+             \x20 aws   default  -               iam user (no role_arn)\n"
         );
     }
 
@@ -844,6 +848,8 @@ mod tests {
         assert_eq!(json[0]["logged_in"], false);
         assert!(json[0]["expires_at"].is_null());
         assert!(json[2]["role_arn"].is_null());
+        assert_eq!(json[0]["auth"], "role");
+        assert_eq!(json[2]["auth"], "iam_user");
     }
 
     #[test]

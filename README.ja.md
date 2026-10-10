@@ -139,13 +139,13 @@ kurama data 's3://my-bucket/orders/2026-08.parquet' --aws-profile ops --query 'S
 kurama をインストールしてシェル連携を有効にし、既存の AWS ロールのプロファイルを 1 つ選びます。以下の例では `dev` という名前のプロファイルを使います。API から始めたい場合は [`kurama preset`](#設定) を参照してください。
 
 ### 動作環境
-<!-- en: 47a4d9c34a66 -->
+<!-- en: 4030bd13853c -->
 
 kurama は macOS と zsh（macOS の既定のシェル）を対象にしています。MFA セッションキャッシュと OAuth トークンの保存先は、ログインキーチェーンです。
 
 Linux（`x86_64` と `aarch64`、glibc）でもビルドと実行ができます。ただし Linux にはキーチェーンがないため、MFA セッションと OAuth トークンは実行のたびに取得し直します。また 1Password のサービスアカウントトークンは `OP_SERVICE_ACCOUNT_TOKEN` から渡す必要があります。Linux 版は、実際に動かした記録による検証がまだありません。テストは macOS で実行しています。Windows と musl ターゲットには対応していません。ビルドすると、ターゲット名を示すメッセージを出して止まります。
 
-- `~/.aws/config` にある AWS ロールのプロファイルと、その元になる認証情報へのアクセス
+- `~/.aws/config` にある AWS ロールのプロファイルと、その元になる認証情報へのアクセス。または、自身のキーをそのまま認証情報とする IAM ユーザーのプロファイル（`role_arn` なし）
 - MFA が必要なプロファイルと `op://` シークレットのための [1Password CLI](https://developer.1password.com/docs/cli/)（`op`）。アイテムの用意は[設定](#設定)で説明します
 
 ### インストール
@@ -373,7 +373,7 @@ Enter を押すと、`kurama env` と同じように選択中のプロファイ�
 | <kbd>q</kbd> / <kbd>Ctrl-C</kbd> | 終了 |
 
 ## 設定
-<!-- en: 616c0b4ede82 -->
+<!-- en: 25c7dcc5f2b0 -->
 
 kurama は `~/.config/kurama/config.toml` を読みます。別のファイルを使うには `KURAMA_CONFIG_PATH` を設定します。キーはすべて省略できます。ファイルには次のセクションがあります。
 
@@ -528,6 +528,8 @@ aws_profile = "dev"            # exclusive with auth
 
 ロールのセッション期間は `~/.aws/config` の `duration_seconds` から取ります（ない場合は 3600 秒）。読み取り専用モードでは `arn:aws:iam::aws:policy/ReadOnlyAccess` を付与します。
 
+`role_arn` のないプロファイルは IAM ユーザーとして使います。AssumeRole はせず、そのプロファイルが署名に使う長期キー（`[onepassword]` / `[onepassword.mappings]` の 1Password アイテム、なければ `~/.aws/credentials` にあるそのプロファイル自身のエントリ）を、セッショントークンなしで `env` がエクスポートし、`exec` が渡します。`mfa_serial` があれば代わりに MFA セッション（1Password の TOTP で GetSessionToken）を取得し、ほかの MFA セッションと同じくキャッシュして再利用します。このようなプロファイルには絞り込む対象のロールセッションも、コンソールにサインインするためのロールセッションもないため、`--readonly` は拒否され（`PROFILE_INVALID`）、`console` も拒否されます（`KIND_UNSUPPORTED`）。`kurama status` では `"auth": "iam_user"` として表示されます。
+
 `issuer` は `auth_url` / `token_url` / `device_auth_url` の明示的な指定と同時には使えず、`auth` は `aws_profile` と同時には使えません。これらの URL と、ディスカバリードキュメントが示す各エンドポイントは、`https://` でなければなりません。`http://` は `localhost` かループバックアドレスに限って受け付けます。それ以外では、グラントの認証情報（クライアントシークレット、コード、リフレッシュトークン、デバイスコード）が平文でネットワークを流れてしまうためです。ソースが受け付けるキーは `kind` で決まり、もう一方の種類に属するキーは行番号付きで拒否されます。
 
 `kind = "token"` のソースには、グラントもトークンストアのエントリもありません。`kurama api` は呼び出しのたびに参照を読み、認証情報を送ります。送り方は、`header` に入れる（形は `format` で決まる）、`username` と組み合わせて HTTP Basic で送る、`query` パラメーターに入れる、の 3 通りです。401 の後に再試行はしません。このソースでは次のようになります。
@@ -547,7 +549,7 @@ aws_profile = "dev"            # exclusive with auth
 コマンドの環境変数は隔離境界ではありません。エージェントが実行するコマンドは、受け取った値を出力できます。kurama が防ぐのは、会話記録、シェル履歴、ファイルに値が残ることです。
 
 ### エージェント向けのガードレール（`[agent]`）
-<!-- en: 1028510ab395 -->
+<!-- en: c40c0381dd81 -->
 
 環境変数 `KURAMA_AGENT` が空でも `0` でもない値に設定された実行は、エージェントによる実行として扱われます。たとえばエージェント自身の設定で指定してください。エージェントの実行には `[agent]` ポリシーが適用され、人の実行には適用されません。拒否された呼び出しは、認証情報を読む前に `error[AGENT_POLICY_DENIED]`（終了コード 3）で終わります。人が `--confirm` を付ければ通せます。
 
@@ -567,7 +569,7 @@ base_url = "https://api.github.com"
 allow_methods = ["GET", "POST"]
 ```
 
-エージェントの実行では、`allow_write` の値にかかわらず `db --execute --commit` に `--confirm` が必要です。`--rollback` とすべての `--dry-run` には何も要りません。
+エージェントの実行では、`allow_write` の値にかかわらず `db --execute --commit` に `--confirm` が必要です。`--rollback` とすべての `--dry-run` には何も要りません。`role_arn` のないプロファイル（IAM ユーザー）への `exec` には ReadOnlyAccess を付けるロールセッションがないため、`exec_readonly` のもとでは拒否され、やはり `--confirm` が必要です。
 
 ### 監査ログ（`kurama audit`）
 <!-- en: 092ba54170ed -->

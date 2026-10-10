@@ -17,6 +17,7 @@ scenarios = [
   "mcp_lists_the_tools_and_calls_an_api",
   "audit_watch_without_a_terminal_exits_2_with_hint",
   "tui_activity_shows_audit_entries_as_they_are_appended",
+  "agent_policy_exec_on_an_iam_user_needs_confirm",
 ]
 depends_on = ["config", "cli-entry", "errors"]
 notes = "Recorded by default for a KURAMA_AGENT run only ([audit] enabled = true: every run, false: none). An exec entry is written before kurama replaces itself, so it has no exit code, and an exec that fails to start leaves none. db / data keep the SHA-256 of SQL written on the command line; a --file or --request statement leaves sql_sha256 empty. The harness holds every audit line of every scenario to a path without a query and to the fields AuditEntry names"

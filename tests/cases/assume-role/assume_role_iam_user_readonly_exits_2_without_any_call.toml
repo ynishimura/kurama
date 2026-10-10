@@ -1,0 +1,32 @@
+# `--readonly` attaches ReadOnlyAccess to a role session; an IAM user's
+# long-term keys take no session policy, so a profile without role_arn
+# refuses it as PROFILE_INVALID (exit 2) before 1Password or STS is asked.
+id = "assume_role_iam_user_readonly_exits_2_without_any_call"
+feature = "assume-role"
+
+[combination]
+command = "env"
+source = "aws-profile"
+role = "iam-user"
+readonly = "on"
+
+[input]
+args = ["env", "uploader", "--readonly"]
+aws_config = """
+[default]
+region = us-east-1
+
+[profile uploader]
+region = ap-northeast-1
+"""
+
+[fakes]
+op = "enabled"
+
+[expect]
+error = { code = "PROFILE_INVALID", exit = 2 }
+sts_actions = []
+op_calls = 0
+stdout = "empty"
+stderr_contains = ["profile 'uploader' has no role_arn"]
+no_files_written = true
