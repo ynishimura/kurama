@@ -26,22 +26,18 @@ fn service(operation: &str, error: Option<(&str, &str)>) -> (StsService, Capture
             .body(SdkBody::from(body))
             .unwrap(),
     ));
+    let keys = Credentials::new("AKIADEFAULT", "default-secret", None, None, "test");
     let config = aws_sdk_sts::Config::builder()
         .behavior_version_latest()
         .region(aws_sdk_sts::config::Region::new("us-east-1"))
-        .credentials_provider(Credentials::new(
-            "AKIADEFAULT",
-            "default-secret",
-            None,
-            None,
-            "test",
-        ))
+        .credentials_provider(keys.clone())
         .http_client(client)
         .retry_config(aws_sdk_sts::config::retry::RetryConfig::disabled())
         .build();
     (
         StsService {
             client: StsClient::from_conf(config),
+            keys: Some(aws_credential_types::provider::SharedCredentialsProvider::new(keys)),
         },
         receiver,
     )
@@ -144,6 +140,38 @@ async fn consumed_totp_is_classified_from_aws_error_message(#[case] operation: &
     };
     assert!(
         matches!(result, Err(StsError::InvalidMfaToken)),
+        "{result:?}"
+    );
+}
+
+/// The signing keys are what the provider holds, read without a request.
+#[tokio::test]
+async fn signing_keys_are_the_providers_and_no_request_is_sent() {
+    let (service, captured) = service("GetSessionToken", None);
+    let keys = service.read_signing_keys().await.unwrap();
+    assert_eq!(keys.access_key_id(), "AKIADEFAULT");
+    assert_eq!(keys.secret_access_key(), "default-secret");
+    assert_eq!(keys.session_token(), None);
+    assert_eq!(keys.expiration(), None);
+    captured.expect_no_request();
+}
+
+/// A client with no credentials provider has no keys to hand out: a tool
+/// failure, not something STS rejected.
+#[tokio::test]
+async fn no_provider_is_a_service_error_not_a_rejection() {
+    let service = StsService {
+        client: StsClient::from_conf(
+            aws_sdk_sts::Config::builder()
+                .behavior_version_latest()
+                .region(aws_sdk_sts::config::Region::new("us-east-1"))
+                .build(),
+        ),
+        keys: None,
+    };
+    let result = service.read_signing_keys().await;
+    assert!(
+        matches!(result, Err(StsError::ServiceError(_))),
         "{result:?}"
     );
 }

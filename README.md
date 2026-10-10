@@ -160,7 +160,8 @@ run, and the 1Password service account token must come from
 recorded run; the tests run on macOS. Windows and musl targets are not
 supported: the build stops with a message naming the target.
 
-- AWS role profiles in `~/.aws/config`, with access to their source credentials
+- AWS role profiles in `~/.aws/config`, with access to their source credentials,
+  or IAM user profiles (no `role_arn`) whose own keys are the credentials
 - [1Password CLI](https://developer.1password.com/docs/cli/) (`op`) for profiles
   that require MFA and for `op://` secrets; the item is set up in
   [Configuration](#configuration)
@@ -654,6 +655,16 @@ The role session duration comes from `duration_seconds` in `~/.aws/config`
 (3600 seconds when absent). Read-only mode attaches
 `arn:aws:iam::aws:policy/ReadOnlyAccess`.
 
+A profile without `role_arn` is used as an IAM user: no AssumeRole, the
+long-term keys it signs with (its 1Password item from `[onepassword]` /
+`[onepassword.mappings]`, else its own entry in `~/.aws/credentials`) are
+what `env` exports and `exec` hands over, with no session token. With
+`mfa_serial` it gets an MFA session instead (GetSessionToken with the TOTP
+from 1Password), cached and reused like every MFA session. Such a profile
+has no role session to narrow or to sign in with, so `--readonly` is refused
+(`PROFILE_INVALID`) and so is `console` (`KIND_UNSUPPORTED`); `kurama status`
+reports it with `"auth": "iam_user"`.
+
 `issuer` excludes explicit `auth_url` / `token_url` / `device_auth_url`, and
 `auth` excludes `aws_profile`. Each of these URLs, and each endpoint a
 discovery document names, must use `https://`. `http://` is accepted only for
@@ -720,7 +731,10 @@ allow_methods = ["GET", "POST"]
 ```
 
 In an agent run, `db --execute --commit` needs `--confirm` whatever
-`allow_write` says. `--rollback` and every `--dry-run` need nothing.
+`allow_write` says. `--rollback` and every `--dry-run` need nothing. An
+`exec` on a profile without `role_arn` (an IAM user) has no role session to
+attach ReadOnlyAccess to, so with `exec_readonly` it is refused and needs
+`--confirm` too.
 
 ### Audit log (`kurama audit`)
 

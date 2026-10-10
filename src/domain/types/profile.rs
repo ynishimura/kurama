@@ -10,6 +10,25 @@
 use crate::domain::functions::validation::extract_account_id;
 use serde::{Deserialize, Serialize};
 
+/// How a profile turns into credentials: by assuming its `role_arn`, or --
+/// with no `role_arn` -- as the IAM user its long-term keys belong to (the
+/// keys themselves, or the MFA session they get with `mfa_serial`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ProfileAuth {
+    Role,
+    IamUser,
+}
+
+impl ProfileAuth {
+    /// The stable name `status --json` reports and errors name.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Role => "role",
+            Self::IamUser => "iam_user",
+        }
+    }
+}
+
 /// AWS profile configuration
 ///
 /// Represents an AWS CLI profile with role assumption configuration.
@@ -234,6 +253,12 @@ mod tests {
 
         let profile = profile.with_role_arn_raw("arn:aws:iam::123456789012:role/TestRole");
         assert!(profile.can_assume_role());
+    }
+
+    #[test]
+    fn profile_auth_names_are_stable() {
+        assert_eq!(ProfileAuth::IamUser.as_str(), "iam_user");
+        assert_eq!(ProfileAuth::Role.as_str(), "role");
     }
 
     #[test]

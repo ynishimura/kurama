@@ -14,7 +14,8 @@ use super::commands::api::handle_api_command;
 use super::commands::login::handle_login_command;
 use super::commands::logout::handle_logout_command;
 use super::commands::profile::{
-    apply_agent_policy, handle_auth_profile_command, handle_aws_profile_command,
+    apply_agent_policy, check_iam_user_profile, handle_auth_profile_command,
+    handle_aws_profile_command,
 };
 use super::commands::source::{CredentialSource, resolve_source};
 use super::commands::status::handle_status_command;
@@ -85,7 +86,9 @@ pub async fn execute_command(command: CliCommand, config: Config) -> Result<()> 
             debug!(?profile, "Executing profile command");
             match resolve_source(&config, &profile.profile_name).await? {
                 CredentialSource::Aws(aws_profile) => {
-                    let profile = apply_agent_policy(profile, &config, is_agent_run());
+                    let profile =
+                        apply_agent_policy(profile, &config, is_agent_run(), &aws_profile)?;
+                    check_iam_user_profile(&profile, &aws_profile)?;
                     let runtime = Runtime::from_config(config, &aws_profile).await;
                     handle_aws_profile_command(profile, &runtime).await
                 }

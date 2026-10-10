@@ -4,7 +4,7 @@ One array with one object per AWS profile, `[auth.*]` source, `[api.*]`
 profile, `[data.*]` workspace and `[s3.*]` connection. It is printed as a single line; it is wrapped here for reading:
 
 ```json
-[{"name":"ops","kind":"aws","active":false,
+[{"name":"ops","kind":"aws","active":false,"auth":"role",
   "role_arn":"arn:aws:iam::123456789012:role/Ops","region":"ap-northeast-1",
   "mfa_serial":"arn:aws:iam::123456789012:mfa/me","session":"valid",
   "logged_in":true,"expires_at":"2026-09-17T03:00:00Z","needs_human":false},
@@ -27,6 +27,9 @@ profile, `[data.*]` workspace and `[s3.*]` connection. It is printed as a single
   "description":null,"auth":null,"auth_status":null,"aws_profile":"dev"}]
 ```
 
+- `auth` (aws) is `role` (the role is assumed) or `iam_user` (no
+  `role_arn`: the IAM user's own long-term keys, or with `mfa_serial` its MFA
+  session, are the credentials; `role_arn` is null).
 - `session` (aws) is `not_required` (no MFA), `valid`, `missing`, `unreadable`
   (keychain error) or `cache_disabled`. `token` (auth) is `valid`, `expired`,
   `missing`, `unreadable` or `not_checked`; `refreshable` means an expired

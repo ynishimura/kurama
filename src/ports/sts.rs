@@ -179,6 +179,11 @@ pub trait StsOperations: Send + Sync {
     /// * `Ok(response)` - Temporary credentials
     /// * `Err(error)` - STS error
     async fn assume_role(&self, request: AssumeRoleRequest) -> Result<StsCredentials, StsError>;
+
+    /// The keys STS calls are signed with (1Password, or the profile's own
+    /// entry in the shared credentials file), read without calling STS: an
+    /// IAM user profile without MFA hands them out as they are.
+    async fn read_signing_keys(&self) -> Result<crate::domain::Credentials, StsError>;
 }
 
 #[cfg(test)]

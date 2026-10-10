@@ -26,6 +26,9 @@ files = [
 tests = ["assume_role", "executor::", "aws_profile_credentials"]
 scenarios = [
   "secrets_a_tunnel_an_iam_token_and_a_reference_assume_the_role_once",
+  "console_federation_iam_user_is_kind_unsupported",
+  "agent_policy_exec_on_an_iam_user_needs_confirm",
+  "status_reports_a_profile_without_role_as_an_iam_user",
 ]
 depends_on = ["cli-entry", "config", "profile-loading", "session-cache", "onepassword-mfa", "export-output", "errors", "console-federation", "agent-policy", "audit"]
 notes = "Invalid-TOTP retry (wait for the next 30-second window) is covered in-process by src/shell/executor_session_tests.rs; a CLI scenario would have to sleep up to 30 seconds"

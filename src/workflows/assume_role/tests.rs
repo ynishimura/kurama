@@ -411,16 +411,169 @@ fn successful_assumption_returns_output() {
         panic!("not completed")
     };
     assert_eq!(output.profile_name, "test");
-    assert_eq!(output.session_name, "custom-test");
+    assert_eq!(output.session_name.as_deref(), Some("custom-test"));
     assert_eq!(output.credentials.access_key_id(), "role-key");
 }
 
+/// A profile without `role_arn`: an IAM user whose own keys are the credentials.
+fn iam_user(mfa: bool, cache: bool) -> AssumeRoleInput {
+    let mut profile = Profile::new("uploader");
+    if mfa {
+        profile = profile.with_mfa_serial_raw("arn:aws:iam::123456789012:mfa/user");
+    }
+    AssumeRoleInput {
+        profile,
+        readonly: false,
+        ..input(false, cache)
+    }
+}
+
+fn completed(state: &AssumeRoleState) -> &AssumeRoleOutput {
+    match state {
+        AssumeRoleState::Completed { output } => output,
+        other => panic!("expected Completed, got {other:?}"),
+    }
+}
+
 #[test]
-fn missing_role_is_reported() {
-    let mut input = input(false, false);
-    input.profile = Profile::new("missing");
-    let (state, _) = step(AssumeRoleState::Initial, AssumeRoleEvent::Start { input });
-    assert!(matches!(state, AssumeRoleState::Failed { error, .. } if error.contains("Role ARN")));
+fn an_iam_user_without_mfa_reads_its_keys_and_calls_no_sts() {
+    let (state, effects) = step(
+        AssumeRoleState::Initial,
+        AssumeRoleEvent::Start {
+            input: iam_user(false, true),
+        },
+    );
+    assert!(matches!(state, AssumeRoleState::ReadingKeys { .. }));
+    assert!(matches!(effects[..], [AssumeRoleEffect::ReadProfileKeys]));
+
+    let keys = Credentials::new("AKIAUSER".into(), "user-secret".into(), None, None);
+    let (state, effects) = step(
+        state,
+        AssumeRoleEvent::ProfileKeysRead {
+            credentials: keys.clone(),
+        },
+    );
+    let output = completed(&state);
+    assert_eq!(output.credentials.access_key_id(), "AKIAUSER");
+    assert_eq!(output.credentials.session_token(), None);
+    assert_eq!(output.profile_name, "uploader");
+    assert!(output.session_name.is_none());
+    assert!(
+        !effects
+            .iter()
+            .any(|e| matches!(e, AssumeRoleEffect::AssumeRole { .. }))
+    );
+}
+
+#[test]
+fn an_iam_user_whose_keys_cannot_be_read_fails_with_the_sts_kind() {
+    let (state, _) = step(
+        AssumeRoleState::ReadingKeys {
+            input: iam_user(false, true),
+        },
+        AssumeRoleEvent::ProfileKeysFailed {
+            error: "no keys".into(),
+            kind: StsErrorKind::ServiceError,
+        },
+    );
+    assert!(matches!(
+        state,
+        AssumeRoleState::Failed {
+            kind: FailureKind::Sts(StsErrorKind::ServiceError),
+            ..
+        }
+    ));
+}
+
+#[test]
+fn an_iam_user_with_a_cached_session_uses_it_without_any_call() {
+    let (state, effects) = step(
+        AssumeRoleState::LoadingSession {
+            input: iam_user(true, true),
+        },
+        AssumeRoleEvent::SessionLoaded {
+            session: Some(session()),
+        },
+    );
+    let output = completed(&state);
+    assert_eq!(output.credentials.access_key_id(), "ASIASESSION123");
+    assert_eq!(
+        output.credentials.session_token(),
+        Some("session-token-value")
+    );
+    assert!(
+        effects
+            .iter()
+            .all(|e| matches!(e, AssumeRoleEffect::Log { .. }))
+    );
+}
+
+#[rstest]
+#[case(true)]
+#[case(false)]
+fn an_iam_user_with_mfa_gets_a_session_token_and_stores_it_only_with_the_cache(
+    #[case] cache: bool,
+) {
+    let (state, effects) = step(
+        AssumeRoleState::WaitingForMfa {
+            input: iam_user(true, cache),
+            attempt: MfaAttempt::First,
+        },
+        AssumeRoleEvent::MfaTokenReceived {
+            token: "123456".into(),
+        },
+    );
+    assert!(matches!(state, AssumeRoleState::GettingSessionToken { .. }));
+    assert!(matches!(
+        effects[..],
+        [AssumeRoleEffect::GetSessionToken {
+            duration_seconds: 129600,
+            ..
+        }]
+    ));
+
+    let (state, effects) = step(
+        state,
+        AssumeRoleEvent::SessionTokenReceived { session: session() },
+    );
+    assert_eq!(
+        completed(&state).credentials.access_key_id(),
+        "ASIASESSION123"
+    );
+    assert_eq!(
+        effects
+            .iter()
+            .any(|e| matches!(e, AssumeRoleEffect::StoreSession { .. })),
+        cache
+    );
+    assert!(
+        !effects
+            .iter()
+            .any(|e| matches!(e, AssumeRoleEffect::AssumeRole { .. }))
+    );
+}
+
+#[test]
+fn an_iam_user_cannot_take_the_readonly_policy() {
+    let (state, effects) = step(
+        AssumeRoleState::Initial,
+        AssumeRoleEvent::Start {
+            input: AssumeRoleInput {
+                readonly: true,
+                ..iam_user(true, true)
+            },
+        },
+    );
+    let AssumeRoleState::Failed { error, kind } = state else {
+        panic!("expected Failed");
+    };
+    assert_eq!(kind, FailureKind::InvalidProfile);
+    assert!(error.contains("no role_arn"), "{error}");
+    assert!(
+        effects
+            .iter()
+            .all(|e| matches!(e, AssumeRoleEffect::Log { .. }))
+    );
 }
 
 #[test]

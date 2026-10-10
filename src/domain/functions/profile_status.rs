@@ -7,7 +7,7 @@ use std::collections::BTreeMap;
 use chrono::{DateTime, Utc};
 
 use super::session_cache::SESSION_REUSE_MARGIN;
-use crate::domain::types::Profile;
+use crate::domain::types::{Profile, ProfileAuth};
 
 /// What the session cache returned for one MFA device.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -69,6 +69,17 @@ pub struct StatusInputs<'a> {
     pub session_cache_enabled: bool,
     pub mfa_provider_enabled: bool,
     pub now: DateTime<Utc>,
+}
+
+impl ProfileStatus {
+    /// A role to assume, or (no `role_arn`) the IAM user's own credentials.
+    pub fn auth(&self) -> ProfileAuth {
+        if self.role_arn.is_some() {
+            ProfileAuth::Role
+        } else {
+            ProfileAuth::IamUser
+        }
+    }
 }
 
 pub fn profile_status(profile: &Profile, inputs: &StatusInputs) -> ProfileStatus {
@@ -194,6 +205,22 @@ mod tests {
             .with_role_arn_raw("arn:aws:iam::123456789012:role/Ops")
             .with_region_raw("ap-northeast-1")
             .with_mfa_serial_raw(SERIAL)
+    }
+
+    #[test]
+    fn a_profile_without_role_arn_reports_itself_as_an_iam_user() {
+        let user = status_with(
+            &Profile::new("uploader").with_mfa_serial_raw(SERIAL),
+            None,
+            true,
+            false,
+        );
+        assert_eq!(user.auth(), ProfileAuth::IamUser);
+        assert!(user.role_arn.is_none());
+        assert_eq!(user.session, SessionState::Missing);
+        assert!(user.needs_human);
+        let role = status_with(&mfa_profile(), None, true, true);
+        assert_eq!(role.auth(), ProfileAuth::Role);
     }
 
     fn status_with(

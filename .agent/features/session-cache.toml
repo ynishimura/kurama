@@ -13,7 +13,10 @@ files = [
   "src/shell/cli/commands/logout.rs",
 ]
 tests = ["session_cache", "session_tests", "logout", "keychain"]
-scenarios = ["tui_header_shows_the_session_time_left"]
+scenarios = [
+  "tui_header_shows_the_session_time_left",
+  "assume_role_iam_user_with_mfa_reuses_the_cached_session",
+]
 depends_on = ["assume-role", "oauth", "cli-entry", "config", "profile-loading"]
 notes = "Scenarios use the file backend from src/adapters/session_cache/file.rs (--features test-fakes); the ignored real-keychain round-trip passed manually on 2026-09-16: cargo test keyring_round_trip_missing_and_corrupt_entry -- --ignored. An entry a rebuild may not write is deleted and written again (errSecDuplicateItem or access denied), which only unit tests cover (`write_replacing` against a scripted entry: the delete, the one retry and whose failure is returned): reproducing it needs two differently signed builds, and the state it fixes was found by hand on 2026-09-21, when kurama-session could be neither read nor overwritten. `logout` also removes OAuth tokens, hence the dependency on oauth"
 

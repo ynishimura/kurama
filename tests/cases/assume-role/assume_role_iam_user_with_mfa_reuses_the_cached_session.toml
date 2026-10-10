@@ -1,0 +1,45 @@
+# A profile without role_arn but with mfa_serial gets an MFA session for the
+# IAM user (GetSessionToken with the TOTP from 1Password, signed with its
+# long-term key) and hands that session to the command; the second run takes
+# the cached session and calls neither STS nor 1Password.
+id = "assume_role_iam_user_with_mfa_reuses_the_cached_session"
+feature = "assume-role"
+
+[combination]
+command = "exec"
+source = "aws-profile"
+role = "iam-user"
+mfa = "onepassword"
+session_cache = "reused"
+
+[input]
+args = ["exec", "uploader-mfa", "--", "/bin/sh", "-c", "printf '%s %s %s\\n' \"$AWS_ACCESS_KEY_ID\" \"$AWS_SESSION_TOKEN\" \"$AWS_SESSION_EXPIRATION\""]
+then_run = [["exec", "uploader-mfa", "--", "/bin/sh", "-c", "printf '%s %s %s\\n' \"$AWS_ACCESS_KEY_ID\" \"$AWS_SESSION_TOKEN\" \"$AWS_SESSION_EXPIRATION\""]]
+aws_config = """
+[default]
+region = us-east-1
+
+[profile uploader-mfa]
+mfa_serial = arn:aws:iam::123456789012:mfa/uploader
+region = ap-northeast-1
+"""
+
+[fakes]
+op = "enabled"
+session_cache = true
+
+[expect]
+exit_code = 0
+stdout = { equals = "{session_access_key} session-token 2030-01-01 12:00:00 UTC\n" }
+files_written = ["session-cache.json"]
+
+[[expect.runs]]
+run = 0
+sts_actions = ["GetSessionToken"]
+sts_calls = [{ action = "GetSessionToken", serial_number = "arn:aws:iam::123456789012:mfa/uploader", token_code = "{op_totp}", signing_access_key = "{op_access_key}" }]
+
+[[expect.runs]]
+run = 1
+sts_actions = []
+op_calls = 0
+stderr_contains = ["# Using cached MFA session"]

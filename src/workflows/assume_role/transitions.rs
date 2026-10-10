@@ -13,6 +13,31 @@ pub fn step(
     use AssumeRoleEvent as Event;
     use AssumeRoleState as State;
     match (state, event) {
+        (State::Initial, Event::Start { input })
+            if !input.profile.can_assume_role() && input.readonly =>
+        {
+            failed(
+                format!(
+                    "profile '{}' has no role_arn: --readonly attaches ReadOnlyAccess to a role session, and an IAM user's long-term keys take no session policy",
+                    input.profile.name()
+                ),
+                FailureKind::InvalidProfile,
+            )
+        }
+        (State::Initial, Event::Start { input })
+            if !input.profile.can_assume_role() && !input.profile.requires_mfa() =>
+        {
+            (
+                State::ReadingKeys { input },
+                vec![AssumeRoleEffect::ReadProfileKeys],
+            )
+        }
+        (State::ReadingKeys { input }, Event::ProfileKeysRead { credentials }) => {
+            complete_as_iam_user(&input, credentials)
+        }
+        (State::ReadingKeys { .. }, Event::ProfileKeysFailed { error, kind }) => {
+            failed(error, FailureKind::Sts(kind))
+        }
         (State::Initial, Event::Start { mut input }) => {
             let token = input.mfa_token.take();
             let (state, effects) = if input.profile.requires_mfa() {
@@ -33,6 +58,9 @@ pub fn step(
             (state, effects)
         }
         (State::LoadingSession { input }, Event::SessionLoaded { session }) => match session {
+            Some(session) if !input.profile.can_assume_role() => {
+                complete_as_iam_user(&input, session_credentials(&session))
+            }
             Some(session) => assume(
                 input,
                 None,
@@ -55,20 +83,27 @@ pub fn step(
             State::GettingSessionToken { input, attempt },
             Event::SessionTokenReceived { session },
         ) => {
-            let store = AssumeRoleEffect::StoreSession {
-                mfa_serial: serial(&input),
-                session: session.clone(),
+            let store = input
+                .session_cache
+                .enabled
+                .then(|| AssumeRoleEffect::StoreSession {
+                    mfa_serial: serial(&input),
+                    session: session.clone(),
+                });
+            let (state, mut effects) = if input.profile.can_assume_role() {
+                assume(
+                    input,
+                    None,
+                    CredentialSource::Session {
+                        session,
+                        fresh: true,
+                    },
+                    attempt,
+                )
+            } else {
+                complete_as_iam_user(&input, session_credentials(&session))
             };
-            let (state, mut effects) = assume(
-                input,
-                None,
-                CredentialSource::Session {
-                    session,
-                    fresh: true,
-                },
-                attempt,
-            );
-            effects.insert(0, store);
+            effects.splice(0..0, store);
             (state, effects)
         }
         (
@@ -96,7 +131,7 @@ pub fn step(
                 output: AssumeRoleOutput {
                     credentials,
                     profile_name: input.profile.name().to_string(),
-                    session_name,
+                    session_name: Some(session_name),
                 },
             },
             vec![AssumeRoleEffect::Log {
@@ -189,7 +224,9 @@ fn mfa_received(
     token: String,
     attempt: MfaAttempt,
 ) -> (AssumeRoleState, Vec<AssumeRoleEffect>) {
-    if input.session_cache.enabled {
+    // An IAM user profile has no AssumeRole to hand the code to: its MFA
+    // session is the credential, cached or not.
+    if input.session_cache.enabled || !input.profile.can_assume_role() {
         let effect = AssumeRoleEffect::GetSessionToken {
             mfa_serial: serial(&input),
             token,
@@ -238,6 +275,42 @@ fn assume(
         }
         Err(error) => failed(error, FailureKind::InvalidProfile),
     }
+}
+
+/// The credentials of an MFA session, as the workflow hands them out.
+fn session_credentials(
+    session: &crate::domain::types::CachedSession,
+) -> crate::domain::Credentials {
+    crate::domain::Credentials::new(
+        session.access_key_id.clone(),
+        session.secret_access_key.clone(),
+        Some(session.session_token.clone()),
+        Some(session.expiration),
+    )
+}
+
+/// An IAM user profile (no `role_arn`) ends with its own credentials: the
+/// long-term keys, or the MFA session they got.
+fn complete_as_iam_user(
+    input: &AssumeRoleInput,
+    credentials: crate::domain::Credentials,
+) -> (AssumeRoleState, Vec<AssumeRoleEffect>) {
+    let profile_name = input.profile.name().to_string();
+    let message =
+        format!("Using the IAM user credentials of profile '{profile_name}' (no role_arn)");
+    (
+        AssumeRoleState::Completed {
+            output: AssumeRoleOutput {
+                credentials,
+                profile_name,
+                session_name: None,
+            },
+        },
+        vec![AssumeRoleEffect::Log {
+            level: LogLevel::Info,
+            message,
+        }],
+    )
 }
 
 fn failed(error: String, kind: FailureKind) -> (AssumeRoleState, Vec<AssumeRoleEffect>) {

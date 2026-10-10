@@ -46,7 +46,7 @@ pub use oauth_client::{
 };
 pub use oauth_token::OAuthToken;
 pub use output_format::OutputFormat;
-pub use profile::Profile;
+pub use profile::{Profile, ProfileAuth};
 pub use secret::Secret;
 pub use secret_ref::{AwsSecretRef, AwsSecretStore, SecretFailure, SecretRef};
 pub use secrets_source::SecretsSourceConfig;

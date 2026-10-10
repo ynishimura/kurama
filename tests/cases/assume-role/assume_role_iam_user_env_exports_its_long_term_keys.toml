@@ -1,0 +1,42 @@
+# A profile without role_arn is an IAM user: `env` exports the keys of its
+# own entry in the shared credentials file (1Password is disabled here; the
+# default entry holds other keys), with no session token, and calls STS for
+# nothing.
+id = "assume_role_iam_user_env_exports_its_long_term_keys"
+feature = "assume-role"
+
+[combination]
+command = "env"
+source = "aws-profile"
+role = "iam-user"
+mfa = "none"
+onepassword = "disabled"
+output = "export-script"
+
+[input]
+args = ["env", "uploader"]
+aws_config = """
+[default]
+region = us-east-1
+
+[profile uploader]
+region = ap-northeast-1
+"""
+home_files = { ".aws/credentials" = """
+[default]
+aws_access_key_id = {source_access_key}
+aws_secret_access_key = source-secret-key
+
+[uploader]
+aws_access_key_id = AKIAUPLOADERKEY00001
+aws_secret_access_key = uploader-secret-key
+""" }
+
+[expect]
+exit_code = 0
+sts_actions = []
+op_calls = 0
+stdout = { kind = "export-script", contains = ["unset AWS_SESSION_TOKEN", "export AWS_ACCESS_KEY_ID='AKIAUPLOADERKEY00001'", "export AWS_SECRET_ACCESS_KEY='uploader-secret-key'", "export KURAMA_AWS='uploader'", "export AWS_REGION='ap-northeast-1'"] }
+stdout_excludes = ["export AWS_SESSION_TOKEN", "export AWS_SESSION_EXPIRATION"]
+stderr_contains = ["# Profile 'uploader' loaded successfully"]
+no_files_written = true

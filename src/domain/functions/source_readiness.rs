@@ -1,7 +1,7 @@
 //! Whether each configured source can be used right now without a person, from what `status` already read; no I/O.
 use crate::domain::functions::auth_status::{AuthStatus, TokenState};
 use crate::domain::functions::profile_status::{ProfileStatus, SessionState, describe_remaining};
-use crate::domain::types::{AuthSource, SecretRef};
+use crate::domain::types::{AuthSource, ProfileAuth, SecretRef};
 use chrono::{DateTime, Utc};
 use serde::Serialize;
 
@@ -122,7 +122,15 @@ pub fn aws_readiness(
         _ => "no MFA session is cached",
     };
     let (condition, expires_at) = match &status.session {
-        SessionState::NotRequired => (Condition::ready("no MFA: the role is assumed as is"), None),
+        SessionState::NotRequired => (
+            Condition::ready(match status.auth() {
+                ProfileAuth::Role => "no MFA: the role is assumed as is",
+                ProfileAuth::IamUser => {
+                    "no MFA: the IAM user's long-term keys are used as they are"
+                }
+            }),
+            None,
+        ),
         SessionState::Valid { expires_at } => (
             Condition::ready(format!(
                 "MFA session valid for {}",
@@ -312,6 +320,30 @@ mod tests {
         mfa_enabled: false,
         headless: false,
     };
+
+    /// Without MFA, the reason says what is handed out: a role session, or
+    /// the IAM user's own keys when the profile has no `role_arn`.
+    #[test]
+    fn source_readiness_without_mfa_names_the_role_or_the_iam_user() {
+        let user = ProfileStatus {
+            mfa_serial: None,
+            ..profile(SessionState::NotRequired)
+        };
+        let ready = aws_readiness(&user, NO_PROVIDER, now());
+        assert_eq!(ready.state, Readiness::Ready);
+        assert_eq!(
+            ready.reason,
+            "no MFA: the IAM user's long-term keys are used as they are"
+        );
+        let role = ProfileStatus {
+            role_arn: Some("arn:aws:iam::123456789012:role/Ops".into()),
+            ..user
+        };
+        assert_eq!(
+            aws_readiness(&role, NO_PROVIDER, now()).reason,
+            "no MFA: the role is assumed as is"
+        );
+    }
 
     #[test]
     fn source_readiness_of_a_profile_follows_its_mfa_session() {

@@ -1,0 +1,35 @@
+# The console sign-in trades a role session for a sign-in token; a profile
+# without role_arn has none to trade, so `console` on it is KIND_UNSUPPORTED
+# (exit 2) before 1Password, STS, the federation endpoint or a browser is
+# reached.
+id = "console_federation_iam_user_is_kind_unsupported"
+feature = "console-federation"
+
+[combination]
+command = "console"
+source = "aws-profile"
+role = "iam-user"
+
+[input]
+args = ["console", "uploader"]
+aws_config = """
+[default]
+region = us-east-1
+
+[profile uploader]
+region = ap-northeast-1
+"""
+
+[fakes]
+op = "enabled"
+browser = true
+
+[expect]
+error = { code = "KIND_UNSUPPORTED", exit = 2 }
+sts_actions = []
+op_calls = 0
+federation_calls = []
+open_calls = []
+stdout = "empty"
+stderr_contains = ["profile 'uploader': kind iam_user does not support console"]
+no_files_written = true

@@ -36,7 +36,9 @@ impl std::fmt::Debug for AssumeRoleInput {
 pub struct AssumeRoleOutput {
     pub credentials: Credentials,
     pub profile_name: String,
-    pub session_name: String,
+    /// The role session's name; `None` for an IAM user profile (no
+    /// `role_arn`), whose own keys or MFA session are the credentials.
+    pub session_name: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -69,6 +71,10 @@ pub enum AssumeRoleEffect {
     AssumeRole {
         request: AssumeRoleRequest,
     },
+    /// Read the long-term keys the profile signs with (1Password or the
+    /// shared credentials file): an IAM user profile without MFA uses them
+    /// as they are.
+    ReadProfileKeys,
     Log {
         level: LogLevel,
         message: String,
@@ -109,6 +115,7 @@ impl std::fmt::Debug for AssumeRoleEffect {
                 .field("mfa_serial", mfa_serial)
                 .finish(),
             Self::WaitForNextTotpWindow => f.write_str("WaitForNextTotpWindow"),
+            Self::ReadProfileKeys => f.write_str("ReadProfileKeys"),
             Self::AssumeRole { request } => f
                 .debug_struct("AssumeRole")
                 .field("request", request)
@@ -132,6 +139,8 @@ pub enum AssumeRoleEvent {
     SessionTokenFailed { error: String, kind: StsErrorKind },
     AssumeRoleSucceeded { credentials: Credentials },
     AssumeRoleFailed { error: String, kind: StsErrorKind },
+    ProfileKeysRead { credentials: Credentials },
+    ProfileKeysFailed { error: String, kind: StsErrorKind },
 }
 
 impl std::fmt::Debug for AssumeRoleEvent {
@@ -168,6 +177,15 @@ impl std::fmt::Debug for AssumeRoleEvent {
                 .field("error", error)
                 .field("kind", kind)
                 .finish(),
+            Self::ProfileKeysRead { credentials } => f
+                .debug_struct("ProfileKeysRead")
+                .field("credentials", credentials)
+                .finish(),
+            Self::ProfileKeysFailed { error, kind } => f
+                .debug_struct("ProfileKeysFailed")
+                .field("error", error)
+                .field("kind", kind)
+                .finish(),
         }
     }
 }
@@ -193,6 +211,10 @@ pub enum AssumeRoleState {
         session_name: String,
         source: CredentialSource,
         attempt: MfaAttempt,
+    },
+    /// An IAM user profile without MFA, waiting for its long-term keys.
+    ReadingKeys {
+        input: AssumeRoleInput,
     },
     Completed {
         output: AssumeRoleOutput,
