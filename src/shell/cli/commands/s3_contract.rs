@@ -1,5 +1,6 @@
 //! `agent --kind s3 --json` and `status --kind s3`: the S3 operations and the bounds a run takes when it names none, and the configured connections; no configuration is read for the contract, and nothing is assumed or reached.
 use serde_json::{Value, json};
+use strum::VariantArray;
 
 use crate::adapters::config::Config;
 use crate::domain::types::limits::S3_READ;
@@ -34,19 +35,21 @@ fn operation(operation: S3Operation) -> (&'static str, &'static str) {
 
 pub fn capabilities() -> Value {
     let name = |op: S3Operation| serde_json::to_value(op).expect("an operation serializes");
-    let flags: serde_json::Map<String, Value> = S3Operation::ALL
-        .into_iter()
+    let flags: serde_json::Map<String, Value> = S3Operation::VARIANTS
+        .iter()
+        .copied()
         .map(|op| (text(name(op)), operation(op).0.into()))
         .collect();
-    let mut side_effects: serde_json::Map<String, Value> = S3Operation::ALL
-        .into_iter()
+    let mut side_effects: serde_json::Map<String, Value> = S3Operation::VARIANTS
+        .iter()
+        .copied()
         .map(|op| (text(name(op)), operation(op).1.into()))
         .collect();
     side_effects.insert("dry_run".into(), "none".into());
     json!({
         "schema_version": 1,
         "kind": "s3",
-        "operations": S3Operation::ALL.map(name),
+        "operations": S3Operation::VARIANTS.iter().copied().map(name).collect::<Vec<_>>(),
         "flags": flags,
         "defaults": {
             "page_size": DEFAULT_PAGE_SIZE,

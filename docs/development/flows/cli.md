@@ -20,11 +20,13 @@ failures and with what code, and it carries what those subcommands share:
 reading a `--request` file or stdin, and projecting the envelope with
 `--jq`. The error document itself is `src/shell/cli/client_error.rs`.
 `api`, `status`, `env` and `token` have that error document under
-`--json` / `--jq` but no request contract: they are the other variants of
-`JsonErrorKind` in the same file, so `agent --kind` cannot list them, and
+`--json` / `--jq` but no request contract: they are `ErrorOnlyKind`, the
+other half of `JsonErrorKind` in the same file, so `agent --kind` cannot list them, and
 `main.rs` answers their usage failures only when JSON was asked for.
-`CliCommand::leaves_stderr_to_json_errors` silences their progress lines
-and logs when stderr is not a terminal.
+`CliCommand::contract`, one match over every command, says which runs
+leave stderr to that document (their progress lines and logs are silenced
+when stderr is not a terminal), which answer with one JSON document on
+stdout, and which call the audit log records.
 
 Errors: `src/shell/cli/error_code.rs` maps the typed error chain to
 `error[CODE]` and an exit code. `rg -n <CODE> src tests` lands on the

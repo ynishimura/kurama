@@ -318,6 +318,168 @@ pub(crate) fn read_source(source: &str) -> Reading {
     }
 }
 
+/// One `match` of a production source, read as syntax.
+pub(crate) struct MatchReading {
+    /// The identifiers its scrutinee names (`self.engine` gives `self` and
+    /// `engine`).
+    pub(crate) scrutinee: Vec<String>,
+    pub(crate) arms: Vec<ArmReading>,
+    /// Every arm that is not a catch-all matches literals (a string, a
+    /// number, a range): a match on a value, which a catch-all has to end.
+    pub(crate) on_literals: bool,
+}
+
+pub(crate) struct ArmReading {
+    pub(crate) line: usize,
+    /// The pattern answers for whatever else the scrutinee holds: `_`, a
+    /// binding (`other`), `Some(_)`, `Err(e)`, or an alternative that is one.
+    pub(crate) catch_all: bool,
+    /// Every path segment the pattern writes (`DbEngine`, `Sqlite`, ...).
+    pub(crate) names: Vec<String>,
+}
+
+/// `Some`, `Ok` or `Err` around one pattern: the wrapper's name and what it
+/// wraps.
+fn wrapped(pattern: &syn::Pat) -> Option<(String, &syn::Pat)> {
+    let syn::Pat::TupleStruct(wrapper) = pattern else {
+        return None;
+    };
+    let name = wrapper.path.segments.last()?.ident.to_string();
+    let [inner] = wrapper.elems.iter().collect::<Vec<_>>()[..] else {
+        return None;
+    };
+    ["Some", "Ok", "Err"]
+        .contains(&name.as_str())
+        .then_some((name, inner))
+}
+
+/// The wrappers (`Some`, `Ok`, `Err`) some arm of a match opens to name what
+/// is inside: there, `Some(x)` answers for every value no arm named.
+fn refined_wrappers(pattern: &syn::Pat, out: &mut Vec<String>) {
+    match pattern {
+        syn::Pat::Or(or) => or.cases.iter().for_each(|case| refined_wrappers(case, out)),
+        syn::Pat::Reference(reference) => refined_wrappers(&reference.pat, out),
+        syn::Pat::Paren(paren) => refined_wrappers(&paren.pat, out),
+        syn::Pat::Guard(guarded) => refined_wrappers(&guarded.pat, out),
+        _ => {
+            if let Some((name, inner)) = wrapped(pattern)
+                && !is_catch_all(inner, &[])
+            {
+                out.push(name);
+            }
+        }
+    }
+}
+
+/// Whether a pattern answers for every value it is matched against that no
+/// other arm named. `Some(x)` is one only where another arm opens a `Some`
+/// to name what is inside (`refined`); beside a `None` alone it is how an
+/// `Option` is read.
+fn is_catch_all(pattern: &syn::Pat, refined: &[String]) -> bool {
+    match pattern {
+        syn::Pat::Wild(_) => true,
+        syn::Pat::Ident(binding) => match &binding.subpat {
+            Some((_, inner)) => is_catch_all(inner, refined),
+            // `None` and a `CONST` are identifiers too; a binding is lowercase.
+            None => binding
+                .ident
+                .to_string()
+                .starts_with(|c: char| c.is_lowercase() || c == '_'),
+        },
+        syn::Pat::Or(or) => or.cases.iter().any(|case| is_catch_all(case, refined)),
+        syn::Pat::Reference(reference) => is_catch_all(&reference.pat, refined),
+        syn::Pat::Paren(paren) => is_catch_all(&paren.pat, refined),
+        syn::Pat::Guard(guarded) => is_catch_all(&guarded.pat, refined),
+        syn::Pat::Tuple(tuple) => {
+            !tuple.elems.is_empty() && tuple.elems.iter().all(|elem| is_catch_all(elem, refined))
+        }
+        _ => wrapped(pattern)
+            .is_some_and(|(name, inner)| refined.contains(&name) && is_catch_all(inner, &[])),
+    }
+}
+
+/// Whether a pattern matches literal values only.
+fn is_literal(pattern: &syn::Pat) -> bool {
+    match pattern {
+        syn::Pat::Lit(_) | syn::Pat::Range(_) => true,
+        syn::Pat::Or(or) => or.cases.iter().all(is_literal),
+        syn::Pat::Reference(reference) => is_literal(&reference.pat),
+        syn::Pat::Paren(paren) => is_literal(&paren.pat),
+        syn::Pat::Guard(guarded) => is_literal(&guarded.pat),
+        _ => false,
+    }
+}
+
+#[derive(Default)]
+struct Idents(Vec<String>);
+
+impl<'ast> Visit<'ast> for Idents {
+    fn visit_ident(&mut self, ident: &'ast proc_macro2::Ident) {
+        self.0.push(ident.to_string());
+    }
+}
+
+#[derive(Default)]
+struct MatchReader {
+    matches: Vec<MatchReading>,
+}
+
+impl<'ast> Visit<'ast> for MatchReader {
+    fn visit_item(&mut self, item: &'ast syn::Item) {
+        if !is_test_only(item_attributes(item)) {
+            syn::visit::visit_item(self, item);
+        }
+    }
+
+    fn visit_impl_item_fn(&mut self, item: &'ast syn::ImplItemFn) {
+        if !is_test_only(&item.attrs) {
+            syn::visit::visit_impl_item_fn(self, item);
+        }
+    }
+
+    fn visit_expr_match(&mut self, expr: &'ast syn::ExprMatch) {
+        let mut scrutinee = Idents::default();
+        scrutinee.visit_expr(&expr.expr);
+        let mut refined = Vec::new();
+        for arm in &expr.arms {
+            refined_wrappers(&arm.pat, &mut refined);
+        }
+        let arms: Vec<ArmReading> = expr
+            .arms
+            .iter()
+            .map(|arm| {
+                let mut names = Idents::default();
+                names.visit_pat(&arm.pat);
+                ArmReading {
+                    line: arm.pat.span().start().line,
+                    catch_all: is_catch_all(&arm.pat, &refined),
+                    names: names.0,
+                }
+            })
+            .collect();
+        let decided: Vec<&syn::Arm> = expr
+            .arms
+            .iter()
+            .filter(|arm| !is_catch_all(&arm.pat, &refined))
+            .collect();
+        let on_literals = !decided.is_empty() && decided.iter().all(|arm| is_literal(&arm.pat));
+        self.matches.push(MatchReading {
+            scrutinee: scrutinee.0,
+            arms,
+            on_literals,
+        });
+        syn::visit::visit_expr_match(self, expr);
+    }
+}
+
+/// Every `match` outside the test-only items of a source.
+pub(crate) fn read_matches(source: &str) -> Vec<MatchReading> {
+    let file = syn::parse_file(source).unwrap_or_else(|e| panic!("does not parse: {e}"));
+    let mut reader = MatchReader::default();
+    reader.visit_file(&file);
+    reader.matches
+}
+
 /// Whether a path is what a forbidden entry names. `x::` is anything in the
 /// crate `x`; a bare `x` is a crate whose name starts with it (`aws_sdk`
 /// covers `aws_sdk_sts`); `x::y` is those segments next to each other

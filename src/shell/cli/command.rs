@@ -5,6 +5,7 @@ use super::commands::api_command::ApiCommand;
 use super::commands::logout::LogoutTarget;
 use super::commands::profile::ProfileCommandConfig;
 use super::commands::status::StatusRowKind;
+use crate::shell::audit::Call;
 
 /// Every CLI invocation, after parsing.
 #[derive(Debug, Clone)]
@@ -130,44 +131,154 @@ impl CliCommand {
         }
     }
 
+    /// What this run promises about its streams, and the call the audit log
+    /// records for it. One match over every command, with no catch-all: a
+    /// new subcommand stops the build until someone says whether it answers
+    /// with JSON and whether it is audited.
+    pub fn contract(&self) -> RunContract<'_> {
+        use super::commands::profile::ProfileAction;
+        use crate::domain::types::OutputFormat;
+        let text = RunContract::of(Output::Text);
+        match self {
+            Self::Api(api) => RunContract {
+                // `api --dry-run --json` is one: its plan goes to stdout. `-v`
+                // prints on stderr what was asked for, and so does a
+                // `--dry-run` without `--json`, so they are not.
+                output: if (api.output.json || api.output.jq.is_some()) && !api.output.verbose {
+                    Output::JsonErrors
+                } else {
+                    Output::Text
+                },
+                audited: Some(Call {
+                    command: "api",
+                    target: &api.api,
+                    program: None,
+                }),
+            },
+            Self::Profile(profile) => match &profile.action {
+                ProfileAction::Exec(argv) => RunContract {
+                    output: Output::Text,
+                    audited: Some(Call {
+                        command: "exec",
+                        target: &profile.profile_name,
+                        program: argv.first().map(String::as_str),
+                    }),
+                },
+                ProfileAction::Export(OutputFormat::Json) => RunContract::of(Output::JsonErrors),
+                ProfileAction::Export(OutputFormat::Shell) | ProfileAction::OpenConsole => text,
+            },
+            Self::Status { json, .. }
+            | Self::ClientStatus { json, .. }
+            | Self::Token { json, .. } => RunContract::of(Output::json_errors_when(*json)),
+            Self::Db(db) => RunContract {
+                output: Output::document_when(db.json),
+                audited: Some(Call {
+                    command: "db",
+                    target: &db.database,
+                    program: None,
+                }),
+            },
+            Self::Data(data) => RunContract {
+                output: Output::document_when(data.json),
+                audited: Some(Call {
+                    command: "data",
+                    target: data.workspace.as_deref().unwrap_or("ad-hoc"),
+                    program: None,
+                }),
+            },
+            Self::Obsidian(obsidian) => RunContract {
+                output: Output::document_when(obsidian.json),
+                audited: Some(Call {
+                    command: "obsidian",
+                    target: obsidian.audit_target(),
+                    program: None,
+                }),
+            },
+            Self::Preset(preset) => RunContract {
+                output: Output::document_when(preset.json()),
+                // Only `preset setup` sends anything, with its first read.
+                audited: preset.sent_to().map(|api| Call {
+                    command: "preset setup",
+                    target: api,
+                    program: None,
+                }),
+            },
+            Self::Config(command) => RunContract::of(Output::document_when(command.json())),
+            Self::S3(command) => RunContract::of(Output::document_when(command.json)),
+            Self::StatusReady { json } => RunContract::of(Output::document_when(*json)),
+            Self::AgentInstall(install) => RunContract::of(Output::document_when(install.json)),
+            // Over stdio, stdout is the JSON-RPC stream; over HTTP stdout
+            // carries nothing, and stderr is the request log. Each tool call
+            // is kurama run again, which writes its own audit entry.
+            Self::Mcp { listen } => RunContract::of(Output::document_when(!listen)),
+            // `--json` prints the document, but the run reads no
+            // configuration and starts no logging, so there is nothing to
+            // keep off stdout.
+            Self::AgentContract(_) | Self::AgentCatalog | Self::Inventory | Self::Audit { .. } => {
+                text
+            }
+            Self::Init { .. }
+            | Self::AgentGuide
+            | Self::AgentSkill
+            | Self::Login { .. }
+            | Self::Logout(_)
+            | Self::Unset
+            | Self::Tui => text,
+        }
+    }
+
     /// Whether stdout carries one JSON document, so progress lines and logs
     /// have to stay off it.
     pub fn answers_with_json(&self) -> bool {
-        match self {
-            Self::Data(command) => command.json,
-            Self::Db(command) => command.json,
-            Self::Config(command) => command.json(),
-            Self::Preset(command) => command.json(),
-            Self::S3(command) => command.json,
-            Self::StatusReady { json } => *json,
-            Self::AgentInstall(install) => install.json,
-            Self::Obsidian(command) => command.json,
-            // Over HTTP stdout carries nothing, and stderr is the request log.
-            Self::Mcp { listen } => !listen,
-            _ => false,
-        }
+        self.contract().output == Output::JsonDocument
     }
 
     /// Whether this is an `api`, `status`, `env` or `token` run that answers
     /// with JSON (`JsonErrorKind`) and asked for nothing else on stderr, so
-    /// stderr is left to its error document. `api --dry-run --json` is one:
-    /// its plan goes to stdout. `-v` prints on stderr what was asked for, and
-    /// so does a `--dry-run` without `--json`, so they are not. Unlike a JSON client,
-    /// these runs can wait for a person on a terminal (a login URL, a device
-    /// code), which is why the caller keeps a terminal's stderr.
+    /// stderr is left to its error document. Unlike a JSON client, these runs
+    /// can wait for a person on a terminal (a login URL, a device code),
+    /// which is why the caller keeps a terminal's stderr.
     pub fn leaves_stderr_to_json_errors(&self) -> bool {
-        match self {
-            Self::Api(api) => (api.output.json || api.output.jq.is_some()) && !api.output.verbose,
-            Self::Status { json, .. }
-            | Self::ClientStatus { json, .. }
-            | Self::Token { json, .. } => *json,
-            Self::Profile(config) => {
-                config.action
-                    == super::commands::profile::ProfileAction::Export(
-                        crate::domain::types::OutputFormat::Json,
-                    )
-            }
-            _ => false,
+        self.contract().output == Output::JsonErrors
+    }
+}
+
+/// What a run promises about its streams.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Output {
+    /// Text for a person; progress lines and logs on stderr.
+    Text,
+    /// stdout carries one JSON document, so progress lines and logs stay off
+    /// both streams.
+    JsonDocument,
+    /// A `JsonErrorKind` run under `--json` / `--jq`: stderr is left to its
+    /// error document when no person reads it.
+    JsonErrors,
+}
+
+impl Output {
+    fn document_when(json: bool) -> Self {
+        if json { Self::JsonDocument } else { Self::Text }
+    }
+
+    fn json_errors_when(json: bool) -> Self {
+        if json { Self::JsonErrors } else { Self::Text }
+    }
+}
+
+/// What [`CliCommand::contract`] answers: the streams, and the call the audit
+/// log records (`api`, `exec`, `db`, `data`, `obsidian` and the first read of
+/// `preset setup`).
+pub struct RunContract<'a> {
+    pub output: Output,
+    pub audited: Option<Call<'a>>,
+}
+
+impl RunContract<'_> {
+    fn of(output: Output) -> Self {
+        Self {
+            output,
+            audited: None,
         }
     }
 }
@@ -200,6 +311,55 @@ mod tests {
         );
         assert!(CliCommand::Unset.needs_bootstrap());
         assert!(CliCommand::Logout(LogoutTarget::All).needs_bootstrap());
+    }
+
+    /// The call each run writes to the audit log: the command, its target
+    /// and, for `exec`, the program.
+    #[test]
+    fn the_contract_names_the_call_the_audit_log_records() {
+        let parse = |args: &[&str]| {
+            let matches = crate::build_command()
+                .try_get_matches_from(std::iter::once("kurama").chain(args.iter().copied()))
+                .unwrap();
+            super::super::parser::parse_cli_command(&matches)
+        };
+        let audited = |args: &[&str]| {
+            parse(args).contract().audited.map(|call| {
+                (
+                    call.command,
+                    call.target.to_owned(),
+                    call.program.map(str::to_owned),
+                )
+            })
+        };
+        let call = |command: &'static str, target: &str, program: Option<&str>| {
+            Some((command, target.to_owned(), program.map(str::to_owned)))
+        };
+        assert_eq!(
+            audited(&["api", "github", "/user"]),
+            call("api", "github", None)
+        );
+        assert_eq!(
+            audited(&["exec", "dev", "--", "aws", "sts"]),
+            call("exec", "dev", Some("aws"))
+        );
+        assert_eq!(
+            audited(&["db", "app", "--tables", "--json"]),
+            call("db", "app", None)
+        );
+        assert_eq!(audited(&["data", "--json"]), call("data", "ad-hoc", None));
+        for args in [
+            &["env", "dev"][..],
+            &["env", "dev", "--json"],
+            &["console", "dev"],
+            &["token", "github"],
+            &["status", "--json"],
+            &["login", "github"],
+            &["preset"],
+            &["audit", "--json"],
+        ] {
+            assert_eq!(audited(args), None, "{args:?}");
+        }
     }
 
     #[test]

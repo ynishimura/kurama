@@ -2,6 +2,8 @@
 //! `[db.*]`, `[data.*]` and `[s3.*]` rows, built from the facts `kurama status`
 //! reports, and what their keys do. Pure: the runtime gathers the facts.
 
+use strum::VariantArray;
+
 use chrono::{DateTime, Utc};
 use crossterm::event::{KeyCode, KeyEvent};
 
@@ -14,8 +16,9 @@ use crate::shell::cli::commands::db_contract::DbStatusRow;
 use crate::shell::cli::commands::s3_status::S3StatusRow;
 use crate::shell::tui::components::list_navigation::moved_selection;
 
-/// One tab of the home screen, in the order `1`-`6` select them.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+/// One tab of the home screen, in the order the digit keys select them
+/// (`Tab::VARIANTS`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, strum::VariantArray)]
 pub enum Tab {
     #[default]
     Aws,
@@ -27,8 +30,6 @@ pub enum Tab {
 }
 
 impl Tab {
-    pub const ALL: [Tab; 6] = [Tab::Aws, Tab::Auth, Tab::Api, Tab::Db, Tab::Data, Tab::S3];
-
     pub fn label(self) -> &'static str {
         match self {
             Tab::Aws => "AWS",
@@ -40,15 +41,18 @@ impl Tab {
         }
     }
 
-    /// The tab a key selects: `1`-`6`, `Tab` for the next, `Shift-Tab` for
-    /// the previous.
+    /// The tab a key selects: `1` for the first through the digit of the
+    /// last, `Tab` for the next, `Shift-Tab` for the previous.
     pub fn for_key(self, key: KeyCode) -> Option<Tab> {
-        let index = Tab::ALL.iter().position(|tab| *tab == self)?;
-        let count = Tab::ALL.len();
+        let index = Tab::VARIANTS.iter().position(|tab| *tab == self)?;
+        let count = Tab::VARIANTS.len();
         match key {
-            KeyCode::Char(digit @ '1'..='6') => Some(Tab::ALL[digit as usize - '1' as usize]),
-            KeyCode::Tab => Some(Tab::ALL[(index + 1) % count]),
-            KeyCode::BackTab => Some(Tab::ALL[(index + count - 1) % count]),
+            KeyCode::Char(digit) => {
+                let number = digit.to_digit(10)? as usize;
+                Tab::VARIANTS.get(number.checked_sub(1)?).copied()
+            }
+            KeyCode::Tab => Some(Tab::VARIANTS[(index + 1) % count]),
+            KeyCode::BackTab => Some(Tab::VARIANTS[(index + count - 1) % count]),
             _ => None,
         }
     }

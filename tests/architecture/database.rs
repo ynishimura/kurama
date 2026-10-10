@@ -394,28 +394,18 @@ fn a_choice_made_per_engine_names_every_engine() {
                 continue;
             };
             let lines: Vec<&str> = code.lines().collect();
-            for (number, line) in lines.iter().enumerate() {
-                // A `match` whose scrutinee is an engine, and the arms of that
-                // match -- the ones at the depth its own brace opened.
-                if !(line.contains("match ") && line.contains("engine")) {
+            // A `match` whose scrutinee names an engine. Each of its arms
+            // names one; anything else -- `_`, a binding like `other` --
+            // answers for an engine nobody has added yet, which is what this
+            // forbids.
+            for reading in crate::syntax::read_matches(&code) {
+                if !reading.scrutinee.iter().any(|name| name.contains("engine")) {
                     continue;
                 }
-                let mut depth = line.matches('{').count() as i32 - line.matches('}').count() as i32;
-                for (offset, arm) in lines[number + 1..].iter().enumerate() {
-                    if depth <= 0 {
-                        break;
+                for arm in reading.arms {
+                    if !arm.names.iter().any(|name| name == "DbEngine") {
+                        found.push(location(&path, arm.line - 1, lines[arm.line - 1]));
                     }
-                    // An arm of this match names an engine. Anything else --
-                    // `_`, a binding like `other`, a guard -- answers for an
-                    // engine nobody has added yet, which is what this forbids.
-                    if depth == 1 && arm.contains("=>") {
-                        let pattern = arm.split("=>").next().unwrap_or_default();
-                        if !pattern.contains("DbEngine::") {
-                            found.push(location(&path, number + 1 + offset, arm));
-                        }
-                    }
-                    depth += arm.matches('{').count() as i32;
-                    depth -= arm.matches('}').count() as i32;
                 }
             }
         }

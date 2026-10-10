@@ -61,7 +61,9 @@
 //! ARCH-034 SQLite's C API is reached through the reviewed entry points only.
 //! ARCH-035 A server statement is prepared in one place.
 //! ARCH-036 A database failure never holds a bare `String`.
-//! ARCH-037 A choice made per database engine names every engine.
+//! ARCH-037 A choice made per variant names every variant: per database
+//!          engine, in `ErrorCode::classify` / `hint_of` and in
+//!          `CliCommand::contract`.
 //! ARCH-038 Every database engine has a real-database test.
 //! ARCH-039 (`cargo xtask architecture-audit`, tested in xtask) This list,
 //!          `rules.toml` and the tests name the same rules.
