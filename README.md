@@ -682,7 +682,7 @@ of one 1Password item are one `op` call, and an `?attribute=otp` reference
 is read fresh for each run. For such a source:
 
 - `kurama exec <source> -- <cmd>` runs `<cmd>` with every variable set, and
-  `kurama env` exports them (`--json`: `{"env": {...}}`);
+  `kurama env` exports them into the shell;
 - `kurama token`, `console` and `--readonly` are refused (`KIND_UNSUPPORTED`),
   and an `[api.*]` cannot use it as `auth` (`CONFIG_INVALID`);
 - `kurama login` and `kurama logout` have nothing to do;

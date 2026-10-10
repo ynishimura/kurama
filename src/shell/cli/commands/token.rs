@@ -3,7 +3,8 @@
 //! granted when needed, or the value a `kind = "token"` source's reference
 //! names -- or, with `--fingerprint`, only its SHA-256. A `kind = "secrets"`
 //! source has several values and no one credential, so it is refused.
-//! The only command besides `env --json` that prints a secret on stdout.
+//! The one command that prints an `[auth.*]` credential on stdout as a
+//! document; `env` prints it only inside the export script a shell runs.
 
 use anyhow::Result;
 

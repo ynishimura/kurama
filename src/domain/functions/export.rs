@@ -211,18 +211,7 @@ pub fn generate_auth_export_script(vars: Vec<(String, String)>, managed: &[Strin
         .join("\n")
 }
 
-/// The values of a `secrets` source as `kurama env <source> --json` prints
-/// them: `{"env": {"<VAR>": "<value>", ...}}`, the shape of the `env` table
-/// they are configured in.
-pub fn generate_secrets_json(values: &[(String, String)]) -> String {
-    let env: serde_json::Map<String, serde_json::Value> = values
-        .iter()
-        .map(|(var, value)| (var.clone(), value.as_str().into()))
-        .collect();
-    serde_json::json!({ "env": env }).to_string()
-}
-
-/// The credential as `kurama token --json` and `kurama env <auth> --json`
+/// The credential as `kurama token --json`
 /// print it. The four keys are the same for both kinds of source: a
 /// credential that was issued elsewhere says nothing about its type, its
 /// expiry or its scope, and `null` is what kurama knows about them.
@@ -498,15 +487,6 @@ mod tests {
             "unset SITE_PASS\nunset SITE_USER\nunset KURAMA_AUTH\nunset KURAMA_AUTH_VAR\n\
              export SITE_PASS='p'\"'\"'w'\nexport SITE_USER='me'\nexport KURAMA_AUTH='site'\n\
              export KURAMA_AUTH_VAR='SITE_PASS SITE_USER'"
-        );
-        let json: serde_json::Value = serde_json::from_str(&generate_secrets_json(&[
-            ("SITE_PASS".into(), "pw".into()),
-            ("SITE_USER".into(), "me".into()),
-        ]))
-        .unwrap();
-        assert_eq!(
-            json,
-            serde_json::json!({"env": {"SITE_PASS": "pw", "SITE_USER": "me"}})
         );
     }
 

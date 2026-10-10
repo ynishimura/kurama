@@ -42,9 +42,12 @@ exit_code = 0
 stdout = { lines_start_with = ["export ", "unset "], contains = ["unset GITHUB_TOKEN", "unset KURAMA_AUTH", "export GITHUB_TOKEN='{stored_access_token}'", "export KURAMA_AUTH='github'"] }
 stderr_contains = ["# Token for 'github' exported into GITHUB_TOKEN"]
 
+# A document with the credential is `token --json`'s alone.
 [[expect.runs]]
 run = 1
-stdout_json = { "/access_token" = "{stored_access_token}", "/token_type" = "Bearer" }
+json_error = { code = "KIND_UNSUPPORTED", exit = 2 }
+stderr_json = { "/error/message" = { contains = "kind oauth does not support env --json" } }
+stdout = { equals = "" }
 
 [[expect.runs]]
 run = 2
