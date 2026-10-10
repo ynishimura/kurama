@@ -136,20 +136,14 @@ pub struct DbStatusRow {
 
 pub fn status_rows(config: &Config, name: Option<&str>) -> Vec<DbStatusRow> {
     config
-        .db
-        .iter()
+        .db_connections()
         .filter(|(database, _)| name.is_none_or(|name| *database == name))
-        .filter_map(|(name, section)| {
-            // A section that cannot be turned into a connection was already
-            // refused when the configuration was read.
-            let connection = section.connection().ok()?;
-            Some(DbStatusRow {
-                name: name.clone(),
-                engine: connection.engine(),
-                database: connection.database(),
-                host: connection.host(),
-                allow_write: connection.allow_write(),
-            })
+        .map(|(name, connection)| DbStatusRow {
+            name: name.clone(),
+            engine: connection.engine(),
+            database: connection.database(),
+            host: connection.host(),
+            allow_write: connection.allow_write(),
         })
         .collect()
 }

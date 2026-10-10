@@ -35,9 +35,9 @@ pub async fn handle_logout_command(target: &LogoutTarget, config: &Config) -> Re
     let profiles = load_profiles().await?;
     check_name_collisions(&profiles, config)?;
     let (aws_profiles, auth_names): (Vec<Profile>, Vec<String>) = match target {
-        LogoutTarget::All => (profiles, stored_token_sources(config)?),
+        LogoutTarget::All => (profiles, stored_token_sources(config)),
         LogoutTarget::Profile(name) if config.auth.contains_key(name) => {
-            if !stored_token_sources(config)?.contains(name) {
+            if !stored_token_sources(config).contains(name) {
                 progress!(
                     "# Source '{name}' uses a credential issued elsewhere; there is nothing to remove"
                 );
@@ -67,13 +67,13 @@ pub async fn handle_logout_command(target: &LogoutTarget, config: &Config) -> Re
 
 /// The sources that can have a token in the store: only a grant writes one,
 /// so a `kind = "token"` source is not among them.
-fn stored_token_sources(config: &Config) -> Result<Vec<String>> {
-    Ok(config
-        .auth_sources()?
+fn stored_token_sources(config: &Config) -> Vec<String> {
+    config
+        .auth_sources()
         .into_iter()
         .filter(|source| matches!(source, AuthSource::OAuth(_)))
         .map(|source| source.name().to_string())
-        .collect())
+        .collect()
 }
 
 /// Remove the session of each distinct MFA device; returns the removed keys.
@@ -169,7 +169,7 @@ mod tests {
              [auth.example]\nkind = \"token\"\ntoken = \"op://Agent/Example/credential\"\n",
         )
         .unwrap();
-        assert_eq!(stored_token_sources(&config).unwrap(), ["github"]);
+        assert_eq!(stored_token_sources(&config), ["github"]);
     }
 
     #[tokio::test]

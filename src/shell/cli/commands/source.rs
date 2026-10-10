@@ -27,7 +27,7 @@ pub enum CredentialSource {
 pub async fn resolve_source(config: &Config, name: &str) -> Result<CredentialSource> {
     let profiles = load_profiles().await?;
     check_name_collisions(&profiles, config)?;
-    if let Some(source) = config.auth_source(name)? {
+    if let Some(source) = config.auth_source(name).cloned() {
         return Ok(CredentialSource::Auth(source));
     }
     find_profile(&profiles, name)

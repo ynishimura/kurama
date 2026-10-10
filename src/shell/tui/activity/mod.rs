@@ -33,7 +33,6 @@ pub async fn watch_audit_log() -> Result<()> {
     let config = Config::load().await.unwrap_or_default();
     let base_paths = config
         .api_profiles()
-        .unwrap_or_default()
         .into_iter()
         .filter_map(|api| {
             let path = url::Url::parse(&api.base_url).ok()?.path().to_owned();

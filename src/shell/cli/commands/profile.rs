@@ -193,7 +193,7 @@ pub async fn handle_auth_profile_command(
         ProfileAction::Export(OutputFormat::Json) => return Err(unsupported("env --json").into()),
         ProfileAction::Export(OutputFormat::Shell) | ProfileAction::Exec(_) => {}
     }
-    let managed = managed_token_vars(&app_config)?;
+    let managed = managed_token_vars(&app_config);
     let options = ApiRuntimeOptions {
         report_secret_reads: config.verbose,
         ..ApiRuntimeOptions::default()

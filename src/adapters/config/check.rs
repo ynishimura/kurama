@@ -220,7 +220,7 @@ mod tests {
         let config = checked.config.unwrap();
         assert_eq!(config.aws.session_cache.duration, 3600);
         assert_eq!(
-            config.api_profile("gh").unwrap().unwrap().auth.as_deref(),
+            config.api_profile("gh").cloned().unwrap().auth.as_deref(),
             Some("gh")
         );
     }
@@ -259,6 +259,42 @@ mod tests {
             "{problems:?}"
         );
         assert!(problems[3].2.contains("exclusive"), "{problems:?}");
+    }
+
+    /// A section that did not type is reported and is not among the typed
+    /// values the rest of `config check` reads; its neighbours are.
+    #[test]
+    fn a_section_that_did_not_type_is_a_problem_and_not_a_value() {
+        let mut checked = check(
+            "[auth.site]\nkind = \"secrets\"\n\n\
+             [api.site]\nbase_url = \"https://x\"\n\n\
+             [api.ok]\nbase_url = \"https://ok\"\n\n\
+             [db.bad]\nengine = \"sqlite\"\n",
+        );
+        let sections: Vec<_> = checked
+            .problems
+            .iter()
+            .map(|p| p.section.as_deref())
+            .collect();
+        assert_eq!(
+            sections,
+            [Some("auth.site"), Some("api.site"), Some("db.bad")],
+            "{:?}",
+            checked.problems
+        );
+        assert!(
+            checked.problems[1]
+                .error
+                .to_string()
+                .contains("[auth.site] is kind = \"secrets\""),
+            "an API naming a secrets source is its own problem while the source has another"
+        );
+        let config = checked.config.take().unwrap();
+        assert!(config.auth_source("site").is_none());
+        assert!(config.api_profile("site").is_none());
+        assert!(config.db_connection("bad").is_none());
+        let apis: Vec<_> = config.api_profiles().into_iter().map(|a| a.name).collect();
+        assert_eq!(apis, ["ok"]);
     }
 
     #[test]

@@ -40,7 +40,7 @@ fn config_with_authorization_code() -> Config {
 }
 
 fn api(config: &Config) -> ApiProfile {
-    config.api_profile("svc").unwrap().unwrap()
+    config.api_profile("svc").cloned().unwrap()
 }
 
 fn token_response(access_token: &str) -> HttpResponse {
@@ -193,7 +193,7 @@ async fn an_issued_credential_is_sent_in_the_header_the_source_names() {
     );
     let response = runtime
         .call(
-            &config.api_profile("issued").unwrap().unwrap(),
+            &config.api_profile("issued").cloned().unwrap(),
             HttpRequest::new("GET", "https://api.example.com/v1/voices"),
         )
         .await
@@ -235,7 +235,7 @@ async fn an_issued_credential_is_not_sent_again_after_a_401() {
     );
     let response = runtime
         .call(
-            &config.api_profile("issued").unwrap().unwrap(),
+            &config.api_profile("issued").cloned().unwrap(),
             HttpRequest::new("GET", "https://api.example.com/v1/voices"),
         )
         .await
@@ -322,7 +322,7 @@ async fn a_401_without_a_terminal_removes_the_dead_token_and_asks_for_a_login() 
         .withf(|key| key == "gh")
         .returning(|_| Ok(()));
     let config = config_with_authorization_code();
-    let api = config.api_profile("gh").unwrap().unwrap();
+    let api = config.api_profile("gh").cloned().unwrap();
     let runtime = ApiRuntime::test(
         config,
         http,
@@ -396,7 +396,7 @@ async fn an_api_without_auth_sends_no_authorization_header() {
         "public".into(),
         toml::from_str("base_url = \"https://example.com\"\n").unwrap(),
     );
-    let api = config.api_profile("public").unwrap().unwrap();
+    let api = config.api_profile("public").cloned().unwrap();
     let runtime = ApiRuntime::test(
         config,
         http,
@@ -480,7 +480,7 @@ async fn an_aws_profile_api_is_signed_with_the_role_credentials_and_sent_once() 
     let config = config_with_aws_profile(
         "base_url = \"https://abc.execute-api.ap-northeast-1.amazonaws.com/prod\"\naws_profile = \"dev\"\n",
     );
-    let api = config.api_profile("apigw").unwrap().unwrap();
+    let api = config.api_profile("apigw").cloned().unwrap();
     let runtime = ApiRuntime::test(
         config,
         http,
@@ -519,7 +519,7 @@ async fn the_profile_service_and_the_aws_profile_region_fill_in_for_a_custom_dom
     let config = config_with_aws_profile(
         "base_url = \"https://api.example.com\"\naws_profile = \"dev\"\nservice = \"execute-api\"\n",
     );
-    let api = config.api_profile("apigw").unwrap().unwrap();
+    let api = config.api_profile("apigw").cloned().unwrap();
     let runtime = ApiRuntime::test(
         config,
         http,
@@ -540,7 +540,7 @@ async fn an_open_signing_target_stops_before_any_credential_is_requested() {
     aws.expect_assume_role().times(0);
     let config =
         config_with_aws_profile("base_url = \"https://api.example.com\"\naws_profile = \"dev\"\n");
-    let api = config.api_profile("apigw").unwrap().unwrap();
+    let api = config.api_profile("apigw").cloned().unwrap();
     let runtime = ApiRuntime::test(
         config,
         MockHttpClient::new(),
@@ -590,23 +590,23 @@ async fn preview_signs_with_placeholders_and_stands_the_token_in() {
     let oauth_config = config_with_client_credentials();
     config.auth.extend(oauth_config.auth);
     config.api.extend(oauth_config.api);
-    let signed_api = config.api_profile("apigw").unwrap().unwrap();
-    let public_api = config.api_profile("public").unwrap().unwrap();
-    let oauth_api = config.api_profile("svc").unwrap().unwrap();
-    let issued_api = {
-        config.auth.insert(
-            "issued".into(),
-            toml::from_str::<AuthToml>(
-                "kind = \"token\"\ntoken = \"op://Agent/Example/credential\"\nheader = \"xi-api-key\"\nformat = \"{token}\"\n",
-            )
-            .unwrap(),
-        );
-        config.api.insert(
-            "issued".into(),
-            toml::from_str("base_url = \"https://api.example.com\"\n").unwrap(),
-        );
-        config.api_profile("issued").unwrap().unwrap()
-    };
+    config.auth.insert(
+        "issued".into(),
+        toml::from_str::<AuthToml>(
+            "kind = \"token\"\ntoken = \"op://Agent/Example/credential\"\nheader = \"xi-api-key\"\nformat = \"{token}\"\n",
+        )
+        .unwrap(),
+    );
+    config.api.insert(
+        "issued".into(),
+        toml::from_str("base_url = \"https://api.example.com\"\n").unwrap(),
+    );
+    // The sections are typed the first time one is read, so every insert
+    // comes first.
+    let signed_api = config.api_profile("apigw").cloned().unwrap();
+    let public_api = config.api_profile("public").cloned().unwrap();
+    let oauth_api = config.api_profile("svc").cloned().unwrap();
+    let issued_api = config.api_profile("issued").cloned().unwrap();
     let runtime = ApiRuntime::test(
         config,
         MockHttpClient::new(),

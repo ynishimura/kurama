@@ -102,7 +102,8 @@ pub async fn handle_api_command(command: ApiCommand, config: Config) -> Result<(
 
 fn resolve_api(config: &Config, name: &str) -> Result<ApiProfile> {
     config
-        .api_profile(name)?
+        .api_profile(name)
+        .cloned()
         .ok_or_else(|| ApiError::NotFound(name.to_string()).into())
 }
 
