@@ -112,6 +112,13 @@ The full text, with the reasons, of what AGENTS.md lists in one line each.
 - Several projections of one type destructure it without `..`, so a new
   field stops the build instead of quietly missing from one of them
   (`Operation` in `spec_output.rs`, `Schema` in `api_spec.rs`).
+- A choice made per variant lists every variant, with no `_ =>`: a new
+  error variant gets the code and hint someone chose in
+  `ErrorCode::classify` / `hint_of`, and a new subcommand its output kind and
+  audit entry in `CliCommand::contract` (ARCH-037). An invariant violation
+  maps to `INTERNAL` by name. A variant list is `strum::VariantArray`, never
+  written by hand (`ClientKind::VARIANTS`, `DbEngine::VARIANTS`, the TUI
+  tabs, whose digit keys follow `Tab::VARIANTS.len()`).
 - Mutually exclusive state is one enum, not two fields that can disagree
   (`JqPanel`). The bounds external input is cut to live in
   `domain/types/limits.rs`, where a test destructures them exhaustively and

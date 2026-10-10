@@ -325,3 +325,78 @@ fn error_variants_do_not_print_their_source_twice() {
         found.join("\n")
     );
 }
+
+/// The files whose every `match` decides per variant: the error code and hint
+/// of each failure, and what each command promises about its streams and the
+/// audit log.
+const CONTRACT_FILES: &[&str] = &["src/shell/cli/error_code.rs", "src/shell/cli/command.rs"];
+
+/// The catch-all arms of a source's production `match`es, by line. A match on
+/// literals (a string, a number) has to end in one, and is not counted.
+fn catch_all_arms(source: &str) -> Vec<usize> {
+    crate::syntax::read_matches(source)
+        .into_iter()
+        .filter(|reading| !reading.on_literals)
+        .flat_map(|reading| reading.arms)
+        .filter(|arm| arm.catch_all)
+        .map(|arm| arm.line)
+        .collect()
+}
+
+/// A new error variant or subcommand gets a code, a hint, an output kind and
+/// an audit decision somebody chose: `ErrorCode::classify`, `hint_of` and
+/// `CliCommand::contract` list every variant, so adding one stops the build
+/// there. A `_ =>` gave a new `DataError` `DATA_FAILED` and a new
+/// `CliExecutorError` `INTERNAL` without anyone deciding it, and a new
+/// subcommand neither a JSON error contract nor an audit entry.
+#[test]
+fn a_contract_match_names_every_variant() {
+    let mut found = Vec::new();
+    for file in CONTRACT_FILES {
+        let path = root().join(file);
+        let code = production_code(&path).expect("a production file");
+        let lines: Vec<&str> = code.lines().collect();
+        for line in catch_all_arms(&code) {
+            found.push(location(&path, line - 1, lines[line - 1]));
+        }
+    }
+    assert!(
+        found.is_empty(),
+        "a contract match lists every variant, so a new one stops the build instead \
+         of silently taking the catch-all's answer:\n{}",
+        found.join("\n")
+    );
+}
+
+#[test]
+fn a_catch_all_arm_in_any_form_is_found() {
+    for source in [
+        "fn f(e: &E) -> C { match e { E::A => C::A, _ => C::B } }",
+        "fn f(e: &E) -> C { match e { E::A => C::A, _ if ready() => C::B, E::B => C::C } }",
+        "fn f(e: &E) -> C { match e { E::A => C::A, other => C::from(other) } }",
+        "fn f(e: Option<&E>) -> C { match e { Some(E::A) => C::A, Some(_) | None => C::B } }",
+        "fn f(e: Option<&E>) -> C { match e { Some(E::A) => C::A, Some(x) => C::B, None => C::C } }",
+        "fn f(r: Result<E, F>) -> C { match r { Err(F::A) => C::A, Err(e) => C::B, Ok(_) => C::C } }",
+        "fn f(e: &E) -> C { match e { E::A | _ => C::A } }",
+        "fn f(e: &E) -> C { let x = |c| match c.downcast_ref::<E>() {\n Some(E::A) => 1,\n _ => 2,\n }; x(e) }",
+        "impl C { fn f(&self) -> u8 { match self { Self::A => 1, ref rest => 2 } } }",
+    ] {
+        assert!(!catch_all_arms(source).is_empty(), "{source}");
+    }
+}
+
+#[test]
+fn every_variant_named_a_literal_match_or_test_code_is_not_found() {
+    for source in [
+        "fn f(e: &E) -> C { match e { E::A => C::A, E::B { .. } | E::C(_) => C::B } }",
+        "fn f(e: Option<&E>) -> C { match e { Some(E::A) => C::A, Some(E::B(_)) | None => C::B } }",
+        "fn f(key: &str) -> u8 { match key { \"a\" | \"b\" => 1, \"c\" => 2, _ => 3 } }",
+        "fn f(n: u8) -> u8 { match n { 0 => 1, 1..=9 => 2, _ => 3 } }",
+        "fn f(e: &E) -> C { match e { E::A if ready() => C::A, E::A | E::B => C::B } }",
+        "#[cfg(test)]\nmod tests { fn f(e: &E) -> u8 { match e { E::A => 1, _ => 2 } } }",
+        "fn f(e: &E) -> bool { matches!(e, E::A) }",
+        "fn f(e: Option<&E>) -> C { match e { None => C::A, Some(x) => C::B } }",
+    ] {
+        assert_eq!(catch_all_arms(source), Vec::<usize>::new(), "{source}");
+    }
+}

@@ -1,6 +1,7 @@
 //! Check the published database contract against its typed parser and output.
 use super::*;
 use crate::domain::types::database::{DbKind, DbMeta, DbRequest};
+use strum::VariantArray;
 
 fn args_for(operation: &str) -> Value {
     match operation {
@@ -134,7 +135,7 @@ fn db_the_contract_publishes_every_engine_the_configuration_accepts() {
         .iter()
         .map(|value| value.as_str().expect("an engine name"))
         .collect();
-    for engine in DbEngine::ALL {
+    for &engine in DbEngine::VARIANTS {
         // No catch-all: a variant added here has to be given a name above.
         let name = match engine {
             DbEngine::Sqlite => "sqlite",
@@ -144,7 +145,7 @@ fn db_the_contract_publishes_every_engine_the_configuration_accepts() {
         assert_eq!(engine.as_str(), name);
         assert!(engines.contains(&name), "{name} is not published");
     }
-    assert_eq!(engines.len(), DbEngine::ALL.len());
+    assert_eq!(engines.len(), DbEngine::VARIANTS.len());
 }
 
 /// A write is one transaction of many statements, so it cannot claim what a

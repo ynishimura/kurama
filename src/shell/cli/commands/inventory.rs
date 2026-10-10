@@ -4,7 +4,7 @@
 //! config keys, kinds and enum values come from `adapters::config::inventory`,
 //! which probes the types; the secret schemes are the table
 //! `SecretRef::parse` dispatches through; the client kinds are
-//! `ClientKind::ALL`. The one thing written by hand is `source_of`, the file
+//! `ClientKind::VARIANTS`. The one thing written by hand is `source_of`, the file
 //! each command is defined in.
 
 use clap::Command;
@@ -18,7 +18,7 @@ use crate::shell::cli::arguments::{ArgumentFacts, visible_arguments};
 use crate::shell::cli::client::ClientKind;
 
 const SCHEMES_SOURCE: &str = "src/domain/types/secret_ref.rs: SCHEMES";
-const CLIENT_KINDS_SOURCE: &str = "src/shell/cli/client.rs: ClientKind::ALL";
+const CLIENT_KINDS_SOURCE: &str = "src/shell/cli/client.rs: ClientKind::VARIANTS";
 const CLAP_SOURCE: &str = "src/shell/cli/args.rs: build_command";
 
 /// One command, with the subcommands it has under `commands`.

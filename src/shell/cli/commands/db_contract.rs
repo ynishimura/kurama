@@ -6,6 +6,7 @@ use crate::domain::types::database::{
 };
 use crate::domain::types::limits;
 use serde_json::{Value, json};
+use strum::VariantArray;
 
 pub fn capabilities() -> Value {
     json!({
@@ -18,7 +19,7 @@ pub fn capabilities() -> Value {
         "error_schema": crate::shell::cli::client_error::schema(),
         "defaults": DbLimits::default(),
         "list_default_limit": limits::DB_CALL.list_page,
-        "engines": DbEngine::ALL.map(DbEngine::as_str),
+        "engines": DbEngine::VARIANTS.iter().copied().map(DbEngine::as_str).collect::<Vec<_>>(),
         // `kurama db <DB>` with no operation, on a terminal: a person's
         // explorer over one connection. An agent never gets it: without a
         // terminal the same call is DB_INVALID.

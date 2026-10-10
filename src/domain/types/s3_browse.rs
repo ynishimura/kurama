@@ -46,7 +46,9 @@ pub fn is_bucket_name(name: &str) -> bool {
             .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'-' | b'.'))
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+/// `strum::VariantArray` gives `S3Operation::VARIANTS`: every operation, in
+/// the order the contract lists them.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, strum::VariantArray)]
 #[serde(rename_all = "snake_case")]
 pub enum S3Operation {
     /// `ListBuckets`, every page.
@@ -62,18 +64,6 @@ pub enum S3Operation {
     /// Every object under the prefix, read to the bounds, each line that
     /// contains the text.
     ContentSearch,
-}
-
-impl S3Operation {
-    /// Every operation, in the order the contract lists them.
-    pub const ALL: [Self; 6] = [
-        Self::Buckets,
-        Self::List,
-        Self::Search,
-        Self::Head,
-        Self::Preview,
-        Self::ContentSearch,
-    ];
 }
 
 /// Where a listing goes on: the page a continuation token names, and how

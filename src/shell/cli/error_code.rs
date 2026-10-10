@@ -309,7 +309,20 @@ impl ErrorCode {
                     "set --region (or region in [s3.*] / [data.*]) to the bucket's region; `aws s3api head-bucket` reports it as BucketRegion",
                 );
             }
-            _ => {}
+            // The code's own hint, below, or none: the message says it.
+            Some(
+                DataError::Sql
+                | DataError::Engine(_)
+                | DataError::Timeout(_)
+                | DataError::Interrupted(_)
+                | DataError::Incomplete
+                | DataError::S3Rejected(_)
+                | DataError::S3Failed
+                | DataError::Changed
+                | DataError::Io(_)
+                | DataError::InputIo { .. },
+            )
+            | None => {}
         }
         if let Some(error) = error
             .chain()
@@ -356,7 +369,14 @@ impl ErrorCode {
                 DbError::Failed(DbFailure::UnsupportedType { .. }) => {
                     Some("cast the column to text in the statement".to_owned())
                 }
-                _ => None,
+                // The message says what happened and what to change.
+                DbError::Failed(
+                    DbFailure::Timeout { .. }
+                    | DbFailure::Interrupted { .. }
+                    | DbFailure::UnreadableValue { .. }
+                    | DbFailure::Disconnected,
+                )
+                | DbError::Io { .. } => None,
             });
         }
         let hint = match self {
@@ -383,12 +403,17 @@ impl ErrorCode {
                     "fix {} (KURAMA_CONFIG_PATH overrides the location); `kurama agent` lists the keys",
                     Self::config_file()
                 );
-                let elsewhere = error.chain().find_map(|cause| match cause.downcast_ref() {
-                    Some(CoreError::KeyOfAnotherSection { key, sections, .. }) => Some(format!(
+                // Reading one variant's fields, not a choice per variant.
+                let elsewhere = error.chain().find_map(|cause| {
+                    let Some(CoreError::KeyOfAnotherSection { key, sections, .. }) =
+                        cause.downcast_ref()
+                    else {
+                        return None;
+                    };
+                    Some(format!(
                         "; this kurama reads `{key}` only in {}, so the key is misplaced or this binary is older than the configuration",
                         sections.join(", ")
-                    )),
-                    _ => None,
+                    ))
                 });
                 return Hint::derived(fix + elsewhere.as_deref().unwrap_or_default());
             }
@@ -413,9 +438,13 @@ impl ErrorCode {
             Self::OAuthLoginRequired => {
                 let profile = error
                     .chain()
-                    .find_map(|cause| match cause.downcast_ref::<OAuthError>() {
-                        Some(OAuthError::LoginRequired { profile, .. }) => Some(profile.as_str()),
-                        _ => None,
+                    .find_map(|cause| match cause.downcast_ref::<OAuthError>()? {
+                        OAuthError::LoginRequired { profile, .. } => Some(profile.as_str()),
+                        OAuthError::Rejected(_)
+                        | OAuthError::Failed(_)
+                        | OAuthError::Secret { .. }
+                        | OAuthError::Config(_)
+                        | OAuthError::UnexpectedState(_) => None,
                     })
                     .unwrap_or("<profile>");
                 return Hint::derived(format!("run `kurama login {profile}` in a terminal"));
@@ -435,14 +464,20 @@ impl ErrorCode {
                 let store = error.chain().find_map(|cause| {
                     let failure = match cause.downcast_ref::<SecretError>() {
                         Some(error) => error.failure,
-                        None => match cause.downcast_ref::<OAuthError>() {
-                            Some(OAuthError::Secret { failure, .. }) => *failure,
-                            _ => return None,
+                        None => match cause.downcast_ref::<OAuthError>()? {
+                            OAuthError::Secret { failure, .. } => *failure,
+                            OAuthError::LoginRequired { .. }
+                            | OAuthError::Rejected(_)
+                            | OAuthError::Failed(_)
+                            | OAuthError::Config(_)
+                            | OAuthError::UnexpectedState(_) => return None,
                         },
                     };
                     match failure {
                         SecretFailure::Rejected { store, not_found } => Some((store, not_found)),
-                        _ => None,
+                        SecretFailure::NeedsAPerson
+                        | SecretFailure::Invalid
+                        | SecretFailure::Unreachable => None,
                     }
                 });
                 return Hint::Derived(store.map(|(store, not_found)| {
@@ -463,88 +498,81 @@ impl ErrorCode {
             Self::ApiTargetRequired => {
                 "pass a TARGET (/path or operationId), or use --ops; the explorer requires a terminal with TERM other than dumb, in a run without KURAMA_AGENT"
             }
-            Self::ApiSpecRequired
-            | Self::ApiSpecUnavailable
-            | Self::ApiSpecInvalid
-            | Self::ApiOperationNotFound
-            | Self::ApiParameterMissing => {
-                let api = error
-                    .chain()
-                    .find_map(|cause| match cause.downcast_ref::<ApiError>() {
-                        Some(
-                            ApiError::SpecRequired { api, .. }
-                            | ApiError::SpecUnavailable { api, .. }
-                            | ApiError::SpecNeedsCredential { api, .. }
-                            | ApiError::SpecInvalid { api, .. }
-                            | ApiError::OperationNotFound { api, .. }
-                            | ApiError::OperationInput { api, .. },
-                        ) => Some(api.as_str()),
-                        _ => None,
-                    })
-                    .unwrap_or("<name>");
-                return Hint::derived(match self {
-                    Self::ApiSpecRequired => {
-                        format!("add openapi = \"<URL or file>\" under [api.{api}] in config.toml")
-                    }
-                    Self::ApiSpecUnavailable
-                        if error.chain().any(|cause| {
-                            matches!(
-                                cause.downcast_ref::<ApiError>(),
-                                Some(ApiError::SpecNeedsCredential { .. })
-                            )
-                        }) =>
-                    {
-                        format!(
-                            "run `kurama api {api} --refresh-spec` without --dry-run to cache the description, then dry-run again"
-                        )
-                    }
-                    Self::ApiSpecUnavailable => {
-                        let Some((key, from_url)) = error.chain().find_map(|cause| match cause
-                            .downcast_ref::<ApiError>(
-                        ) {
-                            Some(ApiError::SpecUnavailable { key, location, .. }) => {
-                                Some((*key, location.starts_with("http")))
-                            }
-                            _ => None,
-                        }) else {
-                            return Hint::Derived(None);
-                        };
-                        if from_url {
-                            format!(
-                                "check the {key} URL under [api.{api}]; `kurama api {api} --refresh-spec` fetches it again"
-                            )
-                        } else {
-                            format!("check the {key} file under [api.{api}]")
-                        }
-                    }
-                    Self::ApiSpecInvalid => {
-                        let Some(key) = error.chain().find_map(|cause| {
-                            match cause.downcast_ref::<ApiError>() {
-                                Some(ApiError::SpecInvalid { key, .. }) => Some(*key),
-                                _ => None,
-                            }
-                        }) else {
-                            return Hint::Derived(None);
-                        };
-                        match key {
-                            "graphql" | "graphql_schema" => format!(
-                                "the graphql schema of [api.{api}] must be a GraphQL introspection result: JSON with a __schema"
-                            ),
-                            "discovery" => format!(
-                                "the discovery document under [api.{api}] must be a Google Discovery Document (discovery#restDescription) as JSON"
-                            ),
-                            _ => format!(
-                                "the openapi document under [api.{api}] must be OpenAPI 3.0 / 3.1 or Swagger 2.0, as JSON or YAML"
-                            ),
-                        }
-                    }
-                    Self::ApiOperationNotFound => {
-                        format!("run `kurama api {api} --ops [QUERY]` to list the operations")
-                    }
+            Self::ApiSpecRequired => {
+                let api = api_named(error);
+                return Hint::derived(format!(
+                    "add openapi = \"<URL or file>\" under [api.{api}] in config.toml"
+                ));
+            }
+            Self::ApiSpecUnavailable
+                if error.chain().any(|cause| {
+                    matches!(
+                        cause.downcast_ref::<ApiError>(),
+                        Some(ApiError::SpecNeedsCredential { .. })
+                    )
+                }) =>
+            {
+                let api = api_named(error);
+                return Hint::derived(format!(
+                    "run `kurama api {api} --refresh-spec` without --dry-run to cache the description, then dry-run again"
+                ));
+            }
+            Self::ApiSpecUnavailable => {
+                // Reading one variant's fields, not a choice per variant.
+                let Some((key, from_url)) = error.chain().find_map(|cause| {
+                    let Some(ApiError::SpecUnavailable { key, location, .. }) =
+                        cause.downcast_ref::<ApiError>()
+                    else {
+                        return None;
+                    };
+                    Some((*key, location.starts_with("http")))
+                }) else {
+                    return Hint::Derived(None);
+                };
+                let api = api_named(error);
+                return Hint::derived(if from_url {
+                    format!(
+                        "check the {key} URL under [api.{api}]; `kurama api {api} --refresh-spec` fetches it again"
+                    )
+                } else {
+                    format!("check the {key} file under [api.{api}]")
+                });
+            }
+            Self::ApiSpecInvalid => {
+                let Some(key) = error.chain().find_map(|cause| {
+                    let Some(ApiError::SpecInvalid { key, .. }) = cause.downcast_ref::<ApiError>()
+                    else {
+                        return None;
+                    };
+                    Some(*key)
+                }) else {
+                    return Hint::Derived(None);
+                };
+                let api = api_named(error);
+                // A match on the configured key's text, not on a variant.
+                return Hint::derived(match key {
+                    "graphql" | "graphql_schema" => format!(
+                        "the graphql schema of [api.{api}] must be a GraphQL introspection result: JSON with a __schema"
+                    ),
+                    "discovery" => format!(
+                        "the discovery document under [api.{api}] must be a Google Discovery Document (discovery#restDescription) as JSON"
+                    ),
                     _ => format!(
-                        "run `kurama api {api} --describe <OP>` to see the parameters and the body"
+                        "the openapi document under [api.{api}] must be OpenAPI 3.0 / 3.1 or Swagger 2.0, as JSON or YAML"
                     ),
                 });
+            }
+            Self::ApiOperationNotFound => {
+                let api = api_named(error);
+                return Hint::derived(format!(
+                    "run `kurama api {api} --ops [QUERY]` to list the operations"
+                ));
+            }
+            Self::ApiParameterMissing => {
+                let api = api_named(error);
+                return Hint::derived(format!(
+                    "run `kurama api {api} --describe <OP>` to see the parameters and the body"
+                ));
             }
             Self::ConfigWriteFailed => {
                 return Hint::Derived(
@@ -564,13 +592,7 @@ impl ErrorCode {
                 );
             }
             Self::ApiSigningTargetRequired => {
-                let api = error
-                    .chain()
-                    .find_map(|cause| match cause.downcast_ref::<ApiError>() {
-                        Some(ApiError::SigningTargetRequired { api, .. }) => Some(api.as_str()),
-                        _ => None,
-                    })
-                    .unwrap_or("<name>");
+                let api = api_named(error);
                 return Hint::derived(format!(
                     "set the missing SigV4 setting under [api.{api}] in config.toml, or pass its --service / --region option"
                 ));
@@ -579,13 +601,9 @@ impl ErrorCode {
                 "open the URL printed above in a browser yourself; check that the system has a default browser for it"
             }
             Self::ApiIntrospectionRefused => {
-                let Some(api) =
-                    error
-                        .chain()
-                        .find_map(|cause| match cause.downcast_ref::<ApiError>() {
-                            Some(ApiError::IntrospectionRefused { api, .. }) => Some(api.as_str()),
-                            _ => None,
-                        })
+                let Some(api) = error
+                    .chain()
+                    .find_map(|cause| cause.downcast_ref::<ApiError>()?.api())
                 else {
                     return Hint::Derived(None);
                 };
@@ -616,7 +634,39 @@ impl ErrorCode {
             Self::AgentPolicyDenied => {
                 "ask a person whether this call may be made, then rerun it with --confirm; to allow it for every agent run, widen [agent] or [api.<name>.agent] in config.toml"
             }
-            _ => return Hint::None,
+            // The message already says what to do: the remote side's answer,
+            // the argument that was wrong, or the STS refusal as AWS named it.
+            Self::ProfileInvalid
+            | Self::KindUnsupported
+            | Self::StsAccessDenied
+            | Self::StsInvalidMfaToken
+            | Self::StsInvalidCredentials
+            | Self::StsRoleNotFound
+            | Self::StsMfaRequired
+            | Self::StsServiceError
+            | Self::FederationFailed
+            | Self::OAuthRejected
+            | Self::OAuthFailed
+            | Self::ArgumentInvalid
+            | Self::ApiArgumentInvalid
+            | Self::ApiHttpError
+            | Self::ApiRequestFailed
+            | Self::JqError
+            | Self::ObsidianFailed => return Hint::None,
+            // A `data`, `db` or `s3` failure got its hint from the typed error
+            // above; reaching here means that error has none.
+            Self::DataInvalid
+            | Self::DataFailed
+            | Self::DataRejected
+            | Self::DbInvalid
+            | Self::DbUnreachable
+            | Self::DbFailed
+            | Self::DbRejected
+            | Self::S3Invalid
+            | Self::S3Rejected
+            | Self::S3Failed => return Hint::None,
+            // A bug: nothing a person can do differs from what the message says.
+            Self::Internal => return Hint::None,
         };
         Hint::Fixed(hint)
     }
@@ -653,15 +703,28 @@ impl ErrorCode {
                     DataError::S3Rejected(_)
                     | DataError::S3OtherRegion { .. }
                     | DataError::S3Redirected { .. } => Self::DataRejected,
-                    _ => Self::DataFailed,
+                    DataError::Engine(_)
+                    | DataError::Timeout(_)
+                    | DataError::Interrupted(_)
+                    | DataError::Incomplete
+                    | DataError::S3Failed
+                    | DataError::Changed
+                    | DataError::Io(_)
+                    | DataError::InputIo { .. } => Self::DataFailed,
                 };
             }
-            match cause.downcast_ref::<CliExecutorError>() {
-                Some(CliExecutorError::ProfileNotFound(_)) => return Self::ProfileNotFound,
-                Some(CliExecutorError::TerminalRequired) => return Self::TerminalRequired,
-                Some(CliExecutorError::ExecFailed { .. }) => return Self::ExecFailed,
-                Some(CliExecutorError::KindUnsupported { .. }) => return Self::KindUnsupported,
-                _ => {}
+            if let Some(error) = cause.downcast_ref::<CliExecutorError>() {
+                return match error {
+                    CliExecutorError::ProfileNotFound(_) => Self::ProfileNotFound,
+                    CliExecutorError::TerminalRequired => Self::TerminalRequired,
+                    CliExecutorError::ExecFailed { .. } => Self::ExecFailed,
+                    CliExecutorError::KindUnsupported { .. } => Self::KindUnsupported,
+                    // An effect that needs a selected profile or its
+                    // credentials ran before the workflow produced them: the
+                    // workflow's own invariant, so a bug.
+                    CliExecutorError::ProfileNotSelected
+                    | CliExecutorError::CredentialsNotAvailable(_) => Self::Internal,
+                };
             }
             if let Some(error) = cause.downcast_ref::<OAuthError>() {
                 return match error {
@@ -730,15 +793,17 @@ impl ErrorCode {
                 };
             }
             if let Some(error) = cause.downcast_ref::<SecretError>() {
-                return match error.cause.as_ref().map(|cause| Self::classify(cause)) {
-                    // The AssumeRole path classified itself already: a wrong
-                    // TOTP is exit 3 and a refused role is exit 4, and this
-                    // reference is malformed in neither case. A chain that
-                    // classifies as nothing says nothing, so the resolver's
-                    // own failure still decides rather than `INTERNAL`.
-                    Some(Self::Internal) | None => Self::from_secret_failure(error.failure),
-                    Some(code) => code,
-                };
+                // The AssumeRole path classified itself already: a wrong TOTP
+                // is exit 3 and a refused role is exit 4, and this reference
+                // is malformed in neither case. A chain that classifies as
+                // nothing says nothing, so the resolver's own failure still
+                // decides rather than `INTERNAL`.
+                return error
+                    .cause
+                    .as_ref()
+                    .map(|cause| Self::classify(cause))
+                    .filter(|code| *code != Self::Internal)
+                    .unwrap_or_else(|| Self::from_secret_failure(error.failure));
             }
             if cause.downcast_ref::<TokenStoreError>().is_some() {
                 return Self::TokenStoreError;
@@ -781,13 +846,21 @@ impl ErrorCode {
             if cause.downcast_ref::<toml::de::Error>().is_some() {
                 return Self::ConfigInvalid;
             }
-            if let Some(
-                CoreError::Configuration(_)
-                | CoreError::TomlParse(_)
-                | CoreError::KeyOfAnotherSection { .. },
-            ) = cause.downcast_ref::<CoreError>()
-            {
-                return Self::ConfigInvalid;
+            if let Some(error) = cause.downcast_ref::<CoreError>() {
+                match error {
+                    CoreError::Configuration(_)
+                    | CoreError::TomlParse(_)
+                    | CoreError::KeyOfAnotherSection { .. } => return Self::ConfigInvalid,
+                    // Untyped failures (a terminal, the home directory, an SDK
+                    // call reduced to text): the chain below may still name
+                    // what happened, so the walk goes on and ends `INTERNAL`.
+                    CoreError::MfaRequired(_)
+                    | CoreError::Internal(_)
+                    | CoreError::Other(_)
+                    | CoreError::Io(_)
+                    | CoreError::JsonParse(_)
+                    | CoreError::AwsSdk(_) => {}
+                }
             }
             if cause.downcast_ref::<BrowserError>().is_some() {
                 return Self::BrowserFailed;
@@ -860,6 +933,15 @@ impl std::fmt::Display for ErrorCode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(self.as_str())
     }
+}
+
+/// The `[api.*]` section a failure of `kurama api` is about, for a hint that
+/// names it.
+fn api_named(error: &anyhow::Error) -> &str {
+    error
+        .chain()
+        .find_map(|cause| cause.downcast_ref::<ApiError>()?.api())
+        .unwrap_or("<name>")
 }
 
 /// What to do about a `kurama s3` failure; each variant has one fixed text.

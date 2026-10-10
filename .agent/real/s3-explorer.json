@@ -3,9 +3,9 @@
   "feature": "s3-explorer",
   "status": "verified",
   "reason": null,
-  "commit": "196cd054fe7e43bc220690c42c7f92d972027ef3",
-  "feature_hash": "49a9bdc641fa8dbb",
-  "diff_hash": "056ec368499187c8",
+  "commit": "ace08d8fd7c30d777c8caaa5fb1085219acff420",
+  "feature_hash": "cf700e563579e5ee",
+  "diff_hash": "f96674ac9a4f78d4",
   "environment": "real-services",
   "access": "read-only",
   "command": [
@@ -16,7 +16,7 @@
     "real",
     "s3-explorer"
   ],
-  "generated_at": "2026-09-27T06:56:07.445151+00:00",
+  "generated_at": "2026-10-10T18:34:10.205532+00:00",
   "observed": [
     {
       "test": "s3_lists_a_prefix_as_common_prefixes_and_objects",

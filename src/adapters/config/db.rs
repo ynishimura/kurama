@@ -6,7 +6,10 @@ use crate::domain::types::database::{DbError, DbLimits, InvalidDb};
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
-#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+/// `strum::VariantArray` gives `DbEngine::VARIANTS`: every engine a `[db.*]`
+/// section may name. The contract publishes it, so an engine added to the
+/// enum is an engine agents can be told about.
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, strum::VariantArray)]
 #[serde(rename_all = "lowercase")]
 pub enum DbEngine {
     Sqlite,
@@ -15,10 +18,6 @@ pub enum DbEngine {
 }
 
 impl DbEngine {
-    /// Every engine a `[db.*]` section may name. The contract publishes this,
-    /// so an engine added to the enum is an engine agents can be told about.
-    pub const ALL: [Self; 3] = [Self::Sqlite, Self::Postgresql, Self::Mysql];
-
     pub fn as_str(self) -> &'static str {
         match self {
             Self::Sqlite => "sqlite",

@@ -90,6 +90,30 @@ pub enum ApiError {
     GraphQl(String),
 }
 
+impl ApiError {
+    /// The `[api.*]` section the failure names, when it names one.
+    pub fn api(&self) -> Option<&str> {
+        match self {
+            Self::SigningTargetRequired { api, .. }
+            | Self::SpecRequired { api, .. }
+            | Self::SpecUnavailable { api, .. }
+            | Self::SpecNeedsCredential { api, .. }
+            | Self::SpecInvalid { api, .. }
+            | Self::OperationNotFound { api, .. }
+            | Self::OperationInput { api, .. }
+            | Self::IntrospectionRefused { api, .. } => Some(api),
+            Self::NotFound(_)
+            | Self::TargetRequired
+            | Self::ArgumentInvalid(_)
+            | Self::HttpStatus { .. }
+            | Self::RequestFailed(_)
+            | Self::Jq(_)
+            | Self::OutputFailed { .. }
+            | Self::GraphQl(_) => None,
+        }
+    }
+}
+
 fn format_candidates(candidates: &[String]) -> String {
     if candidates.is_empty() {
         String::new()

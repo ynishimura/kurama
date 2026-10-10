@@ -50,7 +50,7 @@ pub async fn run(matches: &clap::ArgMatches) -> anyhow::Result<()> {
     };
 
     tracing::debug!("Parsed command: {:?}", command);
-    if let Some(call) = audited_call(&command) {
+    if let Some(call) = command.contract().audited {
         crate::shell::audit::begin(call, &config, crate::shell::agent_policy::is_agent_run());
     }
     let result = dispatch::execute_command(command, config).await;
@@ -60,48 +60,4 @@ pub async fn run(matches: &clap::ArgMatches) -> anyhow::Result<()> {
         code.map(ErrorCode::as_str),
     );
     result
-}
-
-/// The calls the audit log records: `api`, `exec`, `db`, `data`, `obsidian`
-/// and the first read of `preset setup`.
-fn audited_call(command: &command::CliCommand) -> Option<crate::shell::audit::Call<'_>> {
-    use crate::shell::audit::Call;
-    use command::CliCommand;
-    use commands::profile::ProfileAction;
-    match command {
-        CliCommand::Api(api) => Some(Call {
-            command: "api",
-            target: &api.api,
-            program: None,
-        }),
-        CliCommand::Profile(profile) => match &profile.action {
-            ProfileAction::Exec(argv) => Some(Call {
-                command: "exec",
-                target: &profile.profile_name,
-                program: argv.first().map(String::as_str),
-            }),
-            ProfileAction::Export(_) | ProfileAction::OpenConsole => None,
-        },
-        CliCommand::Db(db) => Some(Call {
-            command: "db",
-            target: &db.database,
-            program: None,
-        }),
-        CliCommand::Data(data) => Some(Call {
-            command: "data",
-            target: data.workspace.as_deref().unwrap_or("ad-hoc"),
-            program: None,
-        }),
-        CliCommand::Obsidian(obsidian) => Some(Call {
-            command: "obsidian",
-            target: obsidian.audit_target(),
-            program: None,
-        }),
-        CliCommand::Preset(preset) => preset.sent_to().map(|api| Call {
-            command: "preset setup",
-            target: api,
-            program: None,
-        }),
-        _ => None,
-    }
 }

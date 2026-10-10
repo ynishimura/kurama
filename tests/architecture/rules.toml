@@ -345,9 +345,16 @@ exemptions = []
 
 [[rule]]
 id = "ARCH-037"
-summary = "A choice made per database engine names every engine, with no catch-all arm"
-checks = ["tests/architecture/database.rs::a_choice_made_per_engine_names_every_engine"]
-docs = ["AGENTS.md", "docs/development/database.md"]
+summary = "A choice made per variant names every variant, with no catch-all arm: per database engine, and every match of ErrorCode::classify / hint_of (src/shell/cli/error_code.rs) and of CliCommand::contract (src/shell/cli/command.rs); a match on literals may end in one"
+method = "syntax"
+limits = "names are not resolved: super:: and self:: stay relative, a glob import is the path it names, a macro body is read as tokens, and a path built by a macro from pieces is not seen; a catch-all is `_`, a lowercase binding, or `Some` / `Ok` / `Err` around one where another arm of the same match opens that wrapper to name what is inside, so an `if let` or a `matches!` that picks one variant is not read as a choice"
+checks = [
+  "tests/architecture/database.rs::a_choice_made_per_engine_names_every_engine",
+  "tests/architecture/errors.rs::a_contract_match_names_every_variant",
+]
+violating_fixtures = ["tests/architecture/errors.rs::a_catch_all_arm_in_any_form_is_found"]
+passing_fixtures = ["tests/architecture/errors.rs::every_variant_named_a_literal_match_or_test_code_is_not_found"]
+docs = ["docs/development/database.md", "docs/development/conventions.md"]
 exemptions = []
 
 [[rule]]

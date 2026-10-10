@@ -6,6 +6,8 @@
 //! `<name>.txt.new` next to the file and fails; run the test with
 //! `KURAMA_UPDATE_SNAPSHOTS=1` to accept, after reading the diff.
 
+use strum::VariantArray;
+
 use std::path::PathBuf;
 
 use ratatui::Frame;
@@ -201,7 +203,7 @@ pub fn check_contract(model: &TuiModel, buffer: &Buffer) -> Vec<String> {
 /// The tab row names every tab and draws the one on screen selected.
 fn tab_violations(model: &TuiModel, buffer: &Buffer, line: &str) -> Vec<String> {
     let mut violations = Vec::new();
-    for (index, tab) in Tab::ALL.iter().enumerate() {
+    for (index, tab) in Tab::VARIANTS.iter().enumerate() {
         let label = format!("{} {}", index + 1, tab.label());
         let selected = *tab == model.tab;
         match column_of(line, &label) {
