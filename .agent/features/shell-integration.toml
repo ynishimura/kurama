@@ -1,6 +1,7 @@
 [shell-integration]
 summary = "`kurama init zsh`: export wrapper and dynamic offline name/operation/parameter/jq completion"
 entry = "src/shell/cli/commands/init.rs"
+docs = ["docs/development/flows/completion.md"]
 files = [
   "src/domain/functions/completion_candidates.rs",
   "src/adapters/completion.rs",

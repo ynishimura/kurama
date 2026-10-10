@@ -10,20 +10,31 @@ use crate::verify::{list_scenarios, scenario_name};
 use crate::{root, rust_files};
 
 /// `  - <purpose>`: the first sentence of the `//!` paragraph that opens a
-/// Rust file (of `mod.rs` for a directory entry), empty for anything else.
+/// Rust file (of `mod.rs` for a directory entry), or of the paragraph under a
+/// Markdown document's title; empty for anything else.
 fn module_doc(path: &str) -> String {
     let file = match path.strip_suffix('/') {
         Some(dir) => format!("{dir}/mod.rs"),
-        None if path.ends_with(".rs") => path.to_string(),
+        None if path.ends_with(".rs") || path.ends_with(".md") => path.to_string(),
         None => return String::new(),
     };
-    let Ok(content) = std::fs::read_to_string(root().join(file)) else {
+    let Ok(content) = std::fs::read_to_string(root().join(&file)) else {
         return String::new();
     };
-    let paragraph = content
-        .lines()
-        .map_while(|line| line.strip_prefix("//!"))
-        .map(str::trim)
+    let lines: Vec<&str> = if file.ends_with(".md") {
+        content
+            .lines()
+            .skip_while(|line| line.starts_with('#') || line.trim().is_empty())
+            .collect()
+    } else {
+        content
+            .lines()
+            .map_while(|line| line.strip_prefix("//!"))
+            .collect()
+    };
+    let paragraph = lines
+        .iter()
+        .map(|line| line.trim())
         .take_while(|line| !line.is_empty())
         .collect::<Vec<_>>()
         .join(" ");
@@ -57,6 +68,9 @@ pub(crate) fn map(feature: Option<&str>) -> Result<(), String> {
             feature.entry,
             module_doc(&feature.entry)
         );
+        for doc in &feature.docs {
+            println!("  docs:      {doc}{}", module_doc(doc));
+        }
         for file in &feature.files {
             println!("  file:      {file}{}", module_doc(file));
         }
@@ -215,5 +229,16 @@ mod tests {
         );
         assert_eq!(declaration("fn private() {}"), None);
         assert_eq!(declaration("pub use foo::bar;"), None);
+    }
+
+    /// A document a feature lists under `docs` is announced by the sentence
+    /// under its title, the way a Rust file is by its `//!` line.
+    #[test]
+    fn a_document_is_described_by_the_paragraph_under_its_title() {
+        assert_eq!(
+            module_doc("docs/development/flows/secrets.md"),
+            "  - How a configured secret reference is parsed, resolved once per process and classified when it fails."
+        );
+        assert_eq!(module_doc("docs/development/flows/no-such.md"), "");
     }
 }

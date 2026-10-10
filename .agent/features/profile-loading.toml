@@ -1,6 +1,7 @@
 [profile-loading]
 summary = "Parse ~/.aws/config into profiles and select one by name"
 entry = "src/adapters/profile/manager.rs"
+docs = ["docs/development/flows/cli.md"]
 files = [
   "src/domain/types/profile.rs",
   "src/adapters/profile/",

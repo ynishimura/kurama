@@ -1,6 +1,7 @@
 [console-federation]
 summary = "Open the AWS console through the federation endpoint with the assumed credentials"
 entry = "src/domain/functions/federation.rs"
+docs = ["docs/development/flows/cli.md"]
 files = [
   "src/domain/functions/federation.rs",
   "src/adapters/aws/federation.rs",

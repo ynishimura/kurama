@@ -575,6 +575,7 @@ mod tests {
                 Feature {
                     summary: String::new(),
                     entry: String::new(),
+                    docs: vec![],
                     files: vec![],
                     tests: vec![],
                     scenarios: scenarios.iter().map(|s| s.to_string()).collect(),

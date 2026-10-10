@@ -1,6 +1,7 @@
 [exec]
 summary = "`kurama exec <PROFILE> -- <CMD>`: get the source's credentials and exec(2) the command with them in its environment"
 entry = "src/shell/cli/commands/profile.rs"
+docs = ["docs/development/flows/cli.md"]
 files = [
   "src/shell/cli/commands/profile.rs",
   "src/shell/cli/executor.rs",

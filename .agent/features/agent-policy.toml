@@ -1,6 +1,7 @@
 [agent-policy]
 summary = "`[agent]` / `[api.<name>.agent]`: in a run whose environment sets KURAMA_AGENT, api requests outside the policy, db --commit and exec's full permissions need --confirm"
 entry = "src/shell/agent_policy.rs"
+docs = ["docs/development/flows/agent-runs.md"]
 files = [
   "src/shell/agent_policy.rs",
   "src/domain/functions/agent_policy.rs",

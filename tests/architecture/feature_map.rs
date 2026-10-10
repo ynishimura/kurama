@@ -152,7 +152,12 @@ fn feature_map_paths_and_scenarios_exist() {
     let scenarios = scenario_names();
     let mut problems = Vec::new();
     for (name, feature) in &features {
-        for path in feature.files.iter().chain(std::iter::once(&feature.entry)) {
+        for path in feature
+            .files
+            .iter()
+            .chain(&feature.docs)
+            .chain(std::iter::once(&feature.entry))
+        {
             if !root().join(path.trim_end_matches('/')).exists() {
                 problems.push(format!("[{name}] path does not exist: {path}"));
             }
@@ -234,6 +239,7 @@ fn fixture_features() -> BTreeMap<String, Feature> {
         "a".to_string(),
         Feature {
             entry: "src/a/mod.rs".into(),
+            docs: vec![],
             files: vec!["src/a/".into(), "tests/scenarios/a.rs".into()],
             scenarios: vec!["a_works".into()],
             depends_on: vec![],

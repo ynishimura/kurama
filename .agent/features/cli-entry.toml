@@ -1,6 +1,7 @@
 [cli-entry]
 summary = "Verb commands (env, exec, console, login, logout, token, api, status, unset, agent, init, completions), bootstrap (config and logging) and dispatch; AWS environment cleanup occurs at the SDK boundary; no command opens the TUI on a terminal"
 entry = "src/shell/cli/mod.rs"
+docs = ["docs/development/flows/cli.md"]
 files = [
   "src/main.rs",
   "src/lib.rs",

@@ -1,6 +1,7 @@
 [verification-harness]
 summary = "Runtime verification harness, scenarios, architecture rules and agent metadata"
 entry = "tests/support/mod.rs"
+docs = ["docs/development/harness.md"]
 files = [
   "tests/support/",
   "tests/scenarios/",

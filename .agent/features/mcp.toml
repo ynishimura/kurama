@@ -1,6 +1,7 @@
 [mcp]
 summary = "`kurama mcp`: an MCP server on stdio, or over Streamable HTTP with --listen, whose tools (ready, list_apis, list_operations, describe_operation, call_api, query_data, query_db, and with [obsidian] obsidian_search, obsidian_read, obsidian_files) run kurama's own JSON commands as an agent's, so the [agent] policy, the audit log and the error document are the command line's"
 entry = "src/shell/cli/commands/mcp.rs"
+docs = ["docs/development/flows/mcp.md"]
 files = [
   "src/shell/cli/commands/mcp.rs",
   "src/domain/functions/mcp.rs",
