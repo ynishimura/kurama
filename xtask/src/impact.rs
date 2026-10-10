@@ -508,6 +508,7 @@ mod tests {
         Feature {
             summary: "test".into(),
             entry: entry.into(),
+            docs: vec![],
             files: vec![entry.into()],
             tests: vec![],
             scenarios: vec![],

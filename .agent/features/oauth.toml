@@ -1,6 +1,7 @@
 [oauth]
 summary = "[auth.*] credential sources that are not AWS profiles: kind = \"oauth\" (the token workflow -- authorization code + PKCE, device code, client credentials, refresh, discovery -- the keychain token store with a per-source lock, client secrets from any store kurama reads) kind = \"token\" (a credential issued elsewhere, read from its secret store and sent in the header the source names, stored nowhere) and kind = \"secrets\" (several references, each read into its own variable for env / exec, never sent in a request), with login / logout / token / status / env / exec on a source"
 entry = "src/workflows/oauth_token/transitions.rs"
+docs = ["docs/development/flows/auth-and-api.md", "docs/development/flows/secrets.md"]
 files = [
   "src/workflows/oauth_token/",
   "src/domain/types/oauth_token.rs",

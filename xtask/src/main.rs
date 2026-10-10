@@ -3,7 +3,7 @@
 //! tool does what, and it turns `.agent/features/` plus the scenario
 //! reports written by `tests/scenarios/` into impact analysis and a
 //! verification report. Everything here must stay describable in one line
-//! each in AGENTS.md.
+//! each in docs/development/commands.md.
 
 mod architecture_audit;
 mod architecture_fixtures;
@@ -614,7 +614,7 @@ mod main_tests {
             .collect()
     }
 
-    /// The commands the Commands table of AGENTS.md names, from the first
+    /// The commands the table of docs/development/commands.md names, from the first
     /// cell of each row. A cell names several commands as `` `cargo xtask
     /// db-up` / `db-down` ``; after a command that takes arguments the other
     /// pieces are its subcommands (`worktree add` / `list` / `remove`).
@@ -652,7 +652,7 @@ mod main_tests {
     /// command that is not there, or leaves out one that is.
     #[test]
     fn the_commands_table_the_help_and_the_dispatch_name_the_same_commands() {
-        let agents = std::fs::read_to_string(root().join("AGENTS.md")).unwrap();
+        let agents = std::fs::read_to_string(root().join("docs/development/commands.md")).unwrap();
         let (table, help, dispatch) = (
             documented_commands(&agents),
             help_commands(),
@@ -668,7 +668,7 @@ mod main_tests {
         );
         let mut problems = Vec::new();
         for (name, list) in [
-            ("the Commands table of AGENTS.md", &table),
+            ("the table of docs/development/commands.md", &table),
             ("HELP in xtask/src/main.rs", &help),
             ("the `match` in dispatch()", &dispatch),
             ("COMMANDS, which decides each prelude", &preludes),

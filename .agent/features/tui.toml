@@ -1,6 +1,7 @@
 [tui]
 summary = "Interactive home screen (ratatui, TEA runtime): header, AWS / Auth / API / DB / Data tabs, their table, detail pane and key hints built from the shared theme, layout breakpoints and components; ends in the same AssumeRole workflow"
 entry = "src/shell/tui/tea/runtime.rs"
+docs = ["docs/development/flows/tui.md", "docs/development/tui-testing.md"]
 files = [
   "src/shell/tui/",
   "src/shell/tui/components/line_input.rs",

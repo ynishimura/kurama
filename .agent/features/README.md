@@ -15,6 +15,7 @@ two files declare the same feature.
 #
 #   summary    one line, what the feature does for the user
 #   entry      the file to read first
+#   docs       documents that narrate the feature's flow; `map` prints them first
 #   files      files or directory prefixes (ending in "/") that implement it
 #   tests      substring filters: cargo test --locked --features test-fakes -- <filters>
 #   scenarios  test names under tests/scenarios/ (runtime verification)

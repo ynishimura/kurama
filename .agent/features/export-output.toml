@@ -1,6 +1,7 @@
 [export-output]
 summary = "Hand credentials to the caller: shell export script (AWS_* or an [auth.*] env_var, whichever kind the source is), unset script, credential_process / token JSON, zsh wrapper hand-off"
 entry = "src/domain/functions/export.rs"
+docs = ["docs/development/flows/cli.md"]
 files = [
   "src/domain/functions/export.rs",
   "src/domain/types/output_format.rs",

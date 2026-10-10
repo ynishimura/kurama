@@ -1,6 +1,7 @@
 [local-analytics]
 summary = "Embedded DuckDB CLI for local/S3 CSV, JSONL and Parquet: schema, preview, SQL/JOIN, bounded JSON and atomic local export; no data TUI"
 entry = "src/shell/cli/commands/data.rs"
+docs = ["docs/development/flows/local-analytics.md", "docs/development/data.md"]
 files = [
   "src/shell/cli/commands/data.rs",
   "src/shell/cli/commands/data_plan.rs",

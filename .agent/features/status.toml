@@ -1,6 +1,7 @@
 [status]
 summary = "`kurama status`: every AWS profile, [auth.*] source and [api.*] profile, [data.*] workspace and [s3.*] connection with its session or token state and what the shell holds (KURAMA_AWS, KURAMA_AUTH), as a table or JSON"
 entry = "src/shell/cli/commands/status.rs"
+docs = ["docs/development/flows/cli.md"]
 files = [
   "src/shell/cli/commands/status.rs",
   "src/domain/functions/profile_status.rs",

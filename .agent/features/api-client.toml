@@ -1,6 +1,7 @@
 [api-client]
 summary = "`kurama api <API> [TARGET]`: one HTTP request to an [api.*] profile with its source's bearer token, the credential of a kind = \"token\" source in the header it names, or, with aws_profile, a SigV4 signature from the profile's role credentials; --json envelope, --jq through jaq, --output PATH (a 2xx body renamed into place), --pages N (one line per page, following Link rel=\"next\" or a --cursor PATH=PARAM, with a stop report on stderr), --shape / --sample N (the printed body cut to its types or its first N array elements), --dry-run (with --json, a plan document that starts no credential source), -v, -k, --timeout, --service / --region, one retry after a 401 on an OAuth token and none on the other two"
 entry = "src/shell/cli/commands/api.rs"
+docs = ["docs/development/flows/auth-and-api.md"]
 files = [
   "src/shell/cli/commands/api.rs",
   "src/shell/cli/commands/api_plan.rs",

@@ -1,6 +1,7 @@
 [session-cache]
 summary = "Cache GetSessionToken credentials per MFA device (macOS keychain) and reuse them for AssumeRole; the keychain entry helper the token store shares"
 entry = "src/domain/functions/session_cache.rs"
+docs = ["docs/development/flows/cli.md"]
 files = [
   "src/domain/types/cached_session.rs",
   "src/domain/functions/session_cache.rs",
