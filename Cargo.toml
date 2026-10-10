@@ -4,7 +4,7 @@ members = ["xtask"]
 
 [package]
 name = "kurama"
-version = "0.1.1"
+version = "0.1.2"
 # 2024, so rustdoc compiles every doctest into one binary instead of linking
 # the 150MB rlib 23 times (`--merge-doctests auto`).
 edition = "2024"

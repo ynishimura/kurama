@@ -365,7 +365,7 @@ Enter を押すと、`kurama env` と同じように選択中のプロファイ�
 | <kbd>q</kbd> / <kbd>Ctrl-C</kbd> | 終了 |
 
 ## 設定
-<!-- en: 2d0a1d838b39 -->
+<!-- en: b3d2cc12862b -->
 
 kurama は `~/.config/kurama/config.toml` を読みます。別のファイルを使うには `KURAMA_CONFIG_PATH` を設定します。キーはすべて省略できます。ファイルには次のセクションがあります。
 

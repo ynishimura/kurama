@@ -11,6 +11,25 @@ format. Internal changes need none.
 
 ## Unreleased
 
+## 0.1.2 - 2026-10-10
+
+### Added
+
+- `kurama mcp --listen` serves the same MCP tools over Streamable HTTP on
+  the loopback address `[mcp] listen`, for a cloud agent behind a TLS front.
+  `[mcp]` takes `listen`, `token` (a secret reference the client sends as a
+  bearer token), `tools`, `call_timeout` and `max_concurrent_calls`; `tools`
+  and `call_timeout` apply to stdio too. A server that cannot listen is
+  `MCP_LISTEN_FAILED`.
+- The MCP tool `call_api` takes `query`, percent-encoded onto the target.
+- `kurama obsidian search|read|files [--json]` and the MCP tools
+  `obsidian_search`, `obsidian_read` and `obsidian_files` read an Obsidian
+  vault through the official Obsidian CLI, inside `[obsidian] allow_paths`
+  only, and never write to it. `[obsidian]` takes `vault`, `allow_paths`,
+  `cli_path`, `max_read_bytes` and `timeout`. New error codes:
+  `OBSIDIAN_PATH_REFUSED` (exit 2), `OBSIDIAN_UNAVAILABLE` (exit 3) and
+  `OBSIDIAN_FAILED`.
+
 ### Changed
 
 - The `zendesk` preset gets a token through an OAuth client credentials grant
@@ -21,6 +40,8 @@ format. Internal changes need none.
 - The next steps `preset show` / `preset add` print for a client credentials
   preset no longer ask for `kurama login`: the first `kurama api` call gets
   the token.
+- `kurama data` embeds DuckDB 1.5.6 (was 1.5.5), with its matching httpfs
+  extension for S3 reads.
 
 ## 0.1.1 - 2026-10-01
 
