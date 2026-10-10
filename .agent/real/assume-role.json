@@ -3,9 +3,9 @@
   "feature": "assume-role",
   "status": "verified",
   "reason": null,
-  "commit": "43baf0884ce7e3229162abfb08b9b900776ab755",
-  "feature_hash": "786ae04af8e31406",
-  "diff_hash": "cb7788e9af280039",
+  "commit": "2310cf857d4154f85943d458ca71efabdddb1d6d",
+  "feature_hash": "defb27876cc2a059",
+  "diff_hash": "cbf29ce484222325",
   "environment": "real-services",
   "access": "read-only",
   "command": [
@@ -16,8 +16,15 @@
     "real",
     "assume-role"
   ],
-  "generated_at": "2026-10-10T18:27:04.263336+00:00",
+  "generated_at": "2026-10-10T18:49:03.352691+00:00",
   "observed": [
+    {
+      "test": "assume_role_iam_user_exec_runs_the_command_with_the_mapped_long_term_keys",
+      "result": "passed",
+      "mock": [
+        "assume_role_iam_user_exec_runs_the_command_with_the_mapped_long_term_keys"
+      ]
+    },
     {
       "test": "assume_role_real_env_exports_the_real_profile",
       "result": "passed",
