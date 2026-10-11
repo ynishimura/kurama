@@ -4,11 +4,12 @@ use crate::adapters::auth::OnePasswordCredentialsProvider;
 use crate::adapters::config::OnePasswordConfig;
 use crate::console::progress;
 use crate::domain::functions::export::AWS_ENV_VARS;
-use aws_config::{BehaviorVersion, SdkConfig};
+use aws_config::{BehaviorVersion, Region, SdkConfig};
 use tracing::{debug, info};
 
 pub struct AwsConfigBuilder {
     profile: Option<String>,
+    region: Option<String>,
     behavior_version: BehaviorVersion,
     onepassword_config: Option<OnePasswordConfig>,
 }
@@ -24,6 +25,7 @@ impl AwsConfigBuilder {
     pub fn new() -> Self {
         Self {
             profile: None,
+            region: None,
             behavior_version: BehaviorVersion::latest(),
             onepassword_config: None,
         }
@@ -60,6 +62,13 @@ impl AwsConfigBuilder {
         self
     }
 
+    /// Set the region instead of letting the SDK read it from the profile,
+    /// which it drops when the name holds a space (`[profile dev team]`).
+    pub fn with_region(mut self, region: Option<&str>) -> Self {
+        self.region = region.map(str::to_owned);
+        self
+    }
+
     /// Set 1Password configuration for credentials retrieval
     pub fn with_onepassword(mut self, config: OnePasswordConfig) -> Self {
         self.onepassword_config = Some(config);
@@ -83,6 +92,9 @@ impl AwsConfigBuilder {
         if let Some(profile) = &self.profile {
             debug!(profile = %profile, "Setting AWS profile");
             loader = loader.profile_name(profile);
+        }
+        if let Some(region) = self.region {
+            loader = loader.region(Region::new(region));
         }
 
         // Priority: 1Password > default chain

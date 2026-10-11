@@ -3,9 +3,9 @@
   "feature": "assume-role",
   "status": "verified",
   "reason": null,
-  "commit": "e06669bca47f6e857d43fa9f9deaafcd397f0aa2",
-  "feature_hash": "b18ad60e44115492",
-  "diff_hash": "01787a222b6a7796",
+  "commit": "a487526e5dc9a9d49953e8f34c3d2783260bb9b0",
+  "feature_hash": "454b272839cd5038",
+  "diff_hash": "cbf29ce484222325",
   "environment": "real-services",
   "access": "read-only",
   "command": [
@@ -16,7 +16,7 @@
     "real",
     "assume-role"
   ],
-  "generated_at": "2026-10-10T19:12:03.235717+00:00",
+  "generated_at": "2026-10-11T00:36:04.594436+00:00",
   "observed": [
     {
       "test": "assume_role_iam_user_exec_runs_the_command_with_the_mapped_long_term_keys",

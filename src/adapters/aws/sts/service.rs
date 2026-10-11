@@ -77,17 +77,22 @@ impl StsService {
     /// The selected profile itself is not handed to the SDK without 1Password:
     /// the SDK would assume its role on its own before kurama does. A
     /// profile with no `role_arn` (an IAM user) has no role for the SDK to
-    /// assume, so its own keys sign.
+    /// assume, so its own keys sign. Whenever the selected profile is the
+    /// SDK's, its region is the one kurama read: the SDK drops a section whose
+    /// name holds a space.
     pub async fn from_config(kurama_config: &Config, profile: &Profile) -> Self {
         let mut builder = AwsConfigBuilder::new();
         if kurama_config.onepassword.enabled {
             builder = builder
                 .with_onepassword(kurama_config.onepassword.clone())
-                .with_profile(profile.name());
+                .with_profile(profile.name())
+                .with_region(profile.region_raw());
         } else if let Some(source) = profile.source_profile() {
             builder = builder.with_profile(source);
         } else if !profile.can_assume_role() {
-            builder = builder.with_profile(profile.name());
+            builder = builder
+                .with_profile(profile.name())
+                .with_region(profile.region_raw());
         }
         let config = builder.build().await;
         debug!(

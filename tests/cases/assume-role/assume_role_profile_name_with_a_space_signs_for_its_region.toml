@@ -1,0 +1,34 @@
+# A profile whose name holds a space (`[profile dev team]`, valid for the AWS
+# CLI) is assumed for its own region: the AWS SDK drops such a section, so
+# kurama hands it the region it read instead of letting the SDK find none.
+id = "assume_role_profile_name_with_a_space_signs_for_its_region"
+feature = "assume-role"
+
+[combination]
+command = "exec"
+source = "aws-profile"
+role = "assume-role"
+mfa = "none"
+onepassword = "enabled"
+
+[input]
+args = ["exec", "dev team", "--", "/bin/sh", "-c", "printf '%s %s\\n' \"$KURAMA_AWS\" \"$AWS_REGION\""]
+aws_config = """
+[default]
+region = us-east-1
+
+[profile dev team]
+role_arn = arn:aws:iam::123456789012:role/DevTeam
+region = ap-southeast-2
+"""
+
+[fakes]
+op = "enabled"
+
+[expect]
+exit_code = 0
+sts_actions = ["AssumeRole"]
+sts_calls = [{ action = "AssumeRole", role_arn = "arn:aws:iam::123456789012:role/DevTeam" }]
+sts_signing_region = "ap-southeast-2"
+stdout = { equals = "dev team ap-southeast-2\n" }
+no_files_written = true
