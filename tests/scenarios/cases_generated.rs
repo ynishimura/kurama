@@ -1003,6 +1003,14 @@ fn assume_role_ignores_inherited_stale_credentials() {
 }
 #[test]
 #[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
+fn assume_role_profile_name_with_a_space_signs_for_its_region() {
+    crate::support::cases::run_case(
+        include_str!("../cases/assume-role/assume_role_profile_name_with_a_space_signs_for_its_region.toml"),
+        "tests/cases/assume-role/assume_role_profile_name_with_a_space_signs_for_its_region.toml",
+    );
+}
+#[test]
+#[cfg_attr(not(feature = "test-fakes"), ignore = "needs --features test-fakes")]
 fn assume_role_real_env_exports_the_real_profile() {
     crate::support::cases::run_case(
         include_str!("../cases/assume-role/assume_role_real_env_exports_the_real_profile.toml"),
