@@ -99,6 +99,11 @@ Rust version, or coverage, open **Actions > CI > Run workflow**, select the bran
 and choose `ubuntu`, `macos`, or `all`. Ubuntu alone is the default. Enable the
 coverage checkbox only when needed; it runs an additional Ubuntu job.
 
+`.github/workflows/audit.yml` runs `cargo audit` against `Cargo.lock` on the
+same triggers and once a week, so a RustSec advisory for a transitive crate
+fails a check instead of waiting for Dependabot, which raises no alert for
+most of them.
+
 The same operation is available through the GitHub CLI:
 
 ```bash
