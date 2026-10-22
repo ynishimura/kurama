@@ -14,6 +14,7 @@ files = [
   ".github/workflows/pr.yml",
   ".github/workflows/scorecard.yml",
   ".github/workflows/fuzz.yml",
+  ".github/workflows/audit.yml",
   "fuzz/",
   "lefthook.yml",
   "mise.toml",

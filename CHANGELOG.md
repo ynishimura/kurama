@@ -11,6 +11,49 @@ format. Internal changes need none.
 
 ## Unreleased
 
+## 0.2.0 - 2026-10-22
+
+### Added
+
+- `[auth.<name>] kind = "secrets"`: a table `env` of variable name to secret
+  reference that `kurama exec` reads into the environment of one command.
+  `unset` clears every variable, and `status` lists the variable names only.
+  `token`, `console`, `--readonly` and `env --json` are `KIND_UNSUPPORTED`
+  for it; an `[api.*]` naming it is `CONFIG_INVALID`.
+- `kurama preset setup <ID>` takes an API from nothing to a first answer:
+  configure, check, credential, agent Skill and a first GET, each step
+  reported as `done`, `planned`, `needs_action`, `failed` or `skipped` with
+  the next command. A rerun resumes after the step that stopped.
+- An AWS profile without `role_arn` is an IAM user profile: `exec` and `env`
+  hand over its keys, or a GetSessionToken session when it has
+  `mfa_serial` (cached like the role path). `status --json` has
+  `"auth": "role" | "iam_user"`. `--readonly` on it is `PROFILE_INVALID`,
+  `console` is `KIND_UNSUPPORTED`, and an agent's `exec` on it is
+  `AGENT_POLICY_DENIED` unless `--confirm`.
+- `kurama agent` has a recipe for finding why a Lambda function fails.
+
+### Changed
+
+- `kurama agent ready` is now `kurama status --ready` (JSON kind
+  `status_ready`); the MCP `ready` tool runs it.
+- `kurama completions zsh` is now `kurama init zsh --completion-only`.
+- `kurama preset show` is now `preset setup --dry-run` and `preset add` is
+  now `preset setup --offline`; `--open` is gone.
+- `kurama env <auth source> --json` is `KIND_UNSUPPORTED`: `token --json` is
+  the credential document. `env --json` on an AWS profile is unchanged.
+- `KURAMA_AUTH_VAR` lists the exported variable names separated by spaces.
+- Dependencies with RustSec advisories are updated: rustls 0.23.46,
+  rustls-webpki 0.103.16 and webpki-roots / webpki-root-certs 1.0.10 (which
+  no longer trust distrusted emSign intermediates), and the DuckDB build's
+  zip 9.
+
+### Fixed
+
+- A profile whose name holds a space (`[profile payer369 ct]`) signs for its
+  own region instead of failing with `Missing Region`.
+- Resolved secrets and issued tokens print as `[REDACTED]` in `Debug` and
+  `Display`.
+
 ## 0.1.2 - 2026-10-10
 
 ### Added
