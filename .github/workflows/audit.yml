@@ -33,5 +33,9 @@ jobs:
     - name: Install cargo-audit
       run: cargo install --locked cargo-audit --version 0.22.2
 
+    # fuzz/ is a crate outside the workspace with a lockfile of its own, which
+    # a dependency update at the root does not touch; Scorecard scans it too.
     - name: Audit Cargo.lock
-      run: cargo audit
+      run: |
+        cargo audit
+        cargo audit --file fuzz/Cargo.lock

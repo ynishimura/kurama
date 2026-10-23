@@ -11,6 +11,11 @@ format. Internal changes need none.
 
 ## Unreleased
 
+### Changed
+
+- ctutils 0.4.5 (RUSTSEC-2026-0385: non-constant-time comparisons), used by
+  the HMAC behind SigV4 signing.
+
 ## 0.2.0 - 2026-10-22
 
 ### Added
