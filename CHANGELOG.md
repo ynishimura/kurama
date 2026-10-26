@@ -11,6 +11,8 @@ format. Internal changes need none.
 
 ## Unreleased
 
+## 0.2.1 - 2026-10-27
+
 ### Changed
 
 - ctutils 0.4.5 (RUSTSEC-2026-0385: non-constant-time comparisons), used by
