@@ -15,6 +15,10 @@ format. Internal changes need none.
 
 - ctutils 0.4.5 (RUSTSEC-2026-0385: non-constant-time comparisons), used by
   the HMAC behind SigV4 signing.
+- The AWS SDK is built without SigV4a, which kurama never used: that drops
+  crypto-bigint 0.5 (RUSTSEC-2026-0387, timing variability) and 17 other
+  elliptic-curve crates.
+- tokio 1.54.1 (RUSTSEC-2026-0386: `AsyncFd` constructors were unsound).
 
 ## 0.2.0 - 2026-10-22
 
