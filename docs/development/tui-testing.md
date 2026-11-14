@@ -84,7 +84,7 @@ Fixture states: `loading`, `loaded`, `selected` (later row, readonly and
 console on), `scrolled` (selection below the first page), `searching`,
 `empty` (search without a match), `no_profiles`, `error`, `browser_failed`
 (the console URL opener failed), `mfa`, `help`,
-`processing`, `success`, `session_soon` and `session_expired` (the
+`processing`, `opening_console`, `success`, `session_soon` and `session_expired` (the
 selected profile's MFA session in the header, under 15 minutes and gone),
 `auth_tab`, `api_tab` (a notice in the header), `db_tab`, `data_tab` (no
 section), `palette` (operations and rows, `get` typed), `palette_no_match`, `long_text`, `unicode`, `unicode_help` (a modal over

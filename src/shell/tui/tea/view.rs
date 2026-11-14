@@ -13,14 +13,13 @@ use ratatui::text::{Line, Span};
 use unicode_width::UnicodeWidthStr;
 
 use super::sources::{SourceList, Tab};
-use super::update::{MFA_CODE_LEN, Screen, TuiModel};
+use super::update::{ConsoleFallback, MFA_CODE_LEN, Screen, TuiModel};
 use crate::domain::functions::profile_status::describe_time_left;
 use crate::shell::tui::components::{
     Badge, DetailPane, Header, KeyHints, KeyValues, Modal, PROFILE_COLUMNS, ProfileTable, TableRow,
     Tabs, fit,
 };
 use crate::shell::tui::layout::{HomeLayout, home_tabs_layout};
-use crate::shell::tui::tea::messages::ProfileRow;
 use crate::shell::tui::theme::{self, Tone};
 
 pub const APP_TITLE: &str = "鞍馬 kurama";
@@ -33,15 +32,16 @@ const SOURCE_COLUMNS: [&str; 2] = ["NAME", "STATE"];
 const SOURCE_LABEL_WIDTH: usize = 12;
 
 // Priority order: a narrow terminal drops the last hints first.
-const HOME_HINTS: [(&str, &str); 9] = [
+const HOME_HINTS: [(&str, &str); 10] = [
     ("↑↓", "move"),
     ("Enter", "assume"),
+    ("o", "console"),
     ("q", "quit"),
     ("/", "search"),
     ("^K", "go to"),
     ("?", "help"),
     ("r", "readonly"),
-    ("c", "console"),
+    ("c", "auto-open"),
     ("Tab", "next tab"),
 ];
 const AUTH_HINTS: [(&str, &str); 5] = source_hints("login");
@@ -117,7 +117,7 @@ fn render_profiles(frame: &mut Frame, model: &TuiModel, layout: &HomeLayout) {
     if let Some(area) = layout.detail {
         DetailPane {
             title: DETAILS_TITLE,
-            row: selected_row(model),
+            row: model.selected_row(),
         }
         .render(frame, area);
     }
@@ -195,7 +195,7 @@ pub fn hints(model: &TuiModel) -> &'static [(&'static str, &'static str)] {
             Tab::S3 => &S3_HINTS,
         },
         Screen::MfaInput => &MFA_HINTS,
-        Screen::Processing { .. } => &PROCESSING_HINTS,
+        Screen::Processing { .. } | Screen::OpeningConsole { .. } => &PROCESSING_HINTS,
         Screen::Success(_) => &SUCCESS_HINTS,
         Screen::Error(_) => &ERROR_HINTS,
         Screen::Help => &HELP_HINTS,
@@ -203,7 +203,8 @@ pub fn hints(model: &TuiModel) -> &'static [(&'static str, &'static str)] {
 }
 
 fn header(model: &TuiModel) -> Header<'static> {
-    let time_left = selected_row(model)
+    let time_left = model
+        .selected_row()
         .filter(|_| model.tab == Tab::Aws)
         .and_then(|row| row.session_expires_at)
         .map(|expires_at| describe_time_left("MFA", expires_at, model.now));
@@ -220,13 +221,6 @@ fn header(model: &TuiModel) -> Header<'static> {
                 on: model.mode.console_launch,
             },
         ])
-}
-
-fn selected_row(model: &TuiModel) -> Option<&ProfileRow> {
-    model
-        .profiles
-        .filtered_profiles
-        .get(model.profiles.selected_index)
 }
 
 fn profiles_title(model: &TuiModel, width: usize) -> String {
@@ -284,6 +278,11 @@ fn modal(model: &TuiModel) -> Option<Modal<'static>> {
             tone: Tone::Info,
             body: vec![Line::from(message.clone())],
         },
+        Screen::OpeningConsole { profile } => Modal {
+            title: "Opening console",
+            tone: Tone::Info,
+            body: vec![entry("Profile", profile.clone())],
+        },
         Screen::Success(success) => Modal {
             title: "Success",
             tone: Tone::Success,
@@ -296,14 +295,16 @@ fn modal(model: &TuiModel) -> Option<Modal<'static>> {
         },
         Screen::Error(error) => {
             let mut body = vec![Line::from(error.message.clone())];
-            if error.console_url_on_quit {
+            if let Some(fallback) = error.console_fallback {
                 body.extend([
                     Line::default(),
                     Line::from(
                         "Open the console URL in a browser yourself: q quits and prints it.",
                     ),
-                    Line::from("Credentials are ready for the shell."),
                 ]);
+                if fallback == ConsoleFallback::UrlAndCredentials {
+                    body.push(Line::from("Credentials are ready for the shell."));
+                }
             }
             Modal {
                 title: "Error",
@@ -321,7 +322,8 @@ fn modal(model: &TuiModel) -> Option<Modal<'static>> {
                 ("1-6 or Tab", "switch tabs: AWS Auth API DB Data S3"),
                 ("Ctrl-K or :", "go to a profile, API or operation"),
                 ("r", "toggle readonly mode"),
-                ("c", "toggle console launch"),
+                ("o", "open console and keep browsing"),
+                ("c", "toggle console launch on Enter"),
                 ("? or F1", "show this help"),
                 ("q or Ctrl-C", "quit"),
             ]

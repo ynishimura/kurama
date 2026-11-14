@@ -21,4 +21,4 @@
 ┃     aws  account-36 -                                                        ┃
 ┃ ▸ * aws  account-37 -                                                        ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
- ↑↓ move  Enter assume  q quit  / search  ^K go to  ? help  r readonly
+ ↑↓ move  Enter assume  o console  q quit  / search  ^K go to  ? help

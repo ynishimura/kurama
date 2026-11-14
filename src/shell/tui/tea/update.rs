@@ -73,6 +73,7 @@ pub enum Screen {
     ProfileList,
     MfaInput,
     Processing { message: String },
+    OpeningConsole { profile: String },
     Success(SuccessModel),
     Error(ErrorModel),
     Help,
@@ -94,6 +95,8 @@ pub struct ProfileListModel {
 /// MFA input model
 #[derive(Clone, Default)]
 pub struct MfaInputModel {
+    /// Resume a browser-only launch when this prompt is submitted.
+    pub console_only: bool,
     /// Current MFA input value
     pub value: String,
     /// MFA serial number
@@ -106,6 +109,7 @@ impl std::fmt::Debug for MfaInputModel {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("MfaInputModel")
             .field("value", &(!self.value.is_empty()).then_some("[REDACTED]"))
+            .field("console_only", &self.console_only)
             .field("serial", &self.serial)
             .field("profile", &self.profile)
             .finish()
@@ -124,7 +128,13 @@ pub struct SuccessModel {
 pub struct ErrorModel {
     pub message: String,
     /// The browser did not open the console: its URL is printed on quit.
-    pub console_url_on_quit: bool,
+    pub console_fallback: Option<ConsoleFallback>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ConsoleFallback {
+    UrlOnly,
+    UrlAndCredentials,
 }
 
 /// Application mode settings
@@ -161,12 +171,15 @@ impl TuiModel {
         }
     }
 
-    /// Get the currently selected profile name
-    pub fn selected_profile(&self) -> Option<&str> {
+    pub fn selected_row(&self) -> Option<&ProfileRow> {
         self.profiles
             .filtered_profiles
             .get(self.profiles.selected_index)
-            .map(|row| row.name.as_str())
+    }
+
+    /// Get the currently selected profile name
+    pub fn selected_profile(&self) -> Option<&str> {
+        self.selected_row().map(|row| row.name.as_str())
     }
 }
 
@@ -295,7 +308,7 @@ fn update_key(mut model: TuiModel, key: crossterm::event::KeyEvent) -> UpdateRes
         Screen::Help => update_help_key(model, key),
         Screen::Error(_) => update_error_key(model, key),
         Screen::Success(_) => update_success_key(model, key),
-        Screen::Processing { .. } => UpdateResult::no_effect(model),
+        Screen::Processing { .. } | Screen::OpeningConsole { .. } => UpdateResult::no_effect(model),
     }
 }
 
@@ -328,20 +341,9 @@ fn update_profile_list_key(mut model: TuiModel, key: crossterm::event::KeyEvent)
         }
 
         // Selection
-        KeyCode::Enter => {
-            if let Some(profile) = model.selected_profile().map(|s| s.to_string()) {
-                model.screen = Screen::Processing {
-                    message: format!("Assuming role for profile: {}", profile),
-                };
-                let effect = TuiEffect::AssumeRole(AssumeRoleEffect {
-                    profile_name: profile,
-                    mfa_token: None,
-                    readonly: model.mode.readonly,
-                });
-                UpdateResult::with_effect(model, effect)
-            } else {
-                UpdateResult::no_effect(model)
-            }
+        KeyCode::Enter => start_profile_action(model, false),
+        KeyCode::Char('o') if key.modifiers == KeyModifiers::NONE => {
+            start_profile_action(model, true)
         }
 
         // Help
@@ -380,6 +382,35 @@ fn update_profile_list_key(mut model: TuiModel, key: crossterm::event::KeyEvent)
 
         _ => UpdateResult::no_effect(model),
     }
+}
+
+fn start_profile_action(mut model: TuiModel, console_only: bool) -> UpdateResult {
+    if console_only
+        && model
+            .selected_row()
+            .is_some_and(|row| row.role_arn.is_none())
+    {
+        model.notice = Some("Choose a profile with a role_arn".into());
+        return UpdateResult::no_effect(model);
+    }
+    let Some(profile) = model.selected_profile().map(str::to_owned) else {
+        return UpdateResult::no_effect(model);
+    };
+    model.screen = if console_only {
+        Screen::OpeningConsole {
+            profile: profile.clone(),
+        }
+    } else {
+        Screen::Processing {
+            message: format!("Assuming role for profile: {profile}"),
+        }
+    };
+    let effect = TuiEffect::AssumeRole(AssumeRoleEffect {
+        profile_name: profile,
+        mfa_token: None,
+        readonly: model.mode.readonly,
+    });
+    UpdateResult::with_effect(model, effect)
 }
 
 fn update_search_key(mut model: TuiModel, key: crossterm::event::KeyEvent) -> UpdateResult {
@@ -429,14 +460,20 @@ fn update_mfa_input_key(mut model: TuiModel, key: crossterm::event::KeyEvent) ->
 
         KeyCode::Enter => {
             if model.mfa_input.value.len() == MFA_CODE_LEN {
-                let profile = model.mfa_input.profile.clone();
-                let mfa_token = model.mfa_input.value.clone();
-                model.screen = Screen::Processing {
-                    message: format!("Verifying MFA for profile: {}", profile),
+                let prompt = std::mem::take(&mut model.mfa_input);
+                let profile = prompt.profile;
+                model.screen = if prompt.console_only {
+                    Screen::OpeningConsole {
+                        profile: profile.clone(),
+                    }
+                } else {
+                    Screen::Processing {
+                        message: format!("Verifying MFA for profile: {profile}"),
+                    }
                 };
                 let effect = TuiEffect::AssumeRole(AssumeRoleEffect {
                     profile_name: profile,
-                    mfa_token: Some(mfa_token),
+                    mfa_token: Some(prompt.value),
                     readonly: model.mode.readonly,
                 });
                 UpdateResult::with_effect(model, effect)
@@ -518,7 +555,7 @@ fn update_profiles_loaded(mut model: TuiModel, result: ProfilesLoadedResult) -> 
         Err(err) => {
             model.screen = Screen::Error(ErrorModel {
                 message: format!("Failed to load profiles: {}", err),
-                console_url_on_quit: false,
+                console_fallback: None,
             });
             UpdateResult::no_effect(model)
         }
@@ -531,6 +568,9 @@ fn update_assume_role_completed(mut model: TuiModel, result: AssumeRoleResult) -
         Ok(creds) => {
             let profile_name = result.profile_name;
             let credentials = creds.credentials;
+            if matches!(model.screen, Screen::OpeningConsole { .. }) {
+                return UpdateResult::with_effect(model, generate_console_url(&credentials));
+            }
             let write_credentials = CredentialsToWrite {
                 access_key_id: credentials.access_key_id().to_string(),
                 secret_access_key: credentials.secret_access_key().to_string(),
@@ -549,13 +589,7 @@ fn update_assume_role_completed(mut model: TuiModel, result: AssumeRoleResult) -
                 }),
             ];
             if model.mode.console_launch {
-                effects.push(TuiEffect::GenerateConsoleUrl(ConsoleUrlEffect {
-                    credentials: CredentialsForConsole {
-                        access_key_id: credentials.access_key_id().to_string(),
-                        secret_access_key: credentials.secret_access_key().to_string(),
-                        session_token: credentials.session_token().map(str::to_string),
-                    },
-                }));
+                effects.push(generate_console_url(&credentials));
             }
             model.screen = Screen::Success(SuccessModel {
                 profile: profile_name,
@@ -564,22 +598,33 @@ fn update_assume_role_completed(mut model: TuiModel, result: AssumeRoleResult) -
             UpdateResult::with_effects(model, effects)
         }
         Err(AssumeRoleError::MfaRequired { serial }) => {
-            model.screen = Screen::MfaInput;
             model.mfa_input = MfaInputModel {
-                serial: serial.clone(),
+                console_only: matches!(model.screen, Screen::OpeningConsole { .. }),
+                serial,
                 profile: result.profile_name,
                 value: String::new(),
             };
+            model.screen = Screen::MfaInput;
             UpdateResult::no_effect(model)
         }
         Err(AssumeRoleError::Failed { message }) => {
             model.screen = Screen::Error(ErrorModel {
                 message,
-                console_url_on_quit: false,
+                console_fallback: None,
             });
             UpdateResult::no_effect(model)
         }
     }
+}
+
+fn generate_console_url(credentials: &crate::domain::Credentials) -> TuiEffect {
+    TuiEffect::GenerateConsoleUrl(ConsoleUrlEffect {
+        credentials: CredentialsForConsole {
+            access_key_id: credentials.access_key_id().to_string(),
+            secret_access_key: credentials.secret_access_key().to_string(),
+            session_token: credentials.session_token().map(str::to_string),
+        },
+    })
 }
 
 /// Handle console URL generated message
@@ -592,7 +637,7 @@ fn update_console_url_generated(
         Err(err) => {
             model.screen = Screen::Error(ErrorModel {
                 message: format!("Failed to generate console URL: {}", err),
-                console_url_on_quit: false,
+                console_fallback: None,
             });
             UpdateResult::no_effect(model)
         }
@@ -600,7 +645,7 @@ fn update_console_url_generated(
 }
 
 /// A browser that did not open leaves the URL to the user, printed when the
-/// TUI ends; the credentials were already held for the shell.
+/// TUI ends. A browser-only launch returns directly to the list on success.
 fn update_browser_opened(
     mut model: TuiModel,
     result: super::messages::BrowserOpenResult,
@@ -608,8 +653,15 @@ fn update_browser_opened(
     if let Err(error) = result.result {
         model.screen = Screen::Error(ErrorModel {
             message: format!("Failed to open the browser: {error}"),
-            console_url_on_quit: true,
+            console_fallback: Some(if matches!(model.screen, Screen::OpeningConsole { .. }) {
+                ConsoleFallback::UrlOnly
+            } else {
+                ConsoleFallback::UrlAndCredentials
+            }),
         });
+    } else if let Screen::OpeningConsole { profile } = &model.screen {
+        model.notice = Some(format!("Opened console for {profile}"));
+        model.screen = Screen::ProfileList;
     }
     UpdateResult::no_effect(model)
 }

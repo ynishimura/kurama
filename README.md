@@ -460,7 +460,8 @@ for states.
 | <kbd>Ctrl-K</kbd> / <kbd>:</kbd> | Go to any profile, source, API, operation, database or bucket |
 | <kbd>Enter</kbd> | Assume the selected role |
 | <kbd>r</kbd> | Toggle read-only mode |
-| <kbd>c</kbd> | Toggle console launch |
+| <kbd>o</kbd> | Open the selected role’s AWS Console and keep browsing profiles. Select another role and press <kbd>o</kbd> again to switch. |
+| <kbd>c</kbd> | Toggle opening the console when <kbd>Enter</kbd> assumes a role for the shell |
 | <kbd>?</kbd> / <kbd>F1</kbd> | Show help |
 | <kbd>q</kbd> / <kbd>Ctrl-C</kbd> | Quit |
 

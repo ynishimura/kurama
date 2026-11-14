@@ -115,6 +115,7 @@ fn test_mfa_input() {
     let mut model = TuiModel::new(false, false);
     model.screen = Screen::MfaInput;
     model.mfa_input = MfaInputModel {
+        console_only: false,
         serial: "arn:aws:iam::123456789012:mfa/user".into(),
         profile: "test-profile".into(),
         value: String::new(),
@@ -139,6 +140,7 @@ fn test_mfa_input() {
 #[test]
 fn mfa_input_debug_redacts_code() {
     let input = MfaInputModel {
+        console_only: false,
         serial: "arn:aws:iam::123456789012:mfa/user".into(),
         profile: "test-profile".into(),
         value: "999999".into(),
@@ -346,6 +348,137 @@ fn console_url_effects(effects: &[TuiEffect]) -> Vec<(String, String, Option<Str
         .collect()
 }
 
+fn press(model: TuiModel, code: KeyCode) -> UpdateResult {
+    tea_update(model, TuiMessage::Key(key_event(code)))
+}
+
+#[test]
+fn open_console_uses_the_selected_role_without_exporting_and_returns_to_the_list() {
+    use crate::shell::tui::tea::messages::{BrowserOpenResult, ConsoleUrlResult};
+    use crate::shell::tui::testing::{buffer_text, fixtures, render_buffer};
+
+    let model = press(fixtures::loaded(), KeyCode::Down).model;
+    let model = press(model, KeyCode::Char('r')).model;
+    let started = press(model, KeyCode::Char('o'));
+    assert!(matches!(
+        started.effects.as_slice(),
+        [TuiEffect::AssumeRole(effect)] if effect.profile_name == "dev" && effect.readonly
+    ));
+    let role = tea_update(started.model, assumed("dev"));
+    assert_eq!(console_url_effects(&role.effects).len(), 1);
+    assert!(
+        !role
+            .effects
+            .iter()
+            .any(|e| matches!(e, TuiEffect::WriteCredentials(_)))
+    );
+
+    let federated = tea_update(
+        role.model,
+        TuiMessage::ConsoleUrlGenerated(ConsoleUrlResult {
+            result: Ok("https://signin.example/login".into()),
+        }),
+    );
+    assert!(matches!(federated.effects.as_slice(),
+        [TuiEffect::OpenBrowser { url }] if url == "https://signin.example/login"));
+    let failed = tea_update(
+        federated.model.clone(),
+        TuiMessage::BrowserOpened(BrowserOpenResult {
+            result: Err("open failed".into()),
+        }),
+    );
+    let text = buffer_text(&render_buffer(&failed.model, 120, 40));
+    assert!(
+        text.contains("open failed") && text.contains("prints it"),
+        "{text}"
+    );
+    assert!(
+        !text.contains("Credentials are ready for the shell"),
+        "{text}"
+    );
+
+    let opened = tea_update(
+        federated.model,
+        TuiMessage::BrowserOpened(BrowserOpenResult { result: Ok(()) }),
+    );
+    assert_eq!(opened.model.screen, Screen::ProfileList);
+    assert_eq!(opened.model.selected_profile(), Some("dev"));
+    assert_eq!(
+        opened.model.notice.as_deref(),
+        Some("Opened console for dev")
+    );
+    assert!(!opened.model.should_exit);
+    assert!(!opened.model.mode.console_launch);
+}
+
+#[test]
+fn cancelling_console_mfa_leaves_enter_as_a_shell_action() {
+    use crate::shell::tui::testing::fixtures;
+    let selected = press(fixtures::loaded(), KeyCode::End).model;
+    let started = press(selected, KeyCode::Char('o'));
+    let mfa = tea_update(
+        started.model,
+        TuiMessage::AssumeRoleCompleted(AssumeRoleResult {
+            profile_name: "sandbox-mfa".into(),
+            result: Err(AssumeRoleError::MfaRequired {
+                serial: "device".into(),
+            }),
+        }),
+    );
+    assert_eq!(mfa.model.screen, Screen::MfaInput);
+
+    let mut typed = mfa.model.clone();
+    for ch in "123456".chars() {
+        typed = press(typed, KeyCode::Char(ch)).model;
+    }
+    let submitted = press(typed, KeyCode::Enter);
+    assert!(
+        matches!(submitted.effects.as_slice(), [TuiEffect::AssumeRole(effect)]
+        if effect.mfa_token.as_deref() == Some("123456") && effect.profile_name == "sandbox-mfa")
+    );
+    let role = tea_update(submitted.model, assumed("sandbox-mfa"));
+    assert_eq!(console_url_effects(&role.effects).len(), 1);
+    assert!(
+        !role
+            .effects
+            .iter()
+            .any(|e| matches!(e, TuiEffect::WriteCredentials(_)))
+    );
+
+    let cancelled = press(mfa.model, KeyCode::Esc);
+    assert_eq!(cancelled.model.screen, Screen::ProfileList);
+    let started = press(cancelled.model, KeyCode::Enter);
+    let role = tea_update(started.model, assumed("sandbox-mfa"));
+    assert!(console_url_effects(&role.effects).is_empty());
+    assert!(
+        role.effects
+            .iter()
+            .any(|e| matches!(e, TuiEffect::WriteCredentials(_)))
+    );
+}
+
+#[test]
+fn open_console_on_an_iam_user_explains_the_role_requirement_without_effects() {
+    let model = tea_update(
+        TuiModel::new(false, false),
+        TuiMessage::ProfilesLoaded(ProfilesLoadedResult {
+            profiles: Ok(rows(&["user"])),
+        }),
+    )
+    .model;
+    let result = press(model, KeyCode::Char('o'));
+    assert_eq!(result.model.screen, Screen::ProfileList);
+    assert!(
+        result
+            .model
+            .notice
+            .as_deref()
+            .unwrap_or_default()
+            .contains("role_arn")
+    );
+    assert!(result.effects.is_empty());
+}
+
 #[test]
 fn console_toggle_makes_a_successful_role_open_the_console() {
     let model = TuiModel::new(false, false);
@@ -386,6 +519,7 @@ fn incomplete_mfa_code_stays_on_the_prompt_until_the_sixth_digit() {
     let mut model = TuiModel::new(false, false);
     model.screen = Screen::MfaInput;
     model.mfa_input = MfaInputModel {
+        console_only: false,
         serial: "arn:aws:iam::123456789012:mfa/user".into(),
         profile: "test-profile".into(),
         value: String::new(),
@@ -424,7 +558,7 @@ fn a_browser_that_fails_to_open_shows_the_url_and_keeps_the_tui() {
         result.model.screen,
         Screen::Error(ErrorModel {
             message: "Failed to open the browser: `open` exited with exit status: 1".into(),
-            console_url_on_quit: true,
+            console_fallback: Some(ConsoleFallback::UrlAndCredentials),
         })
     );
 

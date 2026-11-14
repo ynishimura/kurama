@@ -23,6 +23,7 @@ scenarios = [
   "tui_resize_keeps_the_selection_and_switches_panes",
   "tui_search_filters_profiles_and_esc_clears",
   "tui_enter_assumes_the_role_and_hands_credentials_to_the_wrapper",
+  "tui_opens_two_consoles_without_exporting_shell_credentials",
   "tui_console_toggle_generates_and_opens_federated_session",
   "tui_console_browser_failure_shows_an_error_and_keeps_the_credentials",
   "tui_mfa_prompt_accepts_a_code_and_assumes_the_role",
