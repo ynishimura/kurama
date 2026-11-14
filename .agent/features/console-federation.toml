@@ -10,6 +10,7 @@ files = [
 ]
 tests = ["federation"]
 scenarios = [
+  "tui_opens_two_consoles_without_exporting_shell_credentials",
   "tui_console_toggle_generates_and_opens_federated_session",
   "tui_console_browser_failure_shows_an_error_and_keeps_the_credentials",
 ]

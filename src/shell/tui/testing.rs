@@ -266,6 +266,7 @@ fn modal_title(model: &TuiModel) -> Option<(&'static str, Tone)> {
         Screen::ProfileList => None,
         Screen::MfaInput => Some(("MFA code", Tone::Warning)),
         Screen::Processing { .. } => Some(("Processing", Tone::Info)),
+        Screen::OpeningConsole { .. } => Some(("Opening console", Tone::Info)),
         Screen::Success(_) => Some(("Success", Tone::Success)),
         Screen::Error(_) => Some(("Error", Tone::Danger)),
         Screen::Help => Some(("Help", Tone::Info)),
@@ -428,7 +429,7 @@ pub mod fixtures {
         let mut model = loaded();
         model.screen = Screen::Error(ErrorModel {
             message: "STS AssumeRole failed: User: arn:aws:iam::123456789012:user/agent is not authorized to perform: sts:AssumeRole on resource: arn:aws:iam::123456789012:role/Dev".into(),
-            console_url_on_quit: false,
+            console_fallback: None,
         });
         model
     }
@@ -440,7 +441,9 @@ pub mod fixtures {
         model.mode.console_launch = true;
         model.screen = Screen::Error(ErrorModel {
             message: "Failed to open the browser: `open` exited with exit status: 1".into(),
-            console_url_on_quit: true,
+            console_fallback: Some(
+                crate::shell::tui::tea::update::ConsoleFallback::UrlAndCredentials,
+            ),
         });
         model
     }
@@ -450,6 +453,7 @@ pub mod fixtures {
         model.profiles.selected_index = 2;
         model.screen = Screen::MfaInput;
         model.mfa_input = MfaInputModel {
+            console_only: false,
             value: "123".into(),
             serial: "arn:aws:iam::123456789012:mfa/agent".into(),
             profile: "ops-mfa".into(),
@@ -468,6 +472,15 @@ pub mod fixtures {
         model.profiles.selected_index = 1;
         model.screen = Screen::Processing {
             message: "Assuming role for profile: dev".into(),
+        };
+        model
+    }
+
+    pub fn opening_console() -> TuiModel {
+        let mut model = loaded();
+        model.profiles.selected_index = 1;
+        model.screen = Screen::OpeningConsole {
+            profile: "dev".into(),
         };
         model
     }
@@ -723,6 +736,7 @@ pub mod fixtures {
             ("mfa", mfa()),
             ("help", help()),
             ("processing", processing()),
+            ("opening_console", opening_console()),
             ("success", success()),
             ("session_soon", session_soon()),
             ("session_expired", session_expired()),

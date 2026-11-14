@@ -5,7 +5,7 @@
 use crate::support::tui::{self, Key};
 use crate::support::{
     OnePassword, RESULT_ACCESS_KEY, SIGNIN_TOKEN, SOURCE_ACCESS_KEY, STORED_ACCESS_TOKEN, Scenario,
-    StsFake, stored_token_json,
+    StsCallExpect, StsFake, stored_token_json,
 };
 
 /// Full-width names and a name wider than the table, for width handling.
@@ -450,6 +450,60 @@ fn tui_enter_assumes_the_role_and_hands_credentials_to_the_wrapper() {
     v.finish();
 }
 #[test]
+fn tui_opens_two_consoles_without_exporting_shell_credentials() {
+    let mut t = tui::launch(
+        Scenario::tui("tui_opens_two_consoles_without_exporting_shell_credentials")
+            .with_env_script()
+            .with_fake_browser(),
+        tui::SMALL,
+    );
+    t.wait_for("Profiles (3)")
+        .expect_footer_contains("o console")
+        .key(Key::Char('o'))
+        .wait_for("role_arn")
+        .expect_row_with(&["▸", "aws", "default"])
+        .key(Key::Down)
+        .key(Key::Char('r'))
+        .key(Key::Char('o'))
+        .wait_for("Opened console for dev")
+        .expect_row_with(&["▸", "aws", "dev"])
+        .snapshot("dev_console")
+        .key(Key::Down)
+        .key(Key::Char('o'))
+        .wait_for("┏ MFA code ")
+        .type_text("123456")
+        .key(Key::Enter)
+        .wait_for("Opened console for ops-mfa")
+        .expect_row_with(&["▸", "aws", "ops-mfa"])
+        .snapshot("ops_console");
+
+    let mut v = t.quit();
+    let assume_dev = StsCallExpect {
+        action: Some("AssumeRole".into()),
+        role_arn: Some("arn:aws:iam::123456789012:role/Dev".into()),
+        policy_arns: Some(vec!["arn:aws:iam::aws:policy/ReadOnlyAccess".into()]),
+        ..Default::default()
+    };
+    let assume_ops = StsCallExpect {
+        role_arn: Some("arn:aws:iam::123456789012:role/Ops".into()),
+        serial_number: Some("arn:aws:iam::123456789012:mfa/agent".into()),
+        token_code: Some("123456".into()),
+        ..assume_dev.clone()
+    };
+    let signin_token = format!("SigninToken={SIGNIN_TOKEN}");
+    let login_url = ["Action=login", signin_token.as_str()];
+    v.expect_exit_code(0)
+        .expect_sts_calls(&[assume_dev, assume_ops])
+        .expect_federation_calls(&[("getSigninToken", RESULT_ACCESS_KEY); 2])
+        .expect_open_calls_containing(&[&login_url, &login_url]);
+    v.check(
+        "opening consoles leaves the wrapper export file unwritten",
+        v.observed.env_script.is_none(),
+        format!("export file exists: {}", v.observed.env_script.is_some()),
+    );
+    v.finish();
+}
+#[test]
 fn tui_console_toggle_generates_and_opens_federated_session() {
     let mut t = tui::launch(
         Scenario::tui("tui_console_toggle_generates_and_opens_federated_session")
@@ -494,7 +548,8 @@ fn tui_console_browser_failure_shows_an_error_and_keeps_the_credentials() {
         .key(Key::Char('c'))
         .key(Key::Enter)
         .wait_for("┏ Error ")
-        .expect_text("Failed to open the browser: `open` exited")
+        .expect_text("Failed to open the browser:")
+        .expect_text("exit status: 1")
         .expect_text("and prints it.")
         .expect_text("Credentials are ready for the shell.")
         .snapshot("browser_failed")
